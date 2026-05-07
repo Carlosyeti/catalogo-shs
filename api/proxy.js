@@ -1,3 +1,4 @@
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -7,7 +8,7 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const API_BASE = 'http://ultraklean.ddns.net:9091';
+  const API_BASE = 'http://38.58.46.142:9091';
   const TOKEN = '6GmrWp2KvHh2R4682ciDY09Klu92bv';
 
   const metodo = req.query.metodo || 'ARTICULOS';
