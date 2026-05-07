@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Test Proxy SHS</title>
+</head>
+<body style="font-family:sans-serif;padding:20px">
+<h2>Test de conexión</h2>
+<div id="resultado" style="margin-top:20px;padding:15px;background:#f0f0f0;border-radius:8px">
+  Probando conexión...
+</div>
+<script>
+const PROXY = 'https://catalogo-shs.vercel.app/api/proxy';
+
+async function test() {
+  const el = document.getElementById('resultado');
+  try {
+    el.textContent = 'Conectando a proxy...';
+    const resp = await fetch(PROXY + '?metodo=ARTICULOS&cantidad=2');
+    el.textContent = 'Respuesta recibida. Status: ' + resp.status;
+    const text = await resp.text();
+    el.textContent = 'Datos: ' + text.substring(0, 200) + '...';
+  } catch(e) {
+    el.style.background = '#fee2e2';
+    el.textContent = 'ERROR: ' + e.message;
+  }
+}
+test();
+</script>
+</body>
+</html>
