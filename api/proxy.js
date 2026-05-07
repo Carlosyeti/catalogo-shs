@@ -1,4 +1,3 @@
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -12,7 +11,7 @@ export default async function handler(req, res) {
   const TOKEN = '6GmrWp2KvHh2R4682ciDY09Klu92bv';
 
   const metodo = req.query.metodo || 'ARTICULOS';
-  const cantidad = req.query.cantidad || '100';
+  const cantidad = req.query.cantidad || '50';
   const pagina = req.query.pagina || '1';
   const clienteId = req.query.clienteId || '';
   const articuloId = req.query.articuloId || '';
@@ -42,9 +41,21 @@ export default async function handler(req, res) {
 
   try {
     const response = await fetch(apiUrl);
-    const text = await response.text();
-    res.setHeader('Content-Type', 'application/json');
-    return res.status(200).send(text);
+    let text = await response.text();
+    text = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch(e) {
+      const objects = [];
+      const regex = /\{[^{}]*"clave"[^{}]*\}/g;
+      let match;
+      while ((match = regex.exec(text)) !== null) {
+        try { objects.push(JSON.parse(match[0])); } catch(e2) {}
+      }
+      data = objects.length > 0 ? objects : [];
+    }
+    return res.status(200).json(data);
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
