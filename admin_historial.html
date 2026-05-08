@@ -9,18 +9,23 @@ async function sincronizarCatalogo() {
   document.getElementById('btn3').disabled = true;
   document.getElementById('p3').style.display = 'block';
   document.getElementById('r3').style.display = 'none';
-  setProg('3', 20, 'Descargando catálogo de Microsip...');
+  let pagina = 0;
+  let totalAcumulado = 0;
   try {
-    const res = await fetch(`${PROXY}?metodo=SYNC_ARTICULOS`);
-    const data = await res.json();
-    if (data.ok) {
-      setProg('3', 100, '¡Completado!');
-      showResult('3', true, `✅ ${data.total} artículos sincronizados`);
-    } else {
-      showResult('3', false, '❌ Error: ' + JSON.stringify(data));
+    while (true) {
+      const resetParam = pagina === 0 ? '&reset=1' : '';
+      setProg('3', Math.min(90, pagina * 5), `Descargando página ${pagina + 1}... (${totalAcumulado} artículos)`);
+      const res = await fetch(`${PROXY}?metodo=SYNC_ARTICULOS&pagina=${pagina}${resetParam}`);
+      const data = await res.json();
+      if (!data.ok) throw new Error(JSON.stringify(data));
+      totalAcumulado = data.totalAcumulado || totalAcumulado;
+      if (data.fin) break;
+      pagina++;
     }
+    setProg('3', 100, '¡Completado!');
+    showResult('3', true, `✅ ${totalAcumulado} artículos sincronizados en ${pagina + 1} páginas`);
   } catch(e) {
-    showResult('3', false, '❌ Error: ' + e.message);
+    showResult('3', false, '❌ Error en página ' + pagina + ': ' + e.message);
   } finally {
     document.getElementById('btn3').disabled = false;
   }
