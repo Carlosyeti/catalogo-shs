@@ -4,12 +4,10 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=3600');
   if (req.method === 'OPTIONS') return res.status(200).end();
-
   const API_BASE = 'http://38.58.46.142:9091';
   const TOKEN = '6GmrWp2KvHh2R4682ciDY09Klu92bv';
   const metodo = req.query.metodo || 'ARTICULOS';
   const cantidad = req.query.cantidad || '700';
-
   function repairJSON(text) {
     let attempts = 0;
     while (attempts < 100) {
@@ -27,14 +25,12 @@ export default async function handler(req, res) {
     }
     return [];
   }
-
   async function fetchMicrosip(url) {
     const response = await fetch(url);
     let text = await response.text();
     text = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ');
     return repairJSON(text) || [];
   }
-
   try {
     // ARTICULOS
     if (metodo === 'ARTICULOS') {
@@ -49,7 +45,6 @@ export default async function handler(req, res) {
       }
       return res.status(200).json(data);
     }
-
     // CLIENTES
 if (metodo === 'CLIENTES') {
   try {
@@ -62,7 +57,6 @@ if (metodo === 'CLIENTES') {
     return res.status(500).json({ error: err.message, stack: err.stack });
   }
 }
-
     // IMAGENES
     if (metodo === 'IMAGENES') {
       const data = await fetchMicrosip(
@@ -70,10 +64,10 @@ if (metodo === 'CLIENTES') {
       );
       return res.status(200).json(data);
     }
-
     return res.status(200).json({ ok: true });
-
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
 }
+
+verifica el código
