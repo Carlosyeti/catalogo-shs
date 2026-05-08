@@ -3,196 +3,202 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin — Historial de Clientes SHS</title>
+<title>Admin SHS</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-  .container { background: white; border-radius: 16px; padding: 40px; max-width: 600px; width: 90%; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
-  .logo { text-align: center; margin-bottom: 32px; }
-  .logo h1 { font-size: 24px; color: #1a1a2e; font-weight: 700; }
-  .logo p { color: #666; font-size: 14px; margin-top: 4px; }
-  .drop-zone { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 40px; text-align: center; cursor: pointer; transition: all 0.2s; background: #f8fafc; }
-  .drop-zone:hover, .drop-zone.drag-over { border-color: #3b82f6; background: #eff6ff; }
-  .drop-zone svg { width: 48px; height: 48px; color: #94a3b8; margin-bottom: 12px; }
-  .drop-zone p { color: #64748b; font-size: 15px; }
-  .drop-zone span { color: #3b82f6; font-weight: 600; }
-  #fileInput { display: none; }
-  .btn { width: 100%; padding: 14px; border-radius: 10px; border: none; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 20px; transition: all 0.2s; }
-  .btn-primary { background: #3b82f6; color: white; }
-  .btn-primary:hover { background: #2563eb; }
-  .btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
-  .progress-container { margin-top: 24px; display: none; }
-  .progress-bar-bg { background: #e2e8f0; border-radius: 99px; height: 10px; overflow: hidden; }
-  .progress-bar { background: #3b82f6; height: 100%; border-radius: 99px; transition: width 0.3s; width: 0%; }
-  .progress-text { text-align: center; font-size: 13px; color: #64748b; margin-top: 8px; }
-  .result { margin-top: 24px; padding: 16px; border-radius: 10px; display: none; }
-  .result.success { background: #f0fdf4; border: 1px solid #86efac; color: #166534; }
-  .result.error { background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; }
-  .result h3 { font-size: 16px; margin-bottom: 6px; }
-  .result p { font-size: 14px; }
-  .file-selected { background: #eff6ff; border-color: #3b82f6; }
-  .file-name { font-weight: 600; color: #1d4ed8; margin-top: 8px; font-size: 14px; }
-  .instrucciones { background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 16px; margin-bottom: 24px; }
-  .instrucciones h3 { font-size: 14px; font-weight: 600; color: #92400e; margin-bottom: 8px; }
-  .instrucciones ul { font-size: 13px; color: #78350f; padding-left: 16px; }
-  .instrucciones li { margin-bottom: 4px; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.container{background:white;border-radius:16px;padding:40px;max-width:640px;width:100%;box-shadow:0 4px 24px rgba(0,0,0,0.08)}
+h1{font-size:22px;color:#1a1a2e;font-weight:700;margin-bottom:4px}
+.subtitle{color:#64748b;font-size:14px;margin-bottom:28px}
+.seccion{margin-bottom:32px;padding-bottom:32px;border-bottom:2px solid #f1f5f9}
+.seccion:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.seccion h2{font-size:16px;font-weight:700;color:#1e4bcc;margin-bottom:12px}
+.instrucciones{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;color:#78350f}
+.instrucciones ul{padding-left:16px}
+.instrucciones li{margin-bottom:3px}
+.drop-zone{border:2px dashed #cbd5e1;border-radius:12px;padding:28px;text-align:center;cursor:pointer;transition:all 0.2s;background:#f8fafc}
+.drop-zone:hover,.drop-zone.drag-over{border-color:#1e4bcc;background:#eff6ff}
+.drop-zone p{color:#64748b;font-size:14px}
+.drop-zone span{color:#1e4bcc;font-weight:600}
+.file-name{font-weight:700;color:#1d4ed8;margin-top:8px;font-size:13px}
+input[type=file]{display:none}
+.btn{width:100%;padding:13px;border-radius:10px;border:none;font-size:15px;font-weight:700;cursor:pointer;margin-top:14px;transition:all 0.2s;background:#1e4bcc;color:white}
+.btn:hover{background:#163799}
+.btn:disabled{background:#93c5fd;cursor:not-allowed}
+.progress{margin-top:16px;display:none}
+.bar-bg{background:#e2e8f0;border-radius:99px;height:8px;overflow:hidden}
+.bar{background:#1e4bcc;height:100%;border-radius:99px;transition:width 0.3s;width:0%}
+.progress-txt{text-align:center;font-size:12px;color:#64748b;margin-top:6px}
+.result{margin-top:16px;padding:14px;border-radius:10px;display:none;font-size:14px}
+.result.ok{background:#f0fdf4;border:1px solid #86efac;color:#166534}
+.result.err{background:#fef2f2;border:1px solid #fca5a5;color:#991b1b}
 </style>
 </head>
 <body>
 <div class="container">
-  <div class="logo">
-    <h1>🗂️ Actualizar Historial de Clientes</h1>
-    <p>Surtidora de Higiénicos y Servicios</p>
-  </div>
+  <h1>⚙️ Administración SHS</h1>
+  <p class="subtitle">Actualizar historial de compras y precios por cliente</p>
 
-  <div class="instrucciones">
-    <h3>📋 Instrucciones</h3>
-    <ul>
-      <li>Exporta el reporte "Ventas por cliente" de Microsip</li>
-      <li>Asegúrate que incluya la columna <strong>Clave</strong> del cliente</li>
-      <li>Sube el archivo Excel aquí — se actualizará automáticamente</li>
-    </ul>
-  </div>
-
-  <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-    </svg>
-    <p>Arrastra el archivo Excel aquí<br>o <span>haz clic para seleccionar</span></p>
-    <div class="file-name" id="fileName"></div>
-  </div>
-  <input type="file" id="fileInput" accept=".xlsx,.xls">
-
-  <button class="btn btn-primary" id="btnSubir" disabled onclick="procesarArchivo()">
-    Subir y Actualizar Historial
-  </button>
-
-  <div class="progress-container" id="progressContainer">
-    <div class="progress-bar-bg">
-      <div class="progress-bar" id="progressBar"></div>
+  <!-- HISTORIAL -->
+  <div class="seccion">
+    <h2>📋 Historial de compras</h2>
+    <div class="instrucciones">
+      <ul>
+        <li>Exporta "Ventas por cliente" de Microsip</li>
+        <li>Debe incluir columna <strong>Clave</strong> del cliente</li>
+      </ul>
     </div>
-    <div class="progress-text" id="progressText">Procesando...</div>
+    <div class="drop-zone" id="dz1" onclick="document.getElementById('f1').click()">
+      <p>Arrastra el Excel aquí o <span>haz clic para seleccionar</span></p>
+      <div class="file-name" id="fn1"></div>
+    </div>
+    <input type="file" id="f1" accept=".xlsx,.xls">
+    <button class="btn" id="btn1" disabled onclick="subirHistorial()">Actualizar historial</button>
+    <div class="progress" id="p1"><div class="bar-bg"><div class="bar" id="b1"></div></div><div class="progress-txt" id="pt1"></div></div>
+    <div class="result" id="r1"></div>
   </div>
 
-  <div class="result" id="result"></div>
+  <!-- PRECIOS -->
+  <div class="seccion">
+    <h2>💰 Precios por cliente</h2>
+    <div class="instrucciones">
+      <ul>
+        <li>Exporta "Precios por cliente" de Microsip</li>
+        <li>Debe incluir columna <strong>Clave</strong> y <strong>Último Precio</strong></li>
+      </ul>
+    </div>
+    <div class="drop-zone" id="dz2" onclick="document.getElementById('f2').click()">
+      <p>Arrastra el Excel aquí o <span>haz clic para seleccionar</span></p>
+      <div class="file-name" id="fn2"></div>
+    </div>
+    <input type="file" id="f2" accept=".xlsx,.xls">
+    <button class="btn" id="btn2" disabled onclick="subirPrecios()">Actualizar precios</button>
+    <div class="progress" id="p2"><div class="bar-bg"><div class="bar" id="b2"></div></div><div class="progress-txt" id="pt2"></div></div>
+    <div class="result" id="r2"></div>
+  </div>
 </div>
 
 <script>
-const PROXY_URL = 'https://catalogo-shs.vercel.app/api/proxy';
-let archivoSeleccionado = null;
+const PROXY = 'https://catalogo-shs.vercel.app/api/proxy';
 
-const dropZone = document.getElementById('dropZone');
-const fileInput = document.getElementById('fileInput');
-
-dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', (e) => {
-  e.preventDefault();
-  dropZone.classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if (file) seleccionarArchivo(file);
+// Setup drag & drop para ambos
+['1','2'].forEach(n => {
+  const dz = document.getElementById('dz'+n);
+  const fi = document.getElementById('f'+n);
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); if(e.dataTransfer.files[0]) selFile(n, e.dataTransfer.files[0]); });
+  fi.addEventListener('change', e => { if(e.target.files[0]) selFile(n, e.target.files[0]); });
 });
 
-fileInput.addEventListener('change', (e) => {
-  if (e.target.files[0]) seleccionarArchivo(e.target.files[0]);
-});
-
-function seleccionarArchivo(file) {
-  archivoSeleccionado = file;
-  document.getElementById('fileName').textContent = '📄 ' + file.name;
-  dropZone.classList.add('file-selected');
-  document.getElementById('btnSubir').disabled = false;
+const archivos = {};
+function selFile(n, file) {
+  archivos[n] = file;
+  document.getElementById('fn'+n).textContent = '📄 ' + file.name;
+  document.getElementById('btn'+n).disabled = false;
 }
 
-function setProgress(pct, texto) {
-  document.getElementById('progressBar').style.width = pct + '%';
-  document.getElementById('progressText').textContent = texto;
+function setProg(n, pct, txt) {
+  document.getElementById('b'+n).style.width = pct+'%';
+  document.getElementById('pt'+n).textContent = txt;
 }
-
-function mostrarResultado(tipo, titulo, mensaje) {
-  const el = document.getElementById('result');
-  el.className = 'result ' + tipo;
-  el.innerHTML = `<h3>${titulo}</h3><p>${mensaje}</p>`;
+function showResult(n, ok, msg) {
+  const el = document.getElementById('r'+n);
+  el.className = 'result ' + (ok ? 'ok' : 'err');
+  el.textContent = msg;
   el.style.display = 'block';
 }
 
-async function procesarArchivo() {
-  if (!archivoSeleccionado) return;
-
-  document.getElementById('btnSubir').disabled = true;
-  document.getElementById('progressContainer').style.display = 'block';
-  document.getElementById('result').style.display = 'none';
-
+async function subirHistorial() {
+  const file = archivos['1'];
+  if (!file) return;
+  document.getElementById('btn1').disabled = true;
+  document.getElementById('p1').style.display = 'block';
+  document.getElementById('r1').style.display = 'none';
   try {
-    setProgress(10, 'Leyendo archivo Excel...');
-    const data = await archivoSeleccionado.arrayBuffer();
+    setProg('1', 10, 'Leyendo archivo...');
+    const data = await file.arrayBuffer();
     const wb = XLSX.read(data);
     const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-
-    setProgress(25, 'Procesando clientes y artículos...');
+    const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+    setProg('1', 25, 'Procesando...');
     const clientes = {};
     let currentClave = null;
-
     for (const row of rows) {
-      const clave = String(row[0] || '').trim();
-      const nombre = String(row[1] || '').trim();
-      const u1 = parseFloat(row[2]) || 0;
-      const u2 = parseFloat(row[3]) || 0;
-      const u3 = parseFloat(row[4]) || 0;
-
+      const clave = String(row[0]||'').trim();
+      const nombre = String(row[1]||'').trim();
+      const u1 = parseFloat(row[2])||0;
+      const u2 = parseFloat(row[3])||0;
+      const u3 = parseFloat(row[4])||0;
       if (clave && clave !== 'Clave' && /^\d+$/.test(clave)) {
-        currentClave = clave.padStart(4, '0');
-        if (!clientes[currentClave]) {
-          clientes[currentClave] = { nombre, articulos: [] };
-        }
-      } else if (!clave && nombre && nombre !== 'Cliente / Artículo' && nombre !== 'Artículo' && currentClave) {
-        const totalUnidades = u1 + u2 + u3;
-        clientes[currentClave].articulos.push({ nombre, unidades: totalUnidades });
+        currentClave = clave.padStart(4,'0');
+        if (!clientes[currentClave]) clientes[currentClave] = { nombre, articulos: [] };
+      } else if (!clave && nombre && !['Cliente / Artículo','Artículo'].includes(nombre) && currentClave) {
+        clientes[currentClave].articulos.push({ nombre, unidades: u1+u2+u3 });
       }
     }
-
-    // Ordenar artículos por unidades
-    for (const clave in clientes) {
-      clientes[clave].articulos.sort((a, b) => b.unidades - a.unidades);
+    for (const c in clientes) clientes[c].articulos.sort((a,b) => b.unidades - a.unidades);
+    const claves = Object.keys(clientes);
+    let proc = 0;
+    for (let i = 0; i < claves.length; i += 20) {
+      const lote = {};
+      claves.slice(i, i+20).forEach(k => lote[k] = clientes[k]);
+      await fetch(`${PROXY}?metodo=SYNC_HISTORIAL`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(lote) });
+      proc += Object.keys(lote).length;
+      setProg('1', 40 + Math.round(proc/claves.length*55), `${proc} de ${claves.length} clientes...`);
     }
-
-    const clavesList = Object.keys(clientes);
-    const total = clavesList.length;
-    setProgress(40, `${total} clientes encontrados. Subiendo a la nube...`);
-
-    // Subir en lotes de 20
-    const LOTE = 20;
-    let procesados = 0;
-
-    for (let i = 0; i < clavesList.length; i += LOTE) {
-      const lote = clavesList.slice(i, i + LOTE);
-      const payload = {};
-      for (const clave of lote) {
-        payload[clave] = clientes[clave];
-      }
-
-      const resp = await fetch(`${PROXY_URL}?metodo=SYNC_HISTORIAL`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!resp.ok) throw new Error('Error al subir lote');
-      procesados += lote.length;
-      const pct = 40 + Math.round((procesados / total) * 55);
-      setProgress(pct, `Subiendo... ${procesados} de ${total} clientes`);
-    }
-
-    setProgress(100, '¡Completado!');
-    mostrarResultado('success', '✅ Historial actualizado correctamente',
-      `Se procesaron ${total} clientes con un total de ${Object.values(clientes).reduce((s, c) => s + c.articulos.length, 0)} artículos en historial.`);
-
-  } catch (err) {
-    mostrarResultado('error', '❌ Error al procesar', err.message);
+    setProg('1', 100, '¡Completado!');
+    showResult('1', true, `✅ ${claves.length} clientes actualizados`);
+  } catch(e) {
+    showResult('1', false, '❌ Error: ' + e.message);
   } finally {
-    document.getElementById('btnSubir').disabled = false;
+    document.getElementById('btn1').disabled = false;
+  }
+}
+
+async function subirPrecios() {
+  const file = archivos['2'];
+  if (!file) return;
+  document.getElementById('btn2').disabled = true;
+  document.getElementById('p2').style.display = 'block';
+  document.getElementById('r2').style.display = 'none';
+  try {
+    setProg('2', 10, 'Leyendo archivo...');
+    const data = await file.arrayBuffer();
+    const wb = XLSX.read(data);
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+    setProg('2', 25, 'Procesando precios...');
+    const clientes = {};
+    let currentClave = null;
+    for (const row of rows) {
+      const clave = String(row[0]||'').trim();
+      const nombre = String(row[1]||'').trim();
+      const precio = row[3];
+      if (clave && clave !== 'Clave' && /^\d+$/.test(clave.replace(/^0+/,'')||'0')) {
+        currentClave = clave.padStart(4,'0');
+        if (!clientes[currentClave]) clientes[currentClave] = {};
+      } else if (!clave && nombre && !['Cliente / Artículo','Artículo','Última Fecha','Último Precio'].includes(nombre) && currentClave && precio) {
+        try { clientes[currentClave][nombre] = Math.round(parseFloat(precio)*100)/100; } catch {}
+      }
+    }
+    const claves = Object.keys(clientes);
+    let proc = 0;
+    for (let i = 0; i < claves.length; i += 20) {
+      const lote = {};
+      claves.slice(i, i+20).forEach(k => lote[k] = clientes[k]);
+      await fetch(`${PROXY}?metodo=SYNC_PRECIOS`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(lote) });
+      proc += Object.keys(lote).length;
+      setProg('2', 40 + Math.round(proc/claves.length*55), `${proc} de ${claves.length} clientes...`);
+    }
+    setProg('2', 100, '¡Completado!');
+    const totalArts = Object.values(clientes).reduce((s,v) => s+Object.keys(v).length, 0);
+    showResult('2', true, `✅ ${claves.length} clientes, ${totalArts} precios actualizados`);
+  } catch(e) {
+    showResult('2', false, '❌ Error: ' + e.message);
+  } finally {
+    document.getElementById('btn2').disabled = false;
   }
 }
 </script>
