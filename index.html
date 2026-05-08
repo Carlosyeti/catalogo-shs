@@ -224,26 +224,39 @@ async function renderFrecuentes() {
     return;
   }
   lista.innerHTML = historialArticulos.map((art, i) => cardHTML(art.nombre, '', '', i, 'frec', true)).join('');
-  // Cargar precios frecuentes en lotes de 5
-  for (let i = 0; i < historialArticulos.length; i += 5) {
-    const lote = historialArticulos.slice(i, i + 5);
-    await Promise.all(lote.map((art, j) => cargarPrecio(art.nombre, i + j, 'frec')));
+  // Mostrar precios inmediatamente desde Redis (sin esperar catálogo)
+  historialArticulos.forEach((art, i) => {
+    const el = document.getElementById(`precio-frec-${i}`);
+    if (!el) return;
+    if (preciosCliente[art.nombre] !== undefined) {
+      const p = preciosCliente[art.nombre];
+      preciosCache[art.nombre] = p;
+      el.textContent = fmt(p);
+      el.classList.remove('cargando');
+    }
+  });
+  // Para los que no tienen precio fijo, esperar catálogo y usar PRECIO 1
+  const sinPrecio = historialArticulos.filter(art => preciosCliente[art.nombre] === undefined);
+  if (sinPrecio.length > 0) {
+    if (!catalogoCargado) await cargarCatalogo();
+    sinPrecio.forEach((art) => {
+      const i = historialArticulos.findIndex(a => a.nombre === art.nombre);
+      cargarPrecio(art.nombre, i, 'frec');
+    });
   }
 }
 
 async function cargarCatalogo() {
   if (catalogoCargado) return;
   try {
-    let pagina = 0;
-    catalogoCompleto = [];
-    while (true) {
-      const res = await fetch(`${PROXY}?metodo=ARTICULOS&cantidad=100&pagina=${pagina}`);
-      const data = await res.json();
-      if (!Array.isArray(data) || data.length === 0) break;
-      catalogoCompleto = catalogoCompleto.concat(data);
-      if (data.length < 100) break;
-      pagina++;
+    // Cargar catálogo completo de Redis en una sola llamada rápida
+    const res = await fetch(`${PROXY}?metodo=CATALOGO_COMPLETO`);
+    const data = await res.json();
+    if (!Array.isArray(data) || data.length === 0) {
+      document.getElementById('lista-catalogo').innerHTML = `<div class="error-box">Catálogo no disponible. Contacta al administrador.</div>`;
+      return;
     }
+    catalogoCompleto = data;
     // Agrupar por categoría
     catalogoPorCat = { 'TODAS': catalogoCompleto };
     for (const art of catalogoCompleto) {
