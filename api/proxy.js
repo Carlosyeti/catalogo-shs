@@ -51,17 +51,17 @@ export default async function handler(req, res) {
     }
 
     // CLIENTES
-    if (metodo === 'CLIENTES') {
-      const clienteId = (req.query.clienteId || '').trim();
-      // Traemos todos los clientes — Vercel cachea esta respuesta 24h
-      let data = await fetchMicrosip(
-        `${API_BASE}/exsim/servicios/metodo/CLIENTES/${TOKEN}/100`
-      );
-      if (clienteId) {
-        data = data.filter(c => String(c.clave).trim() === clienteId);
-      }
-      return res.status(200).json(data);
-    }
+if (metodo === 'CLIENTES') {
+  try {
+    const url = `${API_BASE}/exsim/servicios/metodo/CLIENTES/${TOKEN}/10`;
+    const response = await fetch(url);
+    const text = await response.text();
+    // Devolver texto crudo para diagnóstico
+    return res.status(200).send(text.substring(0, 500));
+  } catch(err) {
+    return res.status(500).json({ error: err.message, stack: err.stack });
+  }
+}
 
     // IMAGENES
     if (metodo === 'IMAGENES') {
