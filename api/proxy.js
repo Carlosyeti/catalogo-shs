@@ -8,7 +8,6 @@ export default async function handler(req, res) {
   const API_BASE = 'http://38.58.46.142:9091';
   const TOKEN = '6GmrWp2KvHh2R4682ciDY09Klu92bv';
   const metodo = req.query.metodo || 'ARTICULOS';
-  const cantidad = req.query.cantidad || '700';
 
   function repairJSON(text) {
     let attempts = 0;
@@ -36,11 +35,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    // ARTICULOS
+
+    // ── ARTICULOS ──────────────────────────────────────────
     if (metodo === 'ARTICULOS') {
-      let data = await fetchMicrosip(
-        `${API_BASE}/exsim/servicios/metodo/ARTICULOS/${TOKEN}/${cantidad}`
-      );
+      const cantidad = req.query.cantidad || '50';
+      const pagina   = req.query.pagina   || '0';
+      const artId    = req.query.articuloId || '0';
+      let url = `${API_BASE}/exsim/servicios/metodo/ARTICULOS/${TOKEN}/${cantidad}/${pagina}/${artId}`;
+      let data = await fetchMicrosip(url);
       if (Array.isArray(data)) {
         data = data.map(a => ({
           id: a.id, clave: a.clave, nombre: a.nombre,
@@ -50,34 +52,59 @@ export default async function handler(req, res) {
       return res.status(200).json(data);
     }
 
-    // CLIENTES
+    // ── CLIENTES ───────────────────────────────────────────
     if (metodo === 'CLIENTES') {
-      const clienteId = (req.query.clienteId || '').trim();
-      // Traemos 50 clientes — suficiente para encontrar por clave con filtro
-      let data = await fetchMicrosip(
-        `${API_BASE}/exsim/servicios/metodo/CLIENTES/${TOKEN}/50`
-      );
+      const cantidad   = req.query.cantidad  || '50';
+      const pagina     = req.query.pagina    || '0';
+      const clienteId  = (req.query.clienteId || '').trim();
+
+      // Si viene clienteId buscamos en páginas hasta encontrarlo (máx 5 páginas)
       if (clienteId) {
-        // Si no está en los primeros 50, traemos más en paralelo
-        let found = Array.isArray(data) ? data.filter(c => String(c.clave).trim() === clienteId) : [];
-        if (!found.length) {
-          const batches = await Promise.all([
-            fetchMicrosip(`${API_BASE}/exsim/servicios/metodo/CLIENTES/${TOKEN}/500`),
-            fetchMicrosip(`${API_BASE}/exsim/servicios/metodo/CLIENTES/${TOKEN}/1000`)
-          ]);
-          const all = [...(batches[0]||[]), ...(batches[1]||[])];
-          found = all.filter(c => String(c.clave).trim() === clienteId);
+        for (let p = 0; p < 5; p++) {
+          const url = `${API_BASE}/exsim/servicios/metodo/CLIENTES/${TOKEN}/50/${p}`;
+          const data = await fetchMicrosip(url);
+          if (!Array.isArray(data) || data.length === 0) break;
+          const found = data.filter(c => String(c.clave).trim() === clienteId);
+          if (found.length) return res.status(200).json(found);
         }
-        return res.status(200).json(found);
+        return res.status(200).json([]);
       }
+
+      // Sin filtro: devuelve la página solicitada
+      const url = `${API_BASE}/exsim/servicios/metodo/CLIENTES/${TOKEN}/${cantidad}/${pagina}`;
+      const data = await fetchMicrosip(url);
       return res.status(200).json(Array.isArray(data) ? data : []);
     }
 
-    // IMAGENES
-    if (metodo === 'IMAGENES') {
-      const data = await fetchMicrosip(
-        `${API_BASE}/exsim/servicios/metodo/IMAGENES/${TOKEN}/${req.query.id || ''}`
+    // ── PEDIDOS ────────────────────────────────────────────
+    if (metodo === 'PEDIDOS') {
+      if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Método no permitido. Usa POST.' });
+      }
+      const body = req.body;
+      if (!body || !body.Documento) {
+        return res.status(400).json({ error: 'Body inválido. Se requiere { Documento: {...} }' });
+      }
+      const response = await fetch(
+        `${API_BASE}/exsim/servicios/metodo/PEDIDOS/${TOKEN}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        }
       );
+      const text = await response.text();
+      let result;
+      try { result = JSON.parse(text); } catch { result = { respuesta: text }; }
+      return res.status(200).json(result);
+    }
+
+    // ── IMAGENES ───────────────────────────────────────────
+    if (metodo === 'IMAGENES') {
+      const pagina = req.query.pagina || '0';
+      const artId  = req.query.articuloId || '0';
+      const url = `${API_BASE}/exsim/servicios/metodo/IMAGENES/${TOKEN}/50/${pagina}/${artId}`;
+      const data = await fetchMicrosip(url);
       return res.status(200).json(data);
     }
 
