@@ -39,7 +39,6 @@ export default async function handler(req, res) {
 
   try {
 
-    // ── ARTICULOS ──────────────────────────────────────────
     if (metodo === 'ARTICULOS') {
       const cantidad = req.query.cantidad || '50';
       const pagina   = req.query.pagina   || '0';
@@ -55,21 +54,84 @@ export default async function handler(req, res) {
       return res.status(200).json(data);
     }
 
-    // ── CLIENTES ───────────────────────────────────────────
     if (metodo === 'CLIENTES') {
       const clienteId = (req.query.clienteId || '').trim();
       const buscar    = (req.query.buscar || '').trim().toUpperCase();
-      const forzar    = req.query.forzar === '1';
 
-      // Buscar en caché primero
-      if (clienteId && !forzar) {
+      if (clienteId) {
         const cached = await redis.get(`cliente:${clienteId}`);
-        if (cached) return res.status(200).json([cached]);
+        if (cached) return res.status(200).json([JSON.parse(cached)]);
+        return res.status(200).json([]);
       }
 
-      // Si piden reconstruir caché o no encuentran por clave, descargar todo
-      if (forzar || (!clienteId && !buscar)) {
-        // Descargar todos los clientes en background y cachear
-        let pagina = 0;
-        let total = 0;
-        while (tr
+      if (buscar) {
+        const keys = await redis.keys('cliente:*');
+        const resultados = [];
+        for (const key of keys) {
+          const raw = await redis.get(key);
+          if (raw) {
+            const c = JSON.parse(raw);
+            if (c.nombre && c.nombre.toUpperCase().includes(buscar)) {
+              resultados.push(c);
+            }
+          }
+        }
+        return res.status(200).json(resultados);
+      }
+
+      return res.status(200).json([]);
+    }
+
+    if (metodo === 'SYNC') {
+      let pagina = 0;
+      let total = 0;
+      while (true) {
+        const url = `${API_BASE}/exsim/servicios/metodo/CLIENTES/${TOKEN}/100/${pagina}`;
+        const data = await fetchMicrosip(url);
+        if (!Array.isArray(data) || data.length === 0) break;
+        for (const c of data) {
+          await redis.set(`cliente:${String(c.clave).trim()}`, JSON.stringify(c), 'EX', 86400);
+          total++;
+        }
+        if (data.length < 100) break;
+        pagina++;
+      }
+      return res.status(200).json({ ok: true, total, mensaje: `${total} clientes sincronizados` });
+    }
+
+    if (metodo === 'PEDIDOS') {
+      if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Método no permitido. Usa POST.' });
+      }
+      const body = req.body;
+      if (!body || !body.Documento) {
+        return res.status(400).json({ error: 'Body inválido. Se requiere { Documento: {...} }' });
+      }
+      const response = await fetch(
+        `${API_BASE}/exsim/servicios/metodo/PEDIDOS/${TOKEN}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        }
+      );
+      const text = await response.text();
+      let result;
+      try { result = JSON.parse(text); } catch { result = { respuesta: text }; }
+      return res.status(200).json(result);
+    }
+
+    if (metodo === 'IMAGENES') {
+      const pagina = req.query.pagina || '0';
+      const artId  = req.query.articuloId || '0';
+      const url = `${API_BASE}/exsim/servicios/metodo/IMAGENES/${TOKEN}/50/${pagina}/${artId}`;
+      const data = await fetchMicrosip(url);
+      return res.status(200).json(data);
+    }
+
+    return res.status(200).json({ ok: true });
+
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
