@@ -15,7 +15,8 @@ export default async function handler(req, res) {
   if (metodo === 'ARTICULOS') {
     apiUrl = `${API_BASE}/exsim/servicios/metodo/ARTICULOS/${TOKEN}/${cantidad}`;
   } else if (metodo === 'CLIENTES') {
-    apiUrl = `${API_BASE}/exsim/servicios/metodo/CLIENTES/${TOKEN}/${cantidad}`;
+    const clienteId = req.query.clienteId || '';
+    apiUrl = `${API_BASE}/exsim/servicios/metodo/CLIENTES/${TOKEN}/100?clave=${clienteId}`;
   } else if (metodo === 'IMAGENES') {
     apiUrl = `${API_BASE}/exsim/servicios/metodo/IMAGENES/${TOKEN}/${req.query.id||''}`;
   } else {
