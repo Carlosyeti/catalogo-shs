@@ -198,40 +198,40 @@ export default async function handler(req, res) {
       const body = {
         Documento: {
           Cliente: {
-            Nombre: "FARMACIAS DE SIMILARES",
-            DirClienteID: 0,
-            NomDireccion: "Direccion principal",
-            RFC: "FSI970908ML5",
-            Clave: "0135",
-            Calle: "ALEMANIA",
-            Num_interior: "",
-            Num_exterior: "10",
-            Poblacion: "",
-            Referencia: "",
-            Colonia: "INDEPENDENCIA",
-            Ciudad: "DELEGACION BENITO JUAREZ",
-            Estado: "CIUDAD DE MEXICO",
-            Pais: "MEXICO",
-            Telefono1: "314 35 49",
+            Nombre: "LUISD ALBERTO TERAN",
+            DirClienteID: 269084,
+            NomDireccion: "Otra direccion",
+            RFC: "XAXX010101000",
+            Clave: "LA12",
+            Calle: "CENTRO",
+            Num_interior: "305",
+            Num_exterior: "4",
+            Poblacion: "Puebla",
+            Referencia: "Centro",
+            Colonia: "Centro",
+            Ciudad: "Oaxaca",
+            Estado: "Oaxaca",
+            Pais: "Mexico",
+            Telefono1: "2220000000",
             Telefono2: "",
             Fax: "",
-            Email: "0099@fsimilares.com",
-            CodigoPostal: "03630",
-            Notas: "Pedido de prueba"
+            Email: "SOPORTE@EXSIM.COM.MX",
+            CodigoPostal: "72000",
+            Notas: "El cliente solo compra los viernes"
           },
           Encabezado: {
-            OrdenCompra: "TEST001",
-            Descripcion: "Pedido de prueba",
+            OrdenCompra: "QUO451",
+            Descripcion: "QUO451QUO451",
             MetodoPago: "Pago manual",
             EstatusPago: "Pendiente",
-            Almacen: "CEDIS COLIMA"
+            Almacen: "Nombre del almacen"
           },
           Detalle: [{
-            NombreArticulo: "PASTILLA WIESE 70 GRS",
+            NombreArticulo: "Bola de Boliche No. 13",
             Unidades: 1,
-            Precio: 11.27,
+            Precio: 880.00,
             Descuento: 0,
-            Importe: 11.27,
+            Importe: 880.00,
             DescuentoExtra: 0
           }]
         }
