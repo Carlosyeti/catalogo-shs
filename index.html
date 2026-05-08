@@ -7,119 +7,94 @@
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 :root {
-  --azul: #1e4bcc;
-  --azul-dark: #163799;
-  --azul-light: #e8eefb;
-  --verde: #7ac143;
-  --verde-dark: #5fa030;
-  --gris: #f4f6fb;
-  --texto: #1a1a2e;
-  --texto-suave: #64748b;
-  --borde: #e2e8f0;
-  --blanco: #ffffff;
-  --sombra: 0 2px 16px rgba(30,75,204,0.10);
+  --azul:#1e4bcc; --azul-dark:#163799; --azul-light:#e8eefb;
+  --verde:#7ac143; --verde-dark:#5fa030;
+  --gris:#f4f6fb; --texto:#1a1a2e; --texto-suave:#64748b;
+  --borde:#e2e8f0; --blanco:#ffffff;
+  --sombra:0 2px 16px rgba(30,75,204,0.10);
 }
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-body { font-family: 'Nunito', sans-serif; background: var(--gris); color: var(--texto); min-height: 100vh; }
-
-/* HEADER */
-.header { background: var(--azul); padding: 0 16px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(30,75,204,0.25); }
-.header-inner { max-width: 700px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 60px; }
-.logo-text { color: white; font-size: 22px; font-weight: 900; letter-spacing: -0.5px; }
-.logo-text span { color: var(--verde); }
-.carrito-btn { background: var(--verde); border: none; border-radius: 50px; color: white; font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 14px; padding: 8px 16px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.2s; }
-.carrito-btn:hover { background: var(--verde-dark); }
-.carrito-badge { background: white; color: var(--azul); border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; }
-
-/* BIENVENIDA */
-.bienvenida { background: linear-gradient(135deg, var(--azul) 0%, #2d5ee8 100%); padding: 20px 16px; }
-.bienvenida-inner { max-width: 700px; margin: 0 auto; }
-.bienvenida h2 { color: white; font-size: 18px; font-weight: 800; }
-.bienvenida p { color: rgba(255,255,255,0.75); font-size: 13px; margin-top: 2px; }
-.bienvenida-nombre { color: var(--verde); }
-
-/* TABS */
-.tabs { background: white; border-bottom: 2px solid var(--borde); position: sticky; top: 60px; z-index: 99; }
-.tabs-inner { max-width: 700px; margin: 0 auto; display: flex; }
-.tab { flex: 1; padding: 14px; text-align: center; font-weight: 700; font-size: 14px; color: var(--texto-suave); cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; }
-.tab.activo { color: var(--azul); border-bottom-color: var(--azul); }
-.tab-count { background: var(--azul-light); color: var(--azul); border-radius: 50px; padding: 1px 7px; font-size: 11px; margin-left: 4px; }
-
-/* CONTENIDO */
-.contenido { max-width: 700px; margin: 0 auto; padding: 16px; }
-.seccion { display: none; }
-.seccion.activa { display: block; }
-
-/* BÚSQUEDA */
-.busqueda-box { position: relative; margin-bottom: 16px; }
-.busqueda-box input { width: 100%; padding: 12px 16px 12px 44px; border: 2px solid var(--borde); border-radius: 12px; font-family: 'Nunito', sans-serif; font-size: 15px; background: white; outline: none; transition: border-color 0.2s; }
-.busqueda-box input:focus { border-color: var(--azul); }
-.busqueda-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--texto-suave); }
-
-/* TARJETA DE PRODUCTO */
-.producto-card { background: white; border-radius: 14px; padding: 14px 16px; margin-bottom: 10px; box-shadow: var(--sombra); display: flex; align-items: center; gap: 14px; transition: transform 0.15s; }
-.producto-card:active { transform: scale(0.98); }
-.producto-icono { width: 44px; height: 44px; background: var(--azul-light); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
-.producto-info { flex: 1; min-width: 0; }
-.producto-nombre { font-weight: 700; font-size: 14px; color: var(--texto); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.producto-precio { font-weight: 800; font-size: 15px; color: var(--azul); margin-top: 2px; }
-.producto-precio.cargando { color: var(--texto-suave); font-size: 13px; }
-.producto-unidad { font-size: 11px; color: var(--texto-suave); font-weight: 600; }
-.producto-controles { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.btn-cantidad { width: 32px; height: 32px; border-radius: 8px; border: none; background: var(--azul-light); color: var(--azul); font-size: 18px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
-.btn-cantidad:hover { background: var(--azul); color: white; }
-.btn-agregar { background: var(--verde); color: white; border: none; border-radius: 8px; padding: 8px 14px; font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 13px; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
-.btn-agregar:hover { background: var(--verde-dark); }
-.cantidad-display { font-weight: 900; font-size: 16px; color: var(--texto); min-width: 20px; text-align: center; }
-
-/* BADGE FRECUENTE */
-.frecuente-badge { background: #fff8e1; color: #f59e0b; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 50px; display: inline-block; margin-top: 2px; }
-
-/* LOADING */
-.loading { text-align: center; padding: 40px; color: var(--texto-suave); }
-.spinner { width: 36px; height: 36px; border: 3px solid var(--azul-light); border-top-color: var(--azul); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 12px; }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* EMPTY STATE */
-.empty { text-align: center; padding: 48px 24px; color: var(--texto-suave); }
-.empty-icon { font-size: 48px; margin-bottom: 12px; }
-.empty h3 { font-weight: 800; color: var(--texto); margin-bottom: 6px; }
-
-/* CARRITO PANEL */
-.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; }
-.overlay.abierto { display: block; }
-.carrito-panel { position: fixed; right: 0; top: 0; bottom: 0; width: min(400px, 100vw); background: white; z-index: 201; transform: translateX(100%); transition: transform 0.3s ease; display: flex; flex-direction: column; }
-.carrito-panel.abierto { transform: translateX(0); }
-.carrito-header { background: var(--azul); color: white; padding: 20px; display: flex; align-items: center; justify-content: space-between; }
-.carrito-header h3 { font-weight: 800; font-size: 18px; }
-.btn-cerrar { background: rgba(255,255,255,0.2); border: none; color: white; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
-.carrito-items { flex: 1; overflow-y: auto; padding: 16px; }
-.carrito-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--borde); }
-.carrito-item-info { flex: 1; min-width: 0; }
-.carrito-item-nombre { font-weight: 700; font-size: 13px; line-height: 1.3; }
-.carrito-item-precio { font-weight: 800; color: var(--azul); font-size: 14px; }
-.carrito-item-qty { font-size: 12px; color: var(--texto-suave); }
-.btn-quitar { background: #fef2f2; border: none; color: #ef4444; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
-.carrito-footer { padding: 16px; border-top: 2px solid var(--borde); }
-.carrito-total { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.carrito-total span { font-weight: 700; color: var(--texto-suave); }
-.carrito-total strong { font-weight: 900; font-size: 22px; color: var(--azul); }
-.btn-enviar { width: 100%; background: var(--verde); color: white; border: none; border-radius: 12px; padding: 16px; font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 16px; cursor: pointer; transition: background 0.2s; }
-.btn-enviar:hover { background: var(--verde-dark); }
-.btn-enviar:disabled { background: #94a3b8; cursor: not-allowed; }
-
-/* MODAL ÉXITO */
-.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 300; align-items: center; justify-content: center; }
-.modal-overlay.abierto { display: flex; }
-.modal { background: white; border-radius: 20px; padding: 40px 32px; max-width: 340px; width: 90%; text-align: center; }
-.modal-icon { font-size: 64px; margin-bottom: 16px; }
-.modal h3 { font-weight: 900; font-size: 22px; color: var(--texto); margin-bottom: 8px; }
-.modal p { color: var(--texto-suave); font-size: 15px; margin-bottom: 24px; }
-.modal-folio { background: var(--azul-light); color: var(--azul); font-weight: 900; font-size: 18px; padding: 12px 24px; border-radius: 10px; display: inline-block; margin-bottom: 20px; }
-.btn-modal { background: var(--azul); color: white; border: none; border-radius: 12px; padding: 14px 32px; font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 15px; cursor: pointer; }
-
-/* ERROR */
-.error-box { background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; border-radius: 12px; padding: 16px; margin-bottom: 16px; font-weight: 600; font-size: 14px; }
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Nunito',sans-serif;background:var(--gris);color:var(--texto);min-height:100vh}
+.header{background:var(--azul);padding:0 16px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,75,204,0.25)}
+.header-inner{max-width:700px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:60px}
+.logo-text{color:white;font-size:22px;font-weight:900;letter-spacing:-0.5px}
+.logo-text span{color:var(--verde)}
+.carrito-btn{background:var(--verde);border:none;border-radius:50px;color:white;font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;padding:8px 16px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background 0.2s}
+.carrito-btn:hover{background:var(--verde-dark)}
+.carrito-badge{background:white;color:var(--azul);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900}
+.bienvenida{background:linear-gradient(135deg,var(--azul) 0%,#2d5ee8 100%);padding:20px 16px}
+.bienvenida-inner{max-width:700px;margin:0 auto}
+.bienvenida h2{color:white;font-size:18px;font-weight:800}
+.bienvenida p{color:rgba(255,255,255,0.75);font-size:13px;margin-top:2px}
+.bienvenida-nombre{color:var(--verde)}
+.tabs{background:white;border-bottom:2px solid var(--borde);position:sticky;top:60px;z-index:99;overflow-x:auto}
+.tabs-inner{max-width:700px;margin:0 auto;display:flex;min-width:max-content}
+.tab{padding:14px 18px;text-align:center;font-weight:700;font-size:13px;color:var(--texto-suave);cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s;white-space:nowrap}
+.tab.activo{color:var(--azul);border-bottom-color:var(--azul)}
+.tab-count{background:var(--azul-light);color:var(--azul);border-radius:50px;padding:1px 7px;font-size:11px;margin-left:4px}
+.contenido{max-width:700px;margin:0 auto;padding:16px}
+.seccion{display:none}
+.seccion.activa{display:block}
+.busqueda-box{position:relative;margin-bottom:16px}
+.busqueda-box input{width:100%;padding:12px 16px 12px 44px;border:2px solid var(--borde);border-radius:12px;font-family:'Nunito',sans-serif;font-size:15px;background:white;outline:none;transition:border-color 0.2s}
+.busqueda-box input:focus{border-color:var(--azul)}
+.busqueda-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--texto-suave)}
+.cat-tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;margin-bottom:8px;scrollbar-width:none}
+.cat-tabs::-webkit-scrollbar{display:none}
+.cat-tab{background:white;border:2px solid var(--borde);border-radius:50px;padding:7px 14px;font-family:'Nunito',sans-serif;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;transition:all 0.2s;flex-shrink:0}
+.cat-tab.activo{background:var(--azul);border-color:var(--azul);color:white}
+.producto-card{background:white;border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--sombra);display:flex;align-items:center;gap:14px;transition:transform 0.15s}
+.producto-card:active{transform:scale(0.98)}
+.producto-icono{width:44px;height:44px;background:var(--azul-light);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.producto-info{flex:1;min-width:0}
+.producto-nombre{font-weight:700;font-size:14px;color:var(--texto);line-height:1.3}
+.producto-precio{font-weight:800;font-size:15px;color:var(--azul);margin-top:2px}
+.producto-precio.cargando{color:var(--texto-suave);font-size:13px;font-weight:600}
+.producto-unidad{font-size:11px;color:var(--texto-suave);font-weight:600}
+.frecuente-badge{background:#fff8e1;color:#f59e0b;font-size:10px;font-weight:800;padding:2px 6px;border-radius:50px;display:inline-block;margin-top:2px}
+.producto-controles{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.btn-cantidad{width:32px;height:32px;border-radius:8px;border:none;background:var(--azul-light);color:var(--azul);font-size:18px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s}
+.btn-cantidad:hover{background:var(--azul);color:white}
+.btn-agregar{background:var(--verde);color:white;border:none;border-radius:8px;padding:8px 14px;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;transition:background 0.15s;white-space:nowrap}
+.btn-agregar:hover{background:var(--verde-dark)}
+.cantidad-display{font-weight:900;font-size:16px;color:var(--texto);min-width:20px;text-align:center}
+.loading{text-align:center;padding:40px;color:var(--texto-suave)}
+.spinner{width:36px;height:36px;border:3px solid var(--azul-light);border-top-color:var(--azul);border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:48px 24px;color:var(--texto-suave)}
+.empty-icon{font-size:48px;margin-bottom:12px}
+.empty h3{font-weight:800;color:var(--texto);margin-bottom:6px}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200}
+.overlay.abierto{display:block}
+.carrito-panel{position:fixed;right:0;top:0;bottom:0;width:min(400px,100vw);background:white;z-index:201;transform:translateX(100%);transition:transform 0.3s ease;display:flex;flex-direction:column}
+.carrito-panel.abierto{transform:translateX(0)}
+.carrito-header{background:var(--azul);color:white;padding:20px;display:flex;align-items:center;justify-content:space-between}
+.carrito-header h3{font-weight:800;font-size:18px}
+.btn-cerrar{background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center}
+.carrito-items{flex:1;overflow-y:auto;padding:16px}
+.carrito-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--borde)}
+.carrito-item-info{flex:1;min-width:0}
+.carrito-item-nombre{font-weight:700;font-size:13px;line-height:1.3}
+.carrito-item-precio{font-weight:800;color:var(--azul);font-size:14px}
+.carrito-item-qty{font-size:12px;color:var(--texto-suave)}
+.btn-quitar{background:#fef2f2;border:none;color:#ef4444;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.carrito-footer{padding:16px;border-top:2px solid var(--borde)}
+.carrito-total{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.carrito-total span{font-weight:700;color:var(--texto-suave)}
+.carrito-total strong{font-weight:900;font-size:22px;color:var(--azul)}
+.btn-enviar{width:100%;background:var(--verde);color:white;border:none;border-radius:12px;padding:16px;font-family:'Nunito',sans-serif;font-weight:800;font-size:16px;cursor:pointer;transition:background 0.2s}
+.btn-enviar:hover{background:var(--verde-dark)}
+.btn-enviar:disabled{background:#94a3b8;cursor:not-allowed}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:300;align-items:center;justify-content:center}
+.modal-overlay.abierto{display:flex}
+.modal{background:white;border-radius:20px;padding:40px 32px;max-width:340px;width:90%;text-align:center}
+.modal-icon{font-size:64px;margin-bottom:16px}
+.modal h3{font-weight:900;font-size:22px;color:var(--texto);margin-bottom:8px}
+.modal p{color:var(--texto-suave);font-size:15px;margin-bottom:24px}
+.modal-folio{background:var(--azul-light);color:var(--azul);font-weight:900;font-size:18px;padding:12px 24px;border-radius:10px;display:inline-block;margin-bottom:20px}
+.btn-modal{background:var(--azul);color:white;border:none;border-radius:12px;padding:14px 32px;font-family:'Nunito',sans-serif;font-weight:800;font-size:15px;cursor:pointer}
+.error-box{background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;border-radius:12px;padding:16px;margin-bottom:16px;font-weight:600;font-size:14px}
+.info-precios{background:var(--azul-light);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--azul);font-weight:700;margin-bottom:12px;display:none}
 </style>
 </head>
 <body>
@@ -142,38 +117,28 @@ body { font-family: 'Nunito', sans-serif; background: var(--gris); color: var(--
 
 <div class="tabs">
   <div class="tabs-inner">
-    <div class="tab activo" id="tab-frecuentes" onclick="cambiarTab('frecuentes')">
-      ⭐ Mis productos <span class="tab-count" id="countFrecuentes">0</span>
-    </div>
-    <div class="tab" id="tab-catalogo" onclick="cambiarTab('catalogo')">
-      📦 Catálogo completo
-    </div>
+    <div class="tab activo" id="tab-frecuentes" onclick="cambiarTab('frecuentes')">⭐ Mis productos <span class="tab-count" id="countFrecuentes">0</span></div>
+    <div class="tab" id="tab-catalogo" onclick="cambiarTab('catalogo')">📦 Catálogo completo</div>
   </div>
 </div>
 
 <div class="contenido">
   <div id="error-global" class="error-box" style="display:none"></div>
 
-  <!-- FRECUENTES -->
   <div class="seccion activa" id="sec-frecuentes">
-    <div id="lista-frecuentes">
-      <div class="loading"><div class="spinner"></div>Cargando tus productos...</div>
-    </div>
+    <div id="lista-frecuentes"><div class="loading"><div class="spinner"></div>Cargando tus productos...</div></div>
   </div>
 
-  <!-- CATÁLOGO -->
   <div class="seccion" id="sec-catalogo">
     <div class="busqueda-box">
       <span class="busqueda-icon">🔍</span>
-      <input type="text" id="busquedaCatalogo" placeholder="Buscar producto..." oninput="filtrarCatalogo()" />
+      <input type="text" id="busquedaCatalogo" placeholder="Buscar producto..." oninput="filtrarCatalogo()"/>
     </div>
-    <div id="lista-catalogo">
-      <div class="loading"><div class="spinner"></div>Cargando catálogo...</div>
-    </div>
+    <div class="cat-tabs" id="catTabs"></div>
+    <div id="lista-catalogo"><div class="loading"><div class="spinner"></div>Cargando catálogo...</div></div>
   </div>
 </div>
 
-<!-- OVERLAY + CARRITO -->
 <div class="overlay" id="overlay" onclick="cerrarCarrito()"></div>
 <div class="carrito-panel" id="carritoPanel">
   <div class="carrito-header">
@@ -184,15 +149,11 @@ body { font-family: 'Nunito', sans-serif; background: var(--gris); color: var(--
     <div class="empty"><div class="empty-icon">🛒</div><h3>Tu pedido está vacío</h3><p>Agrega productos para continuar</p></div>
   </div>
   <div class="carrito-footer">
-    <div class="carrito-total">
-      <span>Total estimado:</span>
-      <strong id="carritoTotal">$0.00</strong>
-    </div>
+    <div class="carrito-total"><span>Total estimado:</span><strong id="carritoTotal">$0.00</strong></div>
     <button class="btn-enviar" id="btnEnviar" onclick="enviarPedido()">Enviar pedido a SHS</button>
   </div>
 </div>
 
-<!-- MODAL ÉXITO -->
 <div class="modal-overlay" id="modalExito">
   <div class="modal">
     <div class="modal-icon">🎉</div>
@@ -205,20 +166,23 @@ body { font-family: 'Nunito', sans-serif; background: var(--gris); color: var(--
 
 <script>
 const PROXY = 'https://catalogo-shs.vercel.app/api/proxy';
-
-// Leer cliente de la URL
 const params = new URLSearchParams(window.location.search);
 const CLIENTE_ID = params.get('cliente') || '';
 
+// Mapa clave -> categoría (embebido, sin llamada extra)
+const CLAVE_CAT = {"30710":"ABARROTES","30711":"ABARROTES","30712":"ABARROTES","30714":"ABARROTES","BIC250":"ABARROTES","30524":"ABARROTES","30520":"ABARROTES","9P-30110BIO":"ABARROTES","30111":"ABARROTES","D0820":"ABARROTES","30750-1":"ABARROTES","30510":"ABARROTES","30511":"ABARROTES","Q3020":"ABARROTES","Q3017":"ABARROTES","Q3018":"ABARROTES","370AA":"ABARROTES","37001":"ABARROTES","37042":"ABARROTES","30610":"ABARROTES","30611":"ABARROTES","30612":"ABARROTES","9P-5146":"ABARROTES","NAEHO09":"AROMATIZANTES","45102":"AROMATIZANTES","NAEHO55":"AROMATIZANTES","NAEHO18":"AROMATIZANTES","NAEHO25":"AROMATIZANTES","NAEHO20":"AROMATIZANTES","NAEHO56":"AROMATIZANTES","NAEHO01":"AROMATIZANTES","NAEHO10":"AROMATIZANTES","NAEHO02":"AROMATIZANTES","NAEHO21":"AROMATIZANTES","NAEHO23":"AROMATIZANTES","NAEHO57":"AROMATIZANTES","45201":"AROMATIZANTES","31035":"AROMATIZANTES","DA2218":"AROMATIZANTES","DA0658":"AROMATIZANTES","DA0672":"AROMATIZANTES","DA0719":"AROMATIZANTES","DA0733":"AROMATIZANTES","DA0696":"AROMATIZANTES","DA2232":"AROMATIZANTES","DA2225":"AROMATIZANTES","DA0689":"AROMATIZANTES","NAEH074":"AROMATIZANTES","NAEHO65":"AROMATIZANTES","NDIDC03":"AROMATIZANTES","31043":"AROMATIZANTES","NLILG48":"AROMATIZANTES","NLILG50":"AROMATIZANTES","NMANG02":"AROMATIZANTES","NNOPA00":"AROMATIZANTES","DA1631":"AROMATIZANTES","NPARE00":"AROMATIZANTES","NPARE10":"AROMATIZANTES","31021":"AROMATIZANTES","NAEDC12":"AROMATIZANTES","NAEDC13":"AROMATIZANTES","NAEDC27":"AROMATIZANTES","NAEDC10":"AROMATIZANTES","NAEDC09":"AROMATIZANTES","NAEDC41":"AROMATIZANTES","NAEDC20":"AROMATIZANTES","NAEDC11":"AROMATIZANTES","NAEDC07":"AROMATIZANTES","NAEDC17":"AROMATIZANTES","NAEDC03":"AROMATIZANTES","NAEDC18":"AROMATIZANTES","NAEDC26":"AROMATIZANTES","NAEDC02":"AROMATIZANTES","NAEDC40":"AROMATIZANTES","NAEDC04":"AROMATIZANTES","NAEDC05":"AROMATIZANTES","45103":"AROMATIZANTES","45102-1":"AROMATIZANTES","31033":"AROMATIZANTES","DA0597":"AROMATIZANTES","DA1816":"AROMATIZANTES","NTAAS28":"AROMATIZANTES","NTAAS29":"AROMATIZANTES","NTAAS34":"AROMATIZANTES","NTAAS27":"AROMATIZANTES","NTAAS31":"AROMATIZANTES","NTAAS25":"AROMATIZANTES","NTACP01":"AROMATIZANTES","NTACP00":"AROMATIZANTES","DA0107":"AROMATIZANTES","NTALI01":"AROMATIZANTES","NTALI00":"AROMATIZANTES","21016":"BOLSAS","21029":"BOLSAS","21019":"BOLSAS","21020":"BOLSAS","21028":"BOLSAS","21017":"BOLSAS","21027":"BOLSAS","21013":"BOLSAS","21114":"BOLSAS","21018":"BOLSAS","21025":"BOLSAS","20010":"BOLSAS","20011":"BOLSAS","20011K":"BOLSAS","20012":"BOLSAS","20012K":"BOLSAS","20014":"BOLSAS","20014K":"BOLSAS","20013":"BOLSAS","20013K":"BOLSAS","20210":"BOLSAS","20212":"BOLSAS","20220":"BOLSAS","20214":"BOLSAS","20215":"BOLSAS","20216":"BOLSAS","20217":"BOLSAS","20218":"BOLSAS","20018":"BOLSAS","20219":"BOLSAS","20216R":"BOLSAS","20217R":"BOLSAS","20218R":"BOLSAS","20219R":"BOLSAS","23010":"BOLSAS","22010":"BOLSAS","23011":"BOLSAS","23012":"BOLSAS","22012":"BOLSAS","23013":"BOLSAS","22013":"BOLSAS","22014":"BOLSAS","23014":"BOLSAS","23015":"BOLSAS","23016":"BOLSAS","23017":"BOLSAS","23018":"BOLSAS","CL24245C":"BOLSAS","BIO2424-6":"BOLSAS","BIO3035-9":"BOLSAS","SA9074GR":"BOTES DE BASURA","SA8769RJ":"BOTES DE BASURA","SA8858CP":"BOTES DE BASURA","CP200":"BOTES DE BASURA","CP027":"BOTES DE BASURA","D3041":"DESECHABLES","1906-AB":"DESECHABLES","D0210":"DESECHABLES","D0211":"DESECHABLES","9P-0816":"DESECHABLES","9P-810":"DESECHABLES","9P-D0222":"DESECHABLES","CT120":"BOTES DE BASURA","CT021":"BOTES DE BASURA","CT060":"BOTES DE BASURA","CT070":"BOTES DE BASURA","CT085":"BOTES DE BASURA","D0228":"DESECHABLES","D0224":"DESECHABLES","CT135":"BOTES DE BASURA","D0510":"DESECHABLES","D0512":"DESECHABLES","D0511":"DESECHABLES","D0518":"DESECHABLES","D0138":"DESECHABLES","D0014":"DESECHABLES","41017":"JARCIERÍA","43118":"JARCIERÍA","43117":"JARCIERÍA","E4103":"JARCIERÍA","E0007":"JARCIERÍA","E3112":"DESECHABLES","D0330":"DESECHABLES","D0414":"DESECHABLES","E0002":"DESECHABLES","E0003":"DESECHABLES","D0153":"DESECHABLES","D0015":"DESECHABLES","D0517":"DESECHABLES","D0028":"DESECHABLES","D0029":"DESECHABLES","D0024":"DESECHABLES","D0025":"DESECHABLES","D0055":"DESECHABLES","D0117":"DESECHABLES","D0112":"DESECHABLES","D0613":"DESECHABLES","D0614":"DESECHABLES","DR615":"DESECHABLES","040301":"DESECHABLES","44229":"JARCIERÍA","44231":"JARCIERÍA","CP488":"BOTES DE BASURA","CP492":"BOTES DE BASURA","CP490":"BOTES DE BASURA","CP321":"BOTES DE BASURA","ODV009":"DESPACHADORES PARA BAÑOS","82863-8813":"DESPACHADORES PARA BAÑOS","46026":"JARCIERÍA","60212":"JARCIERÍA","46210":"JARCIERÍA","46023":"JARCIERÍA","46024":"JARCIERÍA","60211":"JARCIERÍA","4006":"JARCIERÍA","ODV058":"DESPACHADORES PARA BAÑOS","ODV063":"DESPACHADORES PARA BAÑOS","ODV045":"DESPACHADORES PARA BAÑOS","ODV021":"DESPACHADORES PARA BAÑOS","ODV062":"DESPACHADORES PARA BAÑOS","45064":"DESPACHADORES PARA BAÑOS","60114":"JARCIERÍA","81010":"DESPACHADORES PARA BAÑOS","19901":"DESPACHADORES PARA BAÑOS","46037":"JARCIERÍA","46033":"JARCIERÍA","G8351-02":"GOJO","G5361-02":"GOJO","G5161-04":"GOJO","G1911-02":"GOJO","G8371-02":"GOJO","1999":"JARCIERÍA","16101":"JARCIERÍA","16102":"JARCIERÍA","16103":"JARCIERÍA","16102-I":"JARCIERÍA","46141":"JARCIERÍA","46142":"JARCIERÍA","1906-FY":"JARCIERÍA","1905-FB":"JARCIERÍA","1901-MY":"JARCIERÍA","1901-MB":"JARCIERÍA","1901-MR":"JARCIERÍA","1901-MG":"JARCIERÍA","1905-MY":"JARCIERÍA","1905-MB":"JARCIERÍA","1905-MR":"JARCIERÍA","1905-MG":"JARCIERÍA","4191-AZ":"JARCIERÍA","4191-B":"JARCIERÍA","4191-R":"JARCIERÍA","4191-V":"JARCIERÍA","11904":"JARCIERÍA","11905":"JARCIERÍA","4192-RO":"JARCIERÍA","M69":"JARCIERÍA","1TC060-01":"JARCIERÍA","1810-P":"JARCIERÍA","1814-P":"JARCIERÍA","1408-P":"JARCIERÍA","40215":"JARCIERÍA","40400":"JARCIERÍA","15403":"JARCIERÍA","14332Y":"JARCIERÍA","4079":"JARCIERÍA","40216":"JARCIERÍA","40110":"JARCIERÍA","OV058":"JARCIERÍA","CU124":"JARCIERÍA","40113":"JARCIERÍA","CP123":"JARCIERÍA","CP121":"JARCIERÍA","CU114":"JARCIERÍA","CU115":"JARCIERÍA","CU116":"JARCIERÍA","CU118":"JARCIERÍA","CU112":"JARCIERÍA","CU120":"JARCIERÍA","A4020":"JARCIERÍA","EN007":"JARCIERÍA","1FP19-02":"JARCIERÍA","44213":"JARCIERÍA","44212":"JARCIERÍA","40005":"JARCIERÍA","M66":"JARCIERÍA","M67":"JARCIERÍA","41029-R":"JARCIERÍA","18300Y":"JARCIERÍA","18300B":"JARCIERÍA","41028":"JARCIERÍA","41010":"JARCIERÍA","41029":"JARCIERÍA","41029-BM":"JARCIERÍA","18300R":"JARCIERÍA","18300G":"JARCIERÍA","14702Y":"JARCIERÍA","18306B":"JARCIERÍA","18306K":"JARCIERÍA","41060":"JARCIERÍA","41021":"JARCIERÍA","TREM-22":"JARCIERÍA","TREMX-22":"JARCIERÍA","41022":"JARCIERÍA","41018":"JARCIERÍA","TREP-22R":"JARCIERÍA","41034":"JARCIERÍA","41014":"JARCIERÍA","41016":"JARCIERÍA","41020":"JARCIERÍA","4105":"JARCIERÍA","41012":"JARCIERÍA","41212":"JARCIERÍA","15120G":"JARCIERÍA","41213":"JARCIERÍA","41110":"JARCIERÍA","41111":"JARCIERÍA","41112":"JARCIERÍA","15120B":"JARCIERÍA","15400Y":"JARCIERÍA","15400B":"JARCIERÍA","15400W":"JARCIERÍA","19203B":"JARCIERÍA","44064":"JARCIERÍA","43121":"JARCIERÍA","43113":"JARCIERÍA","43120":"JARCIERÍA","SB-P66":"JARCIERÍA","SB-P94":"JARCIERÍA","SB-P76":"JARCIERÍA","SB-P96":"JARCIERÍA","44086":"JARCIERÍA","44085":"JARCIERÍA","44087":"JARCIERÍA","44095":"JARCIERÍA","16404B":"JARCIERÍA","46150":"JARCIERÍA","46151":"JARCIERÍA","46152":"JARCIERÍA","46160":"JARCIERÍA","46161":"JARCIERÍA","46162":"JARCIERÍA","16403W":"JARCIERÍA","16402R":"JARCIERÍA","16402W":"JARCIERÍA","16402B":"JARCIERÍA","16403B":"JARCIERÍA","16403R":"JARCIERÍA","A3020":"JARCIERÍA","A1003":"JARCIERÍA","A1004":"JARCIERÍA","A5007":"JARCIERÍA","A6032":"JARCIERÍA","A6031":"JARCIERÍA","A6033":"JARCIERÍA","A8073":"JARCIERÍA","A8071":"JARCIERÍA","49027":"JARCIERÍA","49016":"JARCIERÍA","49029":"JARCIERÍA","A8072":"JARCIERÍA","A2112":"JARCIERÍA","A0091":"JARCIERÍA","A0093":"JARCIERÍA","A0092":"JARCIERÍA","OV077":"JARCIERÍA","OV079":"JARCIERÍA","OV078":"JARCIERÍA","43010":"JARCIERÍA","43002":"JARCIERÍA","43003":"JARCIERÍA","1W20075B":"JARCIERÍA","1HD45-B":"JARCIERÍA","1HD55-B":"JARCIERÍA","1HD75-B":"JARCIERÍA","1HY75-B":"JARCIERÍA","1HY55-B":"JARCIERÍA","1FI45-B":"JARCIERÍA","1W20065R":"JARCIERÍA","1S18045":"JARCIERÍA","43000":"JARCIERÍA","43009":"JARCIERÍA","17104":"JARCIERÍA","44082":"JARCIERÍA","44412":"JARCIERÍA","CU300":"JARCIERÍA","43124":"JARCIERÍA","MOP90":"JARCIERÍA","44012":"JARCIERÍA","E45300Y":"JARCIERÍA","E45300B":"JARCIERÍA","E45300GY":"JARCIERÍA","E45300P":"JARCIERÍA","E45300O":"JARCIERÍA","E45300K":"JARCIERÍA","E45300R":"JARCIERÍA","E45300PK":"JARCIERÍA","E45300G":"JARCIERÍA","60110":"JARCIERÍA","19102K":"JARCIERÍA","19102R":"JARCIERÍA","40015":"JARCIERÍA","40010":"JARCIERÍA","40012":"JARCIERÍA","40017":"JARCIERÍA","40025":"JARCIERÍA","18250PB":"JARCIERÍA","18250PR":"JARCIERÍA","45012":"JARCIERÍA","45013":"JARCIERÍA","42015":"JARCIERÍA","45010":"JARCIERÍA","44077":"JARCIERÍA","44079":"JARCIERÍA","18414Y":"JARCIERÍA","18414B":"JARCIERÍA","18414K":"JARCIERÍA","18414R":"JARCIERÍA","18414G":"JARCIERÍA","18720R":"JARCIERÍA","42031":"JARCIERÍA","42028":"JARCIERÍA","42030":"JARCIERÍA","42034":"JARCIERÍA","42029":"JARCIERÍA","42010":"JARCIERÍA","18002Y":"JARCIERÍA","18002B":"JARCIERÍA","18002R":"JARCIERÍA","18002G":"JARCIERÍA","42011":"JARCIERÍA","42043":"JARCIERÍA","44020":"JARCIERÍA","00072":"LÍQUIDOS DE LIMPIEZA","DA0801":"LÍQUIDOS DE LIMPIEZA","00070":"LÍQUIDOS DE LIMPIEZA","36001":"ABARROTES","00066":"LÍQUIDOS DE LIMPIEZA","00067":"LÍQUIDOS DE LIMPIEZA","30418":"ABARROTES","30414":"ABARROTES","30425":"ABARROTES","0236-1":"LÍQUIDOS DE LIMPIEZA","Y9134":"LÍQUIDOS DE LIMPIEZA","Y9132":"LÍQUIDOS DE LIMPIEZA","Y9171":"LÍQUIDOS DE LIMPIEZA","Y9170":"LÍQUIDOS DE LIMPIEZA","00236":"LÍQUIDOS DE LIMPIEZA","00644":"LÍQUIDOS DE LIMPIEZA","DA0702":"AROMATIZANTES","DA0634":"AROMATIZANTES","DA0665":"AROMATIZANTES","Y9127":"LÍQUIDOS DE LIMPIEZA","00576B":"LÍQUIDOS DE LIMPIEZA","30330":"ABARROTES","30764":"ABARROTES","30423":"ABARROTES","30422":"ABARROTES","QG-00577":"LÍQUIDOS DE LIMPIEZA","Y9112":"LÍQUIDOS DE LIMPIEZA","00577":"LÍQUIDOS DE LIMPIEZA","Y9082":"LÍQUIDOS DE LIMPIEZA","Y9083":"LÍQUIDOS DE LIMPIEZA","00578":"LÍQUIDOS DE LIMPIEZA","00763":"LÍQUIDOS DE LIMPIEZA","30430":"ABARROTES","00251-C":"LÍQUIDOS DE LIMPIEZA","00533-C":"LÍQUIDOS DE LIMPIEZA","Y9028":"LÍQUIDOS DE LIMPIEZA","Y9102":"LÍQUIDOS DE LIMPIEZA","Y9029":"LÍQUIDOS DE LIMPIEZA","Y9155":"LÍQUIDOS DE LIMPIEZA","Y9156":"LÍQUIDOS DE LIMPIEZA","Y9157":"LÍQUIDOS DE LIMPIEZA","Y9166":"LÍQUIDOS DE LIMPIEZA","Y9164":"LÍQUIDOS DE LIMPIEZA","Y9165":"LÍQUIDOS DE LIMPIEZA","00052":"LÍQUIDOS DE LIMPIEZA","Y9111":"LÍQUIDOS DE LIMPIEZA","30413":"ABARROTES","00674":"LÍQUIDOS DE LIMPIEZA","30170":"ABARROTES","30122":"ABARROTES","30121":"ABARROTES","30154":"ABARROTES","Y9034":"LÍQUIDOS DE LIMPIEZA","Y9110":"LÍQUIDOS DE LIMPIEZA","Y9035":"LÍQUIDOS DE LIMPIEZA","30134 BIO":"ABARROTES","30112":"ABARROTES","30114":"ABARROTES","30113":"ABARROTES","Y9037":"LÍQUIDOS DE LIMPIEZA","Y9104":"LÍQUIDOS DE LIMPIEZA","Y9038":"LÍQUIDOS DE LIMPIEZA","Y9103":"LÍQUIDOS DE LIMPIEZA","Y9041":"LÍQUIDOS DE LIMPIEZA","00647":"LÍQUIDOS DE LIMPIEZA","30130":"ABARROTES","30131":"ABARROTES","30145":"ABARROTES","30140":"ABARROTES","30143":"ABARROTES","00400":"LÍQUIDOS DE LIMPIEZA","00322":"LÍQUIDOS DE LIMPIEZA","00762":"LÍQUIDOS DE LIMPIEZA","30320":"ABARROTES","30325":"ABARROTES","30324":"ABARROTES","00695":"LÍQUIDOS DE LIMPIEZA","00711":"LÍQUIDOS DE LIMPIEZA","G6463-02":"GOJO","Y9159":"LÍQUIDOS DE LIMPIEZA","Y9161":"LÍQUIDOS DE LIMPIEZA","Y9160":"LÍQUIDOS DE LIMPIEZA","00729":"LÍQUIDOS DE LIMPIEZA","31010C":"ABARROTES","31018":"ABARROTES","31010":"ABARROTES","31013":"ABARROTES","31011":"ABARROTES","00698":"LÍQUIDOS DE LIMPIEZA","30210":"ABARROTES","00722":"ABARROTES","30214":"ABARROTES","Y9058":"LÍQUIDOS DE LIMPIEZA","Y9113":"LÍQUIDOS DE LIMPIEZA","Y9059":"LÍQUIDOS DE LIMPIEZA","Y9067":"LÍQUIDOS DE LIMPIEZA","Y9097":"LÍQUIDOS DE LIMPIEZA","Y9068":"LÍQUIDOS DE LIMPIEZA","Y9092":"LÍQUIDOS DE LIMPIEZA","Y9106":"LÍQUIDOS DE LIMPIEZA","Y9093":"LÍQUIDOS DE LIMPIEZA","Y9061":"LÍQUIDOS DE LIMPIEZA","Y9105":"LÍQUIDOS DE LIMPIEZA","Y9062":"LÍQUIDOS DE LIMPIEZA","Y9118":"LÍQUIDOS DE LIMPIEZA","Y9070":"LÍQUIDOS DE LIMPIEZA","Y9064":"LÍQUIDOS DE LIMPIEZA","30211":"ABARROTES","30410":"ABARROTES","SB-AINOX":"ABARROTES","30426B":"ABARROTES","30426":"ABARROTES","30329":"ABARROTES","Y9072":"LÍQUIDOS DE LIMPIEZA","00747":"LÍQUIDOS DE LIMPIEZA","Y9133":"LÍQUIDOS DE LIMPIEZA","Y9135":"LÍQUIDOS DE LIMPIEZA","Y9131":"LÍQUIDOS DE LIMPIEZA","00074":"LÍQUIDOS DE LIMPIEZA","30901":"ABARROTES","Y9046":"LÍQUIDOS DE LIMPIEZA","Y9100":"LÍQUIDOS DE LIMPIEZA","Y9047":"LÍQUIDOS DE LIMPIEZA","00163-C":"LÍQUIDOS DE LIMPIEZA","Y9055":"LÍQUIDOS DE LIMPIEZA","Y9101":"LÍQUIDOS DE LIMPIEZA","Y9056":"LÍQUIDOS DE LIMPIEZA","Y9152":"LÍQUIDOS DE LIMPIEZA","Y9153":"LÍQUIDOS DE LIMPIEZA","Y9149":"LÍQUIDOS DE LIMPIEZA","Y9151":"LÍQUIDOS DE LIMPIEZA","Y9150":"LÍQUIDOS DE LIMPIEZA","00720":"LÍQUIDOS DE LIMPIEZA","040134-C":"LÍQUIDOS DE LIMPIEZA","Y9043":"LÍQUIDOS DE LIMPIEZA","Y9099":"LÍQUIDOS DE LIMPIEZA","Y9044":"LÍQUIDOS DE LIMPIEZA","Y9117":"LÍQUIDOS DE LIMPIEZA","Y9049":"LÍQUIDOS DE LIMPIEZA","Y9050":"LÍQUIDOS DE LIMPIEZA","040530-C":"LÍQUIDOS DE LIMPIEZA","Y9052":"LÍQUIDOS DE LIMPIEZA","Y9098":"LÍQUIDOS DE LIMPIEZA","Y9053":"LÍQUIDOS DE LIMPIEZA","00621-C":"LÍQUIDOS DE LIMPIEZA","Y9089C":"LÍQUIDOS DE LIMPIEZA","Y9089":"LÍQUIDOS DE LIMPIEZA","Y9108":"LÍQUIDOS DE LIMPIEZA","Y9088":"LÍQUIDOS DE LIMPIEZA","Y9115":"LÍQUIDOS DE LIMPIEZA","30412":"ABARROTES","30313":"ABARROTES","30312":"ABARROTES","30314":"ABARROTES","30338":"ABARROTES","00257":"LÍQUIDOS DE LIMPIEZA","Y9130":"LÍQUIDOS DE LIMPIEZA","Y9128":"LÍQUIDOS DE LIMPIEZA","DA0580":"AROMATIZANTES","Y9136":"LÍQUIDOS DE LIMPIEZA","Y9138":"LÍQUIDOS DE LIMPIEZA","Y9137":"LÍQUIDOS DE LIMPIEZA","00713":"LÍQUIDOS DE LIMPIEZA","00702":"LÍQUIDOS DE LIMPIEZA","00703":"LÍQUIDOS DE LIMPIEZA","Y9146":"LÍQUIDOS DE LIMPIEZA","M80":"LÍQUIDOS DE LIMPIEZA","Y9076":"LÍQUIDOS DE LIMPIEZA","Y9114":"LÍQUIDOS DE LIMPIEZA","Y9096":"LÍQUIDOS DE LIMPIEZA","Y9079":"LÍQUIDOS DE LIMPIEZA","Y9109":"LÍQUIDOS DE LIMPIEZA","Y9073":"LÍQUIDOS DE LIMPIEZA","Y9107":"LÍQUIDOS DE LIMPIEZA","Y9074":"LÍQUIDOS DE LIMPIEZA","DA0412":"AROMATIZANTES","QH005":"LÍQUIDOS DE LIMPIEZA","30900":"ABARROTES","0371":"LÍQUIDOS DE LIMPIEZA","33108":"ABARROTES","86923":"DESPACHADORES PARA BAÑOS","ODV026":"DESPACHADORES PARA BAÑOS","ODV039":"DESPACHADORES PARA BAÑOS","ODV064":"DESPACHADORES PARA BAÑOS","ODV013":"DESPACHADORES PARA BAÑOS","ODV046":"DESPACHADORES PARA BAÑOS","ODV041":"DESPACHADORES PARA BAÑOS","ODV028":"DESPACHADORES PARA BAÑOS","80938":"PAPELES HIGIÉNICOS","9P-8064":"PAPELES HIGIÉNICOS","83182":"PAPELES HIGIÉNICOS","5200-11":"PAPELES HIGIÉNICOS","5200-15":"PAPELES HIGIÉNICOS","5H250-06":"PAPELES HIGIÉNICOS","5H400-06":"PAPELES HIGIÉNICOS","5LUH-160":"PAPELES HIGIÉNICOS","5S180-12":"PAPELES HIGIÉNICOS","85957":"PAPELES HIGIÉNICOS","88057":"PAPELES HIGIÉNICOS","86695":"PAPELES HIGIÉNICOS","9P-5957":"PAPELES HIGIÉNICOS","9P-8057":"PAPELES HIGIÉNICOS","9P-6695":"PAPELES HIGIÉNICOS","90506":"PAPELES HIGIÉNICOS","86810":"PAPELES HIGIÉNICOS","88064":"PAPELES HIGIÉNICOS","52000":"PAPELES HIGIÉNICOS","9P-90498":"PAPELES HIGIÉNICOS","86049":"PAPELES HIGIÉNICOS","9P-6049":"PAPELES HIGIÉNICOS","90498":"PAPELES HIGIÉNICOS","T15040":"PAPELES HIGIÉNICOS","30738":"PAPELES HIGIÉNICOS","86039":"PAPELES HIGIÉNICOS","9P-6039":"PAPELES HIGIÉNICOS","90497":"PAPELES HIGIÉNICOS","90449":"PAPELES HIGIÉNICOS","9P-6060":"PAPELES HIGIÉNICOS","989330":"PAPELES HIGIÉNICOS","9P-89330":"PAPELES HIGIÉNICOS","5SB6000":"PAPELES HIGIÉNICOS","91690":"PAPELES HIGIÉNICOS","80990":"PAPELES HIGIÉNICOS","91670":"PAPELES HIGIÉNICOS","80983":"PAPELES HIGIÉNICOS","5S5400":"PAPELES HIGIÉNICOS","9P-5S450":"PAPELES HIGIÉNICOS","86022":"PAPELES HIGIÉNICOS","9P-6022":"PAPELES HIGIÉNICOS","80884":"PAPELES HIGIÉNICOS","85971":"PAPELES HIGIÉNICOS","83021":"PAPELES HIGIÉNICOS","9P-5971":"PAPELES HIGIÉNICOS","5200-60":"PAPELES HIGIÉNICOS","5200-18":"PAPELES HIGIÉNICOS","5TB180-06":"PAPELES HIGIÉNICOS","5TB160-06":"PAPELES HIGIÉNICOS","9P-C180":"PAPELES HIGIÉNICOS","83045":"PAPELES HIGIÉNICOS","5TK180-06":"PAPELES HIGIÉNICOS","5200-68":"PAPELES HIGIÉNICOS","5200-16":"PAPELES HIGIÉNICOS","80907":"PAPELES HIGIÉNICOS","5200-70":"PAPELES HIGIÉNICOS","833052":"PAPELES HIGIÉNICOS","86015":"PAPELES HIGIÉNICOS","9P-3052":"PAPELES HIGIÉNICOS","9P-1000":"PAPELES HIGIÉNICOS","5TI1000":"PAPELES HIGIÉNICOS","5TIK2000":"PAPELES HIGIÉNICOS","9P-92113":"PAPELES HIGIÉNICOS","92201":"PAPELES HIGIÉNICOS"};
+
+const CAT_EMOJIS = {"ABARROTES":"🛒","AROMATIZANTES":"🌸","BOLSAS":"🛍️","BOTES DE BASURA":"🗑️","DESECHABLES":"🧤","DESPACHADORES PARA BAÑOS":"🚿","GOJO":"🧴","JARCIERÍA":"🧹","LÍQUIDOS DE LIMPIEZA":"🫧","PAPELES HIGIÉNICOS":"🧻"};
+
 let clienteData = null;
-let historialArticulos = []; // nombres de artículos frecuentes
-let catalogoCompleto = [];   // todos los artículos
-let catalogoFiltrado = [];
-let carrito = {};            // { nombre: { nombre, precio, cantidad, unidad, articuloId } }
-let preciosCache = {};       // { nombre: precio }
+let historialArticulos = [];
+let catalogoCompleto = [];
+let catalogoPorCat = {};
+let catActiva = 'TODAS';
+let carrito = {};
+let preciosCache = {};
 let catalogoCargado = false;
 
-// INICIALIZAR
 async function init() {
   if (!CLIENTE_ID) {
     document.getElementById('error-global').textContent = 'Link inválido. Contacta a tu vendedor.';
@@ -226,57 +190,44 @@ async function init() {
     document.getElementById('clienteNombre').textContent = '';
     return;
   }
-
   try {
-    // Cargar datos del cliente
     const [clienteRes, historialRes] = await Promise.all([
       fetch(`${PROXY}?metodo=CLIENTES&clienteId=${CLIENTE_ID}`),
       fetch(`${PROXY}?metodo=HISTORIAL&clienteId=${CLIENTE_ID}`)
     ]);
-
     const clienteArr = await clienteRes.json();
     clienteData = clienteArr[0] || null;
-
     if (!clienteData) {
       document.getElementById('error-global').textContent = 'Cliente no encontrado. Contacta a tu vendedor.';
       document.getElementById('error-global').style.display = 'block';
       return;
     }
-
     document.getElementById('clienteNombre').textContent = clienteData.nombre;
-
     const historial = await historialRes.json();
     historialArticulos = historial.articulos || [];
     document.getElementById('countFrecuentes').textContent = historialArticulos.length;
-
-    // Renderizar frecuentes
     await renderFrecuentes();
-
-    // Cargar catálogo en background
     cargarCatalogo();
-
-  } catch (err) {
+  } catch(err) {
     document.getElementById('error-global').textContent = 'Error de conexión. Intenta de nuevo.';
     document.getElementById('error-global').style.display = 'block';
   }
 }
 
-// RENDERIZAR FRECUENTES
 async function renderFrecuentes() {
   const lista = document.getElementById('lista-frecuentes');
-
   if (historialArticulos.length === 0) {
-    lista.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><h3>Sin historial aún</h3><p>Ve al catálogo completo para hacer tu primer pedido</p></div>`;
+    lista.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><h3>Sin historial aún</h3><p>Ve al catálogo para hacer tu primer pedido</p></div>`;
     return;
   }
-
-  lista.innerHTML = historialArticulos.map((art, i) => productoCardHTML(art.nombre, '', true, i)).join('');
-
-  // Cargar precios en paralelo
-  historialArticulos.forEach((art, i) => cargarPrecioArticulo(art.nombre, i, 'frec'));
+  lista.innerHTML = historialArticulos.map((art, i) => cardHTML(art.nombre, '', '', i, 'frec', true)).join('');
+  // Cargar precios frecuentes en lotes de 5
+  for (let i = 0; i < historialArticulos.length; i += 5) {
+    const lote = historialArticulos.slice(i, i + 5);
+    await Promise.all(lote.map((art, j) => cargarPrecio(art.nombre, i + j, 'frec')));
+  }
 }
 
-// CARGAR CATÁLOGO COMPLETO
 async function cargarCatalogo() {
   if (catalogoCargado) return;
   try {
@@ -290,167 +241,154 @@ async function cargarCatalogo() {
       if (data.length < 100) break;
       pagina++;
     }
-    catalogoFiltrado = [...catalogoCompleto];
+    // Agrupar por categoría
+    catalogoPorCat = { 'TODAS': catalogoCompleto };
+    for (const art of catalogoCompleto) {
+      const cat = CLAVE_CAT[art.clave] || 'OTRAS';
+      if (!catalogoPorCat[cat]) catalogoPorCat[cat] = [];
+      catalogoPorCat[cat].push(art);
+    }
     catalogoCargado = true;
+    renderCatTabs();
     renderCatalogo();
-  } catch (err) {
-    document.getElementById('lista-catalogo').innerHTML = `<div class="error-box">Error al cargar el catálogo. Intenta de nuevo.</div>`;
+  } catch(err) {
+    document.getElementById('lista-catalogo').innerHTML = `<div class="error-box">Error al cargar el catálogo. Recarga la página.</div>`;
   }
 }
 
-// RENDERIZAR CATÁLOGO
+function renderCatTabs() {
+  const cats = ['TODAS', ...Object.keys(CAT_EMOJIS).filter(c => catalogoPorCat[c])];
+  document.getElementById('catTabs').innerHTML = cats.map(cat => `
+    <button class="cat-tab ${cat === catActiva ? 'activo' : ''}" onclick="selCat('${cat}')">
+      ${cat === 'TODAS' ? '🔍 Todas' : (CAT_EMOJIS[cat] || '📦') + ' ' + cat}
+    </button>`).join('');
+}
+
+function selCat(cat) {
+  catActiva = cat;
+  document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('activo'));
+  event.target.classList.add('activo');
+  document.getElementById('busquedaCatalogo').value = '';
+  renderCatalogo();
+}
+
 function renderCatalogo() {
   const lista = document.getElementById('lista-catalogo');
-  if (catalogoFiltrado.length === 0) {
-    lista.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><h3>Sin resultados</h3><p>Intenta con otro término de búsqueda</p></div>`;
+  const q = document.getElementById('busquedaCatalogo').value.trim().toUpperCase();
+  let arts = catalogoPorCat[catActiva] || catalogoCompleto;
+  if (q) arts = catalogoCompleto.filter(a => a.nombre.toUpperCase().includes(q));
+  if (arts.length === 0) {
+    lista.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><h3>Sin resultados</h3></div>`;
     return;
   }
-  lista.innerHTML = catalogoFiltrado.slice(0, 80).map((art, i) => productoCardHTML(art.nombre, art.precios, false, i, art.id, art.unidadmed)).join('');
-
-  // Cargar precios PRECIO 1 del catálogo
-  catalogoFiltrado.slice(0, 80).forEach((art, i) => {
-    const precio1 = getPrecio1(art.precios);
-    if (precio1 !== null) {
+  const muestra = arts.slice(0, 60);
+  lista.innerHTML = muestra.map((art, i) => cardHTML(art.nombre, art.precios, art.unidadmed, i, 'cat', false, art.clave)).join('');
+  muestra.forEach((art, i) => {
+    const p1 = getPrecio1(art.precios);
+    if (p1 !== null) {
       const el = document.getElementById(`precio-cat-${i}`);
-      if (el) {
-        el.textContent = formatPrecio(precio1);
-        el.classList.remove('cargando');
-      }
-      preciosCache[art.nombre] = precio1;
+      if (el) { el.textContent = fmt(p1); el.classList.remove('cargando'); }
+      preciosCache[art.nombre] = p1;
     }
   });
 }
 
-function getPrecio1(precios) {
-  if (!Array.isArray(precios)) return null;
-  const p1 = precios.find(p => p.nombre_precio && p.nombre_precio.toUpperCase().includes('PRECIO 1'));
-  return p1 ? p1.precio : (precios[0] ? precios[0].precio : null);
+function filtrarCatalogo() {
+  catActiva = 'TODAS';
+  document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('activo'));
+  document.querySelector('.cat-tab')?.classList.add('activo');
+  renderCatalogo();
 }
 
-// CARGAR PRECIO PERSONALIZADO DEL CLIENTE
-async function cargarPrecioArticulo(nombre, index, tipo) {
-  const elId = tipo === 'frec' ? `precio-frec-${index}` : `precio-cat-${index}`;
+async function cargarPrecio(nombre, index, tipo) {
+  const elId = `precio-${tipo}-${index}`;
   const el = document.getElementById(elId);
-
   if (!el) return;
-
-  // Buscar artículo en catálogo por nombre
-  const art = catalogoCompleto.find(a => a.nombre === nombre);
-  if (!art) {
-    // Catálogo aún no cargado, reintentar
-    setTimeout(() => cargarPrecioArticulo(nombre, index, tipo), 2000);
-    return;
-  }
-
   if (preciosCache[nombre] !== undefined) {
-    el.textContent = formatPrecio(preciosCache[nombre]);
+    el.textContent = fmt(preciosCache[nombre]);
     el.classList.remove('cargando');
     return;
   }
-
+  // Buscar en catálogo
+  const art = catalogoCompleto.find(a => a.nombre === nombre);
+  if (!art) {
+    if (!catalogoCargado) setTimeout(() => cargarPrecio(nombre, index, tipo), 3000);
+    return;
+  }
   try {
-    const clienteNumId = clienteData ? clienteData.id : 0;
-    const res = await fetch(`${PROXY}?metodo=DESCUENTO_CLIENTE&clienteId=${clienteNumId}&articuloId=${art.id}&unidades=1`);
+    const res = await fetch(`${PROXY}?metodo=DESCUENTO_CLIENTE&clienteId=${clienteData.id}&articuloId=${art.id}&unidades=1`);
     const data = await res.json();
-
     let precio = null;
-    if (Array.isArray(data) && data[0]) {
-      precio = data[0].precio || data[0].Precio || null;
-    } else if (data && data.precio) {
-      precio = data.precio;
-    }
-
-    if (!precio) {
-      // Usar PRECIO 1 como fallback
-      precio = getPrecio1(art.precios);
-    }
-
+    if (Array.isArray(data) && data[0]) precio = data[0].precio || data[0].Precio;
+    else if (data?.precio) precio = data.precio;
+    if (!precio) precio = getPrecio1(art.precios);
     if (precio !== null) {
       preciosCache[nombre] = precio;
-      el.textContent = formatPrecio(precio);
+      el.textContent = fmt(precio);
       el.classList.remove('cargando');
     }
   } catch {
-    const fallback = getPrecio1(art ? art.precios : null);
-    if (fallback) {
-      el.textContent = formatPrecio(fallback);
-      el.classList.remove('cargando');
-    }
+    const p = getPrecio1(art?.precios);
+    if (p) { preciosCache[nombre] = p; el.textContent = fmt(p); el.classList.remove('cargando'); }
   }
 }
 
-// GENERAR HTML DE TARJETA
-function productoCardHTML(nombre, precios, frecuente, index, artId = '', unidad = '') {
-  const enCarrito = carrito[nombre];
-  const cantidad = enCarrito ? enCarrito.cantidad : 0;
-  const tipo = frecuente ? 'frec' : 'cat';
-
+function cardHTML(nombre, precios, unidad, index, tipo, frecuente, clave) {
+  const cant = carrito[nombre]?.cantidad || 0;
+  const cat = clave ? (CLAVE_CAT[clave] || '') : '';
   return `
   <div class="producto-card" id="card-${tipo}-${index}">
-    <div class="producto-icono">${getEmoji(nombre)}</div>
+    <div class="producto-icono">${getEmoji(nombre, cat)}</div>
     <div class="producto-info">
-      <div class="producto-nombre" title="${nombre}">${nombre}</div>
+      <div class="producto-nombre">${nombre}</div>
       ${frecuente ? '<span class="frecuente-badge">⭐ Frecuente</span>' : ''}
       <div class="producto-precio cargando" id="precio-${tipo}-${index}">Cargando precio...</div>
       ${unidad ? `<div class="producto-unidad">${unidad}</div>` : ''}
     </div>
     <div class="producto-controles" id="ctrl-${tipo}-${index}">
-      ${cantidad > 0 ? `
-        <button class="btn-cantidad" onclick="cambiarCantidad('${nombre}','${tipo}',${index},-1)">−</button>
-        <span class="cantidad-display">${cantidad}</span>
-        <button class="btn-cantidad" onclick="cambiarCantidad('${nombre}','${tipo}',${index},1)">+</button>
-      ` : `
-        <button class="btn-agregar" onclick="agregarAlCarrito('${nombre}','${tipo}',${index})">Agregar</button>
-      `}
+      ${cant > 0 ? `
+        <button class="btn-cantidad" onclick="cambiarCant('${esc(nombre)}','${tipo}',${index},-1)">−</button>
+        <span class="cantidad-display">${cant}</span>
+        <button class="btn-cantidad" onclick="cambiarCant('${esc(nombre)}','${tipo}',${index},1)">+</button>
+      ` : `<button class="btn-agregar" onclick="agregar('${esc(nombre)}','${tipo}',${index})">Agregar</button>`}
     </div>
   </div>`;
 }
 
-// AGREGAR AL CARRITO
-function agregarAlCarrito(nombre, tipo, index) {
-  const elPrecio = document.getElementById(`precio-${tipo}-${index}`);
-  let precio = 0;
-  if (elPrecio && !elPrecio.classList.contains('cargando')) {
-    precio = parseFloat(elPrecio.textContent.replace('$','').replace(',','')) || 0;
-  }
+function esc(s) { return s.replace(/'/g,"&#39;"); }
 
-  if (!carrito[nombre]) {
-    carrito[nombre] = { nombre, precio, cantidad: 1 };
-  } else {
-    carrito[nombre].cantidad++;
-  }
-
-  actualizarControles(nombre, tipo, index);
+function agregar(nombre, tipo, index) {
+  const el = document.getElementById(`precio-${tipo}-${index}`);
+  const precio = el && !el.classList.contains('cargando') ? parseFloat(el.textContent.replace('$','').replace(/,/g,'')) || 0 : 0;
+  if (!carrito[nombre]) carrito[nombre] = { nombre, precio, cantidad: 1 };
+  else carrito[nombre].cantidad++;
+  actualizarCtrl(nombre, tipo, index);
   actualizarCarritoUI();
 }
 
-function cambiarCantidad(nombre, tipo, index, delta) {
+function cambiarCant(nombre, tipo, index, delta) {
   if (!carrito[nombre]) return;
   carrito[nombre].cantidad += delta;
-  if (carrito[nombre].cantidad <= 0) {
-    delete carrito[nombre];
-  }
-  actualizarControles(nombre, tipo, index);
+  if (carrito[nombre].cantidad <= 0) delete carrito[nombre];
+  actualizarCtrl(nombre, tipo, index);
   actualizarCarritoUI();
 }
 
-function actualizarControles(nombre, tipo, index) {
+function actualizarCtrl(nombre, tipo, index) {
   const ctrl = document.getElementById(`ctrl-${tipo}-${index}`);
   if (!ctrl) return;
-  const cantidad = carrito[nombre] ? carrito[nombre].cantidad : 0;
-  ctrl.innerHTML = cantidad > 0 ? `
-    <button class="btn-cantidad" onclick="cambiarCantidad('${nombre}','${tipo}',${index},-1)">−</button>
-    <span class="cantidad-display">${cantidad}</span>
-    <button class="btn-cantidad" onclick="cambiarCantidad('${nombre}','${tipo}',${index},1)">+</button>
-  ` : `<button class="btn-agregar" onclick="agregarAlCarrito('${nombre}','${tipo}',${index})">Agregar</button>`;
+  const cant = carrito[nombre]?.cantidad || 0;
+  ctrl.innerHTML = cant > 0
+    ? `<button class="btn-cantidad" onclick="cambiarCant('${esc(nombre)}','${tipo}',${index},-1)">−</button><span class="cantidad-display">${cant}</span><button class="btn-cantidad" onclick="cambiarCant('${esc(nombre)}','${tipo}',${index},1)">+</button>`
+    : `<button class="btn-agregar" onclick="agregar('${esc(nombre)}','${tipo}',${index})">Agregar</button>`;
 }
 
 function actualizarCarritoUI() {
   const items = Object.values(carrito);
-  const total = items.reduce((s, i) => s + (i.precio * i.cantidad), 0);
-  document.getElementById('carritoCount').textContent = items.reduce((s, i) => s + i.cantidad, 0);
-  document.getElementById('carritoTotal').textContent = formatPrecio(total);
-
+  const totalUnid = items.reduce((s, i) => s + i.cantidad, 0);
+  const totalPesos = items.reduce((s, i) => s + i.precio * i.cantidad, 0);
+  document.getElementById('carritoCount').textContent = totalUnid;
+  document.getElementById('carritoTotal').textContent = fmt(totalPesos);
   if (items.length === 0) {
     document.getElementById('carritoItems').innerHTML = `<div class="empty"><div class="empty-icon">🛒</div><h3>Tu pedido está vacío</h3><p>Agrega productos para continuar</p></div>`;
   } else {
@@ -458,41 +396,31 @@ function actualizarCarritoUI() {
       <div class="carrito-item">
         <div class="carrito-item-info">
           <div class="carrito-item-nombre">${item.nombre}</div>
-          <div class="carrito-item-precio">${formatPrecio(item.precio * item.cantidad)}</div>
-          <div class="carrito-item-qty">${item.cantidad} pza × ${formatPrecio(item.precio)}</div>
+          <div class="carrito-item-precio">${fmt(item.precio * item.cantidad)}</div>
+          <div class="carrito-item-qty">${item.cantidad} pza × ${fmt(item.precio)}</div>
         </div>
-        <button class="btn-quitar" onclick="quitarDelCarrito('${item.nombre}')">✕</button>
-      </div>
-    `).join('');
+        <button class="btn-quitar" onclick="quitarItem('${esc(item.nombre)}')">✕</button>
+      </div>`).join('');
   }
 }
 
-function quitarDelCarrito(nombre) {
+function quitarItem(nombre) {
   delete carrito[nombre];
   actualizarCarritoUI();
-  // Actualizar botones en las listas
   document.querySelectorAll('[id^="card-"]').forEach(card => {
-    const nameEl = card.querySelector('.producto-nombre');
-    if (nameEl && nameEl.textContent === nombre) {
-      const id = card.id; // card-frec-0 o card-cat-0
-      const parts = id.split('-');
-      const tipo = parts[1];
-      const index = parts[2];
-      actualizarControles(nombre, tipo, index);
+    const el = card.querySelector('.producto-nombre');
+    if (el && el.textContent === nombre) {
+      const [, tipo, idx] = card.id.split('-');
+      actualizarCtrl(nombre, tipo, idx);
     }
   });
 }
 
-// ENVIAR PEDIDO
 async function enviarPedido() {
   const items = Object.values(carrito);
-  if (items.length === 0) return;
-  if (!clienteData) return;
-
+  if (!items.length || !clienteData) return;
   const btn = document.getElementById('btnEnviar');
-  btn.disabled = true;
-  btn.textContent = 'Enviando...';
-
+  btn.disabled = true; btn.textContent = 'Enviando...';
   try {
     const dir = clienteData.direcciones?.[0] || {};
     const body = {
@@ -513,11 +441,10 @@ async function enviarPedido() {
           Estado: dir.estado || '',
           Pais: dir.pais || 'MEXICO',
           Telefono1: clienteData.telefono || '',
-          Telefono2: '',
-          Fax: '',
+          Telefono2: '', Fax: '',
           Email: clienteData.email || '',
           CodigoPostal: dir.codigo_postal || '',
-          Notas: `Pedido realizado desde app web`
+          Notas: 'Pedido realizado desde app web SHS'
         },
         Encabezado: {
           OrdenCompra: '',
@@ -536,47 +463,59 @@ async function enviarPedido() {
         }))
       }
     };
-
     const res = await fetch(`${PROXY}?metodo=PEDIDOS`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
     });
-
     const data = await res.json();
     const folio = data.Folio || data.folio || data.respuesta || '—';
-
-    carrito = {};
-    actualizarCarritoUI();
-    cerrarCarrito();
+    carrito = {}; actualizarCarritoUI(); cerrarCarrito();
     document.getElementById('modalFolio').textContent = `Folio: ${folio}`;
     document.getElementById('modalExito').classList.add('abierto');
-
-  } catch (err) {
-    alert('Error al enviar el pedido. Intenta de nuevo.');
+  } catch {
+    alert('Error al enviar. Intenta de nuevo.');
   } finally {
-    btn.disabled = false;
-    btn.textContent = 'Enviar pedido a SHS';
+    btn.disabled = false; btn.textContent = 'Enviar pedido a SHS';
   }
 }
 
-// FILTRAR CATÁLOGO
-function filtrarCatalogo() {
-  const q = document.getElementById('busquedaCatalogo').value.trim().toUpperCase();
-  catalogoFiltrado = q ? catalogoCompleto.filter(a => a.nombre.toUpperCase().includes(q)) : [...catalogoCompleto];
-  renderCatalogo();
+function getPrecio1(precios) {
+  if (!Array.isArray(precios)) return null;
+  const p1 = precios.find(p => p.nombre_precio?.toUpperCase().includes('PRECIO 1'));
+  return p1 ? p1.precio : precios[0]?.precio ?? null;
 }
 
-// TABS
+function fmt(n) { return '$' + parseFloat(n||0).toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+function getEmoji(nombre, cat) {
+  if (cat === 'PAPELES HIGIÉNICOS') return '🧻';
+  if (cat === 'AROMATIZANTES') return '🌸';
+  if (cat === 'BOLSAS') return '🛍️';
+  if (cat === 'BOTES DE BASURA') return '🗑️';
+  if (cat === 'DESECHABLES') return '🧤';
+  if (cat === 'DESPACHADORES PARA BAÑOS') return '🚿';
+  if (cat === 'GOJO') return '🧴';
+  if (cat === 'JARCIERÍA') return '🧹';
+  if (cat === 'LÍQUIDOS DE LIMPIEZA') return '🫧';
+  const n = nombre.toUpperCase();
+  if (n.includes('HIGIENICO') || n.includes('PAPEL')) return '🧻';
+  if (n.includes('JABON') || n.includes('JABÓN')) return '🧴';
+  if (n.includes('CLORO') || n.includes('DESINFECT')) return '🧪';
+  if (n.includes('BOLSA')) return '🛍️';
+  if (n.includes('ESCOBA') || n.includes('TRAPEADOR')) return '🧹';
+  if (n.includes('GUANTE')) return '🧤';
+  if (n.includes('AROMATIZANTE')) return '🌸';
+  if (n.includes('DETERGENTE') || n.includes('MULTIUSOS')) return '🫧';
+  return '📦';
+}
+
 function cambiarTab(tab) {
-  document.getElementById('tab-frecuentes').classList.toggle('activo', tab === 'frecuentes');
-  document.getElementById('tab-catalogo').classList.toggle('activo', tab === 'catalogo');
-  document.getElementById('sec-frecuentes').classList.toggle('activa', tab === 'frecuentes');
-  document.getElementById('sec-catalogo').classList.toggle('activa', tab === 'catalogo');
+  ['frecuentes','catalogo'].forEach(t => {
+    document.getElementById(`tab-${t}`).classList.toggle('activo', t === tab);
+    document.getElementById(`sec-${t}`).classList.toggle('activa', t === tab);
+  });
   if (tab === 'catalogo' && !catalogoCargado) cargarCatalogo();
 }
 
-// CARRITO
 function abrirCarrito() {
   document.getElementById('carritoPanel').classList.add('abierto');
   document.getElementById('overlay').classList.add('abierto');
@@ -585,34 +524,8 @@ function cerrarCarrito() {
   document.getElementById('carritoPanel').classList.remove('abierto');
   document.getElementById('overlay').classList.remove('abierto');
 }
-function cerrarModal() {
-  document.getElementById('modalExito').classList.remove('abierto');
-}
+function cerrarModal() { document.getElementById('modalExito').classList.remove('abierto'); }
 
-// HELPERS
-function formatPrecio(n) {
-  return '$' + parseFloat(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function getEmoji(nombre) {
-  const n = nombre.toUpperCase();
-  if (n.includes('HIGIENICO') || n.includes('PAPEL')) return '🧻';
-  if (n.includes('JABON') || n.includes('JABÓN')) return '🧴';
-  if (n.includes('CLORO') || n.includes('DESINFECT')) return '🧪';
-  if (n.includes('BOLSA')) return '🛍️';
-  if (n.includes('ESCOBA') || n.includes('TRAPEADOR') || n.includes('MOP')) return '🧹';
-  if (n.includes('TOALLA')) return '🗂️';
-  if (n.includes('GUANTE')) return '🧤';
-  if (n.includes('AROMATIZANTE') || n.includes('AROMA')) return '🌸';
-  if (n.includes('DETERGENTE') || n.includes('MULTIUSOS')) return '🫧';
-  if (n.includes('FIBRA') || n.includes('ESTROPAJO')) return '🟩';
-  if (n.includes('RECOGEDOR') || n.includes('JALADOR')) return '🪣';
-  if (n.includes('PASTILLA')) return '💊';
-  if (n.includes('LIJA')) return '📄';
-  return '📦';
-}
-
-// ARRANCAR
 init();
 </script>
 </body>
