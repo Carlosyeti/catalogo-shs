@@ -82,6 +82,39 @@ export default async function handler(req, res) {
       return res.status(200).json([]);
     }
 
+    if (metodo === 'HISTORIAL') {
+      const clienteId = (req.query.clienteId || '').trim();
+      if (!clienteId) return res.status(400).json({ error: 'clienteId requerido' });
+      const cached = await redis.get(`historial:${clienteId}`);
+      if (cached) return res.status(200).json(JSON.parse(cached));
+      return res.status(200).json({ articulos: [] });
+    }
+
+    if (metodo === 'SYNC_HISTORIAL') {
+      if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Usar POST' });
+      }
+      const payload = req.body;
+      if (!payload || typeof payload !== 'object') {
+        return res.status(400).json({ error: 'Body inválido' });
+      }
+      let total = 0;
+      for (const [clave, data] of Object.entries(payload)) {
+        await redis.set(`historial:${clave}`, JSON.stringify(data));
+        total++;
+      }
+      return res.status(200).json({ ok: true, total });
+    }
+
+    if (metodo === 'DESCUENTO_CLIENTE') {
+      const clienteId  = req.query.clienteId  || '0';
+      const articuloId = req.query.articuloId || '0';
+      const unidades   = req.query.unidades   || '1';
+      const url = `${API_BASE}/exsim/servicios/metodo/DESCUENTO_CLIENTE/${TOKEN}/${clienteId}/${articuloId}/${unidades}`;
+      const data = await fetchMicrosip(url);
+      return res.status(200).json(data);
+    }
+
     if (metodo === 'SYNC') {
       let pagina = 0;
       let total = 0;
