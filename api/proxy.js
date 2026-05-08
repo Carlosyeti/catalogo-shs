@@ -39,10 +39,25 @@ export default async function handler(req, res) {
 
   try {
 
+    // ── ARTICULOS — sirve desde Redis si está cacheado ──
     if (metodo === 'ARTICULOS') {
       const cantidad = req.query.cantidad || '50';
       const pagina   = req.query.pagina   || '0';
       const artId    = req.query.articuloId || '0';
+
+      // Si piden catálogo completo (artId=0), intentar desde Redis
+      if (artId === '0') {
+        const cached = await redis.get('catalogo:completo');
+        if (cached) {
+          const todos = JSON.parse(cached);
+          const p = parseInt(pagina);
+          const c = parseInt(cantidad);
+          const slice = todos.slice(p * c, (p + 1) * c);
+          return res.status(200).json(slice);
+        }
+      }
+
+      // Fallback: Microsip directo
       const url = `${API_BASE}/exsim/servicios/metodo/ARTICULOS/${TOKEN}/${cantidad}/${pagina}/${artId}`;
       let data = await fetchMicrosip(url);
       if (Array.isArray(data)) {
@@ -52,6 +67,34 @@ export default async function handler(req, res) {
         }));
       }
       return res.status(200).json(data);
+    }
+
+    // ── SYNC_ARTICULOS — descarga todo el catálogo y lo cachea ──
+    if (metodo === 'SYNC_ARTICULOS') {
+      let pagina = 0;
+      let todos = [];
+      while (true) {
+        const url = `${API_BASE}/exsim/servicios/metodo/ARTICULOS/${TOKEN}/100/${pagina}/0`;
+        const data = await fetchMicrosip(url);
+        if (!Array.isArray(data) || data.length === 0) break;
+        const mapped = data.map(a => ({
+          id: a.id, clave: a.clave, nombre: a.nombre,
+          unidadmed: a.unidadmed, imagen: a.imagen, precios: a.precios
+        }));
+        todos = todos.concat(mapped);
+        if (data.length < 100) break;
+        pagina++;
+      }
+      // Guardar en Redis sin expiración (se actualiza manualmente)
+      await redis.set('catalogo:completo', JSON.stringify(todos));
+      return res.status(200).json({ ok: true, total: todos.length, mensaje: `${todos.length} artículos cacheados` });
+    }
+
+    // ── CATALOGO_COMPLETO — devuelve todo de una vez desde Redis ──
+    if (metodo === 'CATALOGO_COMPLETO') {
+      const cached = await redis.get('catalogo:completo');
+      if (cached) return res.status(200).json(JSON.parse(cached));
+      return res.status(200).json([]);
     }
 
     if (metodo === 'CLIENTES') {
@@ -85,7 +128,6 @@ export default async function handler(req, res) {
       return res.status(200).json({ articulos: [] });
     }
 
-    // Devuelve precios personalizados del cliente
     if (metodo === 'PRECIOS_CLIENTE') {
       const clienteId = (req.query.clienteId || '').trim();
       if (!clienteId) return res.status(400).json({ error: 'clienteId requerido' });
@@ -118,15 +160,6 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, total });
     }
 
-    if (metodo === 'DESCUENTO_CLIENTE') {
-      const clienteId  = req.query.clienteId  || '0';
-      const articuloId = req.query.articuloId || '0';
-      const unidades   = req.query.unidades   || '1';
-      const url = `${API_BASE}/exsim/servicios/metodo/DESCUENTO_CLIENTE/${TOKEN}/${clienteId}/${articuloId}/${unidades}`;
-      const data = await fetchMicrosip(url);
-      return res.status(200).json(data);
-    }
-
     if (metodo === 'SYNC') {
       let pagina = 0;
       let total = 0;
@@ -145,7 +178,7 @@ export default async function handler(req, res) {
     }
 
     if (metodo === 'PEDIDOS') {
-      if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido. Usa POST.' });
+      if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido.' });
       const body = req.body;
       if (!body || !body.Documento) return res.status(400).json({ error: 'Body inválido.' });
       const response = await fetch(
