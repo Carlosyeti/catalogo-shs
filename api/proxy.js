@@ -69,25 +69,41 @@ export default async function handler(req, res) {
       return res.status(200).json(data);
     }
 
-    // ── SYNC_ARTICULOS — descarga todo el catálogo y lo cachea ──
+    // ── SYNC_ARTICULOS — descarga UNA página y la agrega al caché ──
     if (metodo === 'SYNC_ARTICULOS') {
-      let pagina = 0;
-      let todos = [];
-      while (true) {
-        const url = `${API_BASE}/exsim/servicios/metodo/ARTICULOS/${TOKEN}/100/${pagina}/0`;
-        const data = await fetchMicrosip(url);
-        if (!Array.isArray(data) || data.length === 0) break;
-        const mapped = data.map(a => ({
-          id: a.id, clave: a.clave, nombre: a.nombre,
-          unidadmed: a.unidadmed, imagen: a.imagen, precios: a.precios
-        }));
-        todos = todos.concat(mapped);
-        if (data.length < 100) break;
-        pagina++;
+      const pagina = parseInt(req.query.pagina || '0');
+      const reset  = req.query.reset === '1';
+      res.setHeader('Cache-Control', 'no-store');
+
+      const url = `${API_BASE}/exsim/servicios/metodo/ARTICULOS/${TOKEN}/100/${pagina}/0`;
+      const data = await fetchMicrosip(url);
+
+      if (!Array.isArray(data) || data.length === 0) {
+        return res.status(200).json({ ok: true, fin: true, pagina, total: 0 });
       }
-      // Guardar en Redis sin expiración (se actualiza manualmente)
+
+      const mapped = data.map(a => ({
+        id: a.id, clave: a.clave, nombre: a.nombre,
+        unidadmed: a.unidadmed, imagen: a.imagen, precios: a.precios
+      }));
+
+      // Si es página 0 o reset, empezar de cero; si no, agregar al existente
+      let existentes = [];
+      if (!reset && pagina > 0) {
+        const cached = await redis.get('catalogo:completo');
+        if (cached) existentes = JSON.parse(cached);
+      }
+
+      const todos = existentes.concat(mapped);
       await redis.set('catalogo:completo', JSON.stringify(todos));
-      return res.status(200).json({ ok: true, total: todos.length, mensaje: `${todos.length} artículos cacheados` });
+
+      return res.status(200).json({
+        ok: true,
+        fin: data.length < 100,
+        pagina,
+        enEstaPagina: data.length,
+        totalAcumulado: todos.length
+      });
     }
 
     // ── CATALOGO_COMPLETO — devuelve todo de una vez desde Redis ──
