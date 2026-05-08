@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   const API_BASE = 'http://38.58.46.142:9091';
   const TOKEN = '6GmrWp2KvHh2R4682ciDY09Klu92bv';
   const metodo = req.query.metodo || 'ARTICULOS';
-  const cantidad = req.query.cantidad || '700';
+  const cantidad = req.query.cantidad || '50';
 
   let apiUrl = '';
   if (metodo === 'ARTICULOS') {
