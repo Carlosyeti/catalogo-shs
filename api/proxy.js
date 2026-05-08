@@ -22,31 +22,35 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true });
   }
 
+  function repairJSON(text) {
+    // Intentar hasta 100 reparaciones de caracteres malos
+    let attempts = 0;
+    while(attempts < 100) {
+      try {
+        return JSON.parse(text);
+      } catch(e) {
+        const posMatch = e.message.match(/position (\d+)/);
+        if(!posMatch) break;
+        const pos = parseInt(posMatch[1]);
+        // Reemplazar el carácter malo en esa posición exacta
+        text = text.substring(0, pos) + ' ' + text.substring(pos + 1);
+        attempts++;
+      }
+    }
+    // Si aún falla, truncar antes del último objeto completo
+    const lastObj = text.lastIndexOf('},{');
+    if(lastObj > 0) {
+      try { return JSON.parse(text.substring(0, lastObj+1) + ']'); } catch(e) {}
+    }
+    return [];
+  }
+
   try {
     const response = await fetch(apiUrl);
     let text = await response.text();
-    
-    // Sanitizar caracteres de control
     text = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ');
 
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch(e) {
-      // Usar la posición exacta del error para cortar el JSON
-      const posMatch = e.message.match(/position (\d+)/);
-      if(posMatch) {
-        const pos = parseInt(posMatch[1]);
-        let truncado = text.substring(0, pos);
-        const ultimoObj = truncado.lastIndexOf('},{');
-        if(ultimoObj > 0) {
-          try {
-            data = JSON.parse(truncado.substring(0, ultimoObj+1) + ']');
-          } catch(e2) { data = []; }
-        } else { data = []; }
-      } else { data = []; }
-    }
-
+    let data = repairJSON(text);
     if(!data) data = [];
 
     if(metodo === 'ARTICULOS' && Array.isArray(data)){
