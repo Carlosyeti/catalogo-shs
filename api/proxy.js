@@ -4,10 +4,12 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=3600');
   if (req.method === 'OPTIONS') return res.status(200).end();
+
   const API_BASE = 'http://38.58.46.142:9091';
   const TOKEN = '6GmrWp2KvHh2R4682ciDY09Klu92bv';
   const metodo = req.query.metodo || 'ARTICULOS';
   const cantidad = req.query.cantidad || '700';
+
   function repairJSON(text) {
     let attempts = 0;
     while (attempts < 100) {
@@ -25,12 +27,14 @@ export default async function handler(req, res) {
     }
     return [];
   }
+
   async function fetchMicrosip(url) {
     const response = await fetch(url);
     let text = await response.text();
     text = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ');
     return repairJSON(text) || [];
   }
+
   try {
     // ARTICULOS
     if (metodo === 'ARTICULOS') {
@@ -45,18 +49,30 @@ export default async function handler(req, res) {
       }
       return res.status(200).json(data);
     }
+
     // CLIENTES
-if (metodo === 'CLIENTES') {
-  try {
-    const url = `${API_BASE}/exsim/servicios/metodo/CLIENTES/${TOKEN}/10`;
-    const response = await fetch(url);
-    const text = await response.text();
-    // Devolver texto crudo para diagnóstico
-    return res.status(200).send(text.substring(0, 500));
-  } catch(err) {
-    return res.status(500).json({ error: err.message, stack: err.stack });
-  }
-}
+    if (metodo === 'CLIENTES') {
+      const clienteId = (req.query.clienteId || '').trim();
+      // Traemos 50 clientes — suficiente para encontrar por clave con filtro
+      let data = await fetchMicrosip(
+        `${API_BASE}/exsim/servicios/metodo/CLIENTES/${TOKEN}/50`
+      );
+      if (clienteId) {
+        // Si no está en los primeros 50, traemos más en paralelo
+        let found = Array.isArray(data) ? data.filter(c => String(c.clave).trim() === clienteId) : [];
+        if (!found.length) {
+          const batches = await Promise.all([
+            fetchMicrosip(`${API_BASE}/exsim/servicios/metodo/CLIENTES/${TOKEN}/500`),
+            fetchMicrosip(`${API_BASE}/exsim/servicios/metodo/CLIENTES/${TOKEN}/1000`)
+          ]);
+          const all = [...(batches[0]||[]), ...(batches[1]||[])];
+          found = all.filter(c => String(c.clave).trim() === clienteId);
+        }
+        return res.status(200).json(found);
+      }
+      return res.status(200).json(Array.isArray(data) ? data : []);
+    }
+
     // IMAGENES
     if (metodo === 'IMAGENES') {
       const data = await fetchMicrosip(
@@ -64,10 +80,10 @@ if (metodo === 'CLIENTES') {
       );
       return res.status(200).json(data);
     }
+
     return res.status(200).json({ ok: true });
+
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
 }
-
-verifica el código
