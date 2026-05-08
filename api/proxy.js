@@ -18,16 +18,6 @@ export default async function handler(req, res) {
     apiUrl = `${API_BASE}/exsim/servicios/metodo/CLIENTES/${TOKEN}/${cantidad}`;
   } else if (metodo === 'IMAGENES') {
     apiUrl = `${API_BASE}/exsim/servicios/metodo/IMAGENES/${TOKEN}/${req.query.id||''}`;
-  } else if (metodo === 'DESCUENTO_CLIENTE') {
-    apiUrl = `${API_BASE}/exsim/servicios/metodo/DESCUENTO_CLIENTE/${TOKEN}/${req.query.clienteId||''}/${req.query.articuloId||''}`;
-  } else if (metodo === 'PEDIDOS' && req.method === 'POST') {
-    const body = await req.json();
-    const resp = await fetch(`${API_BASE}/exsim/servicios/metodo/PEDIDOS`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    return res.status(200).json(await resp.json());
   } else {
     return res.status(200).json({ ok: true });
   }
@@ -35,25 +25,26 @@ export default async function handler(req, res) {
   try {
     const response = await fetch(apiUrl);
     let text = await response.text();
-    text = text.replace(/[\x00-\x1F\x7F]/g, ' ');
+    
+    // Sanitizar caracteres de control
+    text = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ');
 
     let data;
     try {
       data = JSON.parse(text);
     } catch(e) {
-      try {
-        let fixed = text;
-        while(fixed.length > 10){
+      // Usar la posición exacta del error para cortar el JSON
+      const posMatch = e.message.match(/position (\d+)/);
+      if(posMatch) {
+        const pos = parseInt(posMatch[1]);
+        let truncado = text.substring(0, pos);
+        const ultimoObj = truncado.lastIndexOf('},{');
+        if(ultimoObj > 0) {
           try {
-            data = JSON.parse(fixed + (fixed.trimEnd().endsWith(']') ? '' : ']'));
-            break;
-          } catch(e2){
-            const lc = fixed.lastIndexOf('},{');
-            if(lc < 0){ data = []; break; }
-            fixed = fixed.substring(0, lc+1) + ']';
-          }
-        }
-      } catch(e3){ data = []; }
+            data = JSON.parse(truncado.substring(0, ultimoObj+1) + ']');
+          } catch(e2) { data = []; }
+        } else { data = []; }
+      } else { data = []; }
     }
 
     if(!data) data = [];
