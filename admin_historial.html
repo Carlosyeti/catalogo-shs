@@ -4,33 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin SHS</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
-async function sincronizarCatalogo() {
-  document.getElementById('btn3').disabled = true;
-  document.getElementById('p3').style.display = 'block';
-  document.getElementById('r3').style.display = 'none';
-  let pagina = 0;
-  let totalAcumulado = 0;
-  try {
-    while (true) {
-      const resetParam = pagina === 0 ? '&reset=1' : '';
-      setProg('3', Math.min(90, pagina * 5), `Descargando página ${pagina + 1}... (${totalAcumulado} artículos)`);
-      const res = await fetch(`${PROXY}?metodo=SYNC_ARTICULOS&pagina=${pagina}${resetParam}`);
-      const data = await res.json();
-      if (!data.ok) throw new Error(JSON.stringify(data));
-      totalAcumulado = data.totalAcumulado || totalAcumulado;
-      if (data.fin) break;
-      pagina++;
-    }
-    setProg('3', 100, '¡Completado!');
-    showResult('3', true, `✅ ${totalAcumulado} artículos sincronizados en ${pagina + 1} páginas`);
-  } catch(e) {
-    showResult('3', false, '❌ Error en página ' + pagina + ': ' + e.message);
-  } finally {
-    document.getElementById('btn3').disabled = false;
-  }
-}
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
@@ -63,20 +37,17 @@ input[type=file]{display:none}
 </head>
 <body>
 <div class="container">
-  <h1>⚙️ Administración SHS</h1>
-  <p class="subtitle">Actualizar historial de compras y precios por cliente</p>
+  <h1>Administracion SHS</h1>
+  <p class="subtitle">Actualizar historial, catalogo y precios por cliente</p>
 
-  <!-- HISTORIAL -->
   <div class="seccion">
-    <h2>📋 Historial de compras</h2>
-    <div class="instrucciones">
-      <ul>
-        <li>Exporta "Ventas por cliente" de Microsip</li>
-        <li>Debe incluir columna <strong>Clave</strong> del cliente</li>
-      </ul>
-    </div>
+    <h2>Historial de compras</h2>
+    <div class="instrucciones"><ul>
+      <li>Exporta "Ventas por cliente" de Microsip</li>
+      <li>Debe incluir columna Clave del cliente</li>
+    </ul></div>
     <div class="drop-zone" id="dz1" onclick="document.getElementById('f1').click()">
-      <p>Arrastra el Excel aquí o <span>haz clic para seleccionar</span></p>
+      <p>Arrastra el Excel aqui o <span>haz clic para seleccionar</span></p>
       <div class="file-name" id="fn1"></div>
     </div>
     <input type="file" id="f1" accept=".xlsx,.xls">
@@ -85,31 +56,25 @@ input[type=file]{display:none}
     <div class="result" id="r1"></div>
   </div>
 
-  <!-- CATALOGO -->
   <div class="seccion">
-    <h2>📦 Catálogo de artículos</h2>
-    <div class="instrucciones">
-      <ul>
-        <li>Sincroniza el catálogo completo de Microsip a Redis</li>
-        <li>Hazlo una vez al mes o cuando agregues productos nuevos</li>
-      </ul>
-    </div>
-    <button class="btn" id="btn3" onclick="sincronizarCatalogo()">Sincronizar catálogo desde Microsip</button>
+    <h2>Catalogo de articulos</h2>
+    <div class="instrucciones"><ul>
+      <li>Sincroniza el catalogo completo de Microsip a Redis</li>
+      <li>Hazlo una vez al mes o cuando agregues productos nuevos</li>
+    </ul></div>
+    <button class="btn" id="btn3" onclick="sincronizarCatalogo()">Sincronizar catalogo desde Microsip</button>
     <div class="progress" id="p3"><div class="bar-bg"><div class="bar" id="b3"></div></div><div class="progress-txt" id="pt3"></div></div>
     <div class="result" id="r3"></div>
   </div>
 
-  <!-- PRECIOS -->
   <div class="seccion">
-    <h2>💰 Precios por cliente</h2>
-    <div class="instrucciones">
-      <ul>
-        <li>Exporta "Precios por cliente" de Microsip</li>
-        <li>Debe incluir columna <strong>Clave</strong> y <strong>Último Precio</strong></li>
-      </ul>
-    </div>
+    <h2>Precios por cliente</h2>
+    <div class="instrucciones"><ul>
+      <li>Exporta "Precios por cliente" de Microsip</li>
+      <li>Debe incluir columna Clave y Ultimo Precio</li>
+    </ul></div>
     <div class="drop-zone" id="dz2" onclick="document.getElementById('f2').click()">
-      <p>Arrastra el Excel aquí o <span>haz clic para seleccionar</span></p>
+      <p>Arrastra el Excel aqui o <span>haz clic para seleccionar</span></p>
       <div class="file-name" id="fn2"></div>
     </div>
     <input type="file" id="f2" accept=".xlsx,.xls">
@@ -120,22 +85,21 @@ input[type=file]{display:none}
 </div>
 
 <script>
-const PROXY = 'https://catalogo-shs.vercel.app/api/proxy';
+var PROXY = 'https://catalogo-shs.vercel.app/api/proxy';
+var archivos = {};
 
-// Setup drag & drop para ambos
-['1','2'].forEach(n => {
-  const dz = document.getElementById('dz'+n);
-  const fi = document.getElementById('f'+n);
-  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
-  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
-  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); if(e.dataTransfer.files[0]) selFile(n, e.dataTransfer.files[0]); });
-  fi.addEventListener('change', e => { if(e.target.files[0]) selFile(n, e.target.files[0]); });
+['1','2'].forEach(function(n) {
+  var dz = document.getElementById('dz'+n);
+  var fi = document.getElementById('f'+n);
+  dz.addEventListener('dragover', function(e) { e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', function() { dz.classList.remove('drag-over'); });
+  dz.addEventListener('drop', function(e) { e.preventDefault(); dz.classList.remove('drag-over'); if(e.dataTransfer.files[0]) selFile(n, e.dataTransfer.files[0]); });
+  fi.addEventListener('change', function(e) { if(e.target.files[0]) selFile(n, e.target.files[0]); });
 });
 
-const archivos = {};
 function selFile(n, file) {
   archivos[n] = file;
-  document.getElementById('fn'+n).textContent = '📄 ' + file.name;
+  document.getElementById('fn'+n).textContent = file.name;
   document.getElementById('btn'+n).disabled = false;
 }
 
@@ -143,103 +107,121 @@ function setProg(n, pct, txt) {
   document.getElementById('b'+n).style.width = pct+'%';
   document.getElementById('pt'+n).textContent = txt;
 }
+
 function showResult(n, ok, msg) {
-  const el = document.getElementById('r'+n);
+  var el = document.getElementById('r'+n);
   el.className = 'result ' + (ok ? 'ok' : 'err');
   el.textContent = msg;
   el.style.display = 'block';
 }
 
 async function subirHistorial() {
-  const file = archivos['1'];
+  var file = archivos['1'];
   if (!file) return;
   document.getElementById('btn1').disabled = true;
   document.getElementById('p1').style.display = 'block';
   document.getElementById('r1').style.display = 'none';
   try {
     setProg('1', 10, 'Leyendo archivo...');
-    const data = await file.arrayBuffer();
-    const wb = XLSX.read(data);
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+    var data = await file.arrayBuffer();
+    var wb = XLSX.read(data);
+    var ws = wb.Sheets[wb.SheetNames[0]];
+    var rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
     setProg('1', 25, 'Procesando...');
-    const clientes = {};
-    let currentClave = null;
-    for (const row of rows) {
-      const clave = String(row[0]||'').trim();
-      const nombre = String(row[1]||'').trim();
-      const u1 = parseFloat(row[2])||0;
-      const u2 = parseFloat(row[3])||0;
-      const u3 = parseFloat(row[4])||0;
+    var clientes = {};
+    var cur = null;
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      var clave = String(row[0]||'').trim();
+      var nombre = String(row[1]||'').trim();
+      var u1 = parseFloat(row[2])||0, u2 = parseFloat(row[3])||0, u3 = parseFloat(row[4])||0;
       if (clave && clave !== 'Clave' && /^\d+$/.test(clave)) {
-        currentClave = clave.padStart(4,'0');
-        if (!clientes[currentClave]) clientes[currentClave] = { nombre, articulos: [] };
-      } else if (!clave && nombre && !['Cliente / Artículo','Artículo'].includes(nombre) && currentClave) {
-        clientes[currentClave].articulos.push({ nombre, unidades: u1+u2+u3 });
+        cur = clave.padStart(4,'0');
+        if (!clientes[cur]) clientes[cur] = { nombre: nombre, articulos: [] };
+      } else if (!clave && nombre && nombre !== 'Cliente / Articulo' && nombre !== 'Articulo' && nombre !== 'Cliente / Artículo' && nombre !== 'Artículo' && cur) {
+        clientes[cur].articulos.push({ nombre: nombre, unidades: u1+u2+u3 });
       }
     }
-    for (const c in clientes) clientes[c].articulos.sort((a,b) => b.unidades - a.unidades);
-    const claves = Object.keys(clientes);
-    let proc = 0;
-    for (let i = 0; i < claves.length; i += 20) {
-      const lote = {};
-      claves.slice(i, i+20).forEach(k => lote[k] = clientes[k]);
-      await fetch(`${PROXY}?metodo=SYNC_HISTORIAL`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(lote) });
+    for (var c in clientes) clientes[c].articulos.sort(function(a,b){ return b.unidades-a.unidades; });
+    var claves = Object.keys(clientes);
+    var proc = 0;
+    for (var i = 0; i < claves.length; i += 20) {
+      var lote = {};
+      claves.slice(i, i+20).forEach(function(k){ lote[k]=clientes[k]; });
+      await fetch(PROXY+'?metodo=SYNC_HISTORIAL', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(lote)});
       proc += Object.keys(lote).length;
-      setProg('1', 40 + Math.round(proc/claves.length*55), `${proc} de ${claves.length} clientes...`);
+      setProg('1', 40 + Math.round(proc/claves.length*55), proc+' de '+claves.length+' clientes...');
     }
-    setProg('1', 100, '¡Completado!');
-    showResult('1', true, `✅ ${claves.length} clientes actualizados`);
-  } catch(e) {
-    showResult('1', false, '❌ Error: ' + e.message);
-  } finally {
-    document.getElementById('btn1').disabled = false;
-  }
+    setProg('1', 100, 'Completado');
+    showResult('1', true, 'OK: ' + claves.length + ' clientes actualizados');
+  } catch(e) { showResult('1', false, 'Error: ' + e.message); }
+  finally { document.getElementById('btn1').disabled = false; }
+}
+
+async function sincronizarCatalogo() {
+  document.getElementById('btn3').disabled = true;
+  document.getElementById('p3').style.display = 'block';
+  document.getElementById('r3').style.display = 'none';
+  var pagina = 0;
+  var totalAcumulado = 0;
+  try {
+    while (true) {
+      var resetParam = pagina === 0 ? '&reset=1' : '';
+      setProg('3', Math.min(90, pagina * 5), 'Pagina '+(pagina+1)+'... ('+totalAcumulado+' articulos)');
+      var res = await fetch(PROXY+'?metodo=SYNC_ARTICULOS&pagina='+pagina+resetParam);
+      var data = await res.json();
+      if (!data.ok) throw new Error(JSON.stringify(data));
+      totalAcumulado = data.totalAcumulado || totalAcumulado;
+      if (data.fin) break;
+      pagina++;
+    }
+    setProg('3', 100, 'Completado');
+    showResult('3', true, 'OK: ' + totalAcumulado + ' articulos en ' + (pagina+1) + ' paginas');
+  } catch(e) { showResult('3', false, 'Error pagina '+pagina+': '+e.message); }
+  finally { document.getElementById('btn3').disabled = false; }
 }
 
 async function subirPrecios() {
-  const file = archivos['2'];
+  var file = archivos['2'];
   if (!file) return;
   document.getElementById('btn2').disabled = true;
   document.getElementById('p2').style.display = 'block';
   document.getElementById('r2').style.display = 'none';
   try {
     setProg('2', 10, 'Leyendo archivo...');
-    const data = await file.arrayBuffer();
-    const wb = XLSX.read(data);
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+    var data = await file.arrayBuffer();
+    var wb = XLSX.read(data);
+    var ws = wb.Sheets[wb.SheetNames[0]];
+    var rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
     setProg('2', 25, 'Procesando precios...');
-    const clientes = {};
-    let currentClave = null;
-    for (const row of rows) {
-      const clave = String(row[0]||'').trim();
-      const nombre = String(row[1]||'').trim();
-      const precio = row[3];
+    var clientes = {};
+    var cur = null;
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      var clave = String(row[0]||'').trim();
+      var nombre = String(row[1]||'').trim();
+      var precio = row[3];
       if (clave && clave !== 'Clave' && /^\d+$/.test(clave.replace(/^0+/,'')||'0')) {
-        currentClave = clave.padStart(4,'0');
-        if (!clientes[currentClave]) clientes[currentClave] = {};
-      } else if (!clave && nombre && !['Cliente / Artículo','Artículo','Última Fecha','Último Precio'].includes(nombre) && currentClave && precio) {
-        try { clientes[currentClave][nombre] = Math.round(parseFloat(precio)*100)/100; } catch {}
+        cur = clave.padStart(4,'0');
+        if (!clientes[cur]) clientes[cur] = {};
+      } else if (!clave && nombre && cur && precio && nombre !== 'Ultima Fecha' && nombre !== 'Ultimo Precio' && nombre !== 'Última Fecha' && nombre !== 'Último Precio') {
+        try { clientes[cur][nombre] = Math.round(parseFloat(precio)*100)/100; } catch(e){}
       }
     }
-    const claves = Object.keys(clientes);
-    let proc = 0;
-    for (let i = 0; i < claves.length; i += 20) {
-      const lote = {};
-      claves.slice(i, i+20).forEach(k => lote[k] = clientes[k]);
-      await fetch(`${PROXY}?metodo=SYNC_PRECIOS`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(lote) });
+    var claves = Object.keys(clientes);
+    var proc = 0;
+    for (var i = 0; i < claves.length; i += 20) {
+      var lote = {};
+      claves.slice(i, i+20).forEach(function(k){ lote[k]=clientes[k]; });
+      await fetch(PROXY+'?metodo=SYNC_PRECIOS', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(lote)});
       proc += Object.keys(lote).length;
-      setProg('2', 40 + Math.round(proc/claves.length*55), `${proc} de ${claves.length} clientes...`);
+      setProg('2', 40 + Math.round(proc/claves.length*55), proc+' de '+claves.length+' clientes...');
     }
-    setProg('2', 100, '¡Completado!');
-    const totalArts = Object.values(clientes).reduce((s,v) => s+Object.keys(v).length, 0);
-    showResult('2', true, `✅ ${claves.length} clientes, ${totalArts} precios actualizados`);
-  } catch(e) {
-    showResult('2', false, '❌ Error: ' + e.message);
-  } finally {
-    document.getElementById('btn2').disabled = false;
-  }
+    setProg('2', 100, 'Completado');
+    var totalArts = Object.values(clientes).reduce(function(s,v){return s+Object.keys(v).length;},0);
+    showResult('2', true, 'OK: ' + claves.length + ' clientes, ' + totalArts + ' precios');
+  } catch(e) { showResult('2', false, 'Error: ' + e.message); }
+  finally { document.getElementById('btn2').disabled = false; }
 }
 </script>
 </body>
