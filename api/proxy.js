@@ -55,7 +55,7 @@ export default async function handler(req, res) {
       const clienteId = (req.query.clienteId || '').trim();
       // Traemos todos los clientes — Vercel cachea esta respuesta 24h
       let data = await fetchMicrosip(
-        `${API_BASE}/exsim/servicios/metodo/CLIENTES/${TOKEN}/2000`
+        `${API_BASE}/exsim/servicios/metodo/CLIENTES/${TOKEN}/100`
       );
       if (clienteId) {
         data = data.filter(c => String(c.clave).trim() === clienteId);
