@@ -53,28 +53,15 @@ export default async function handler(req, res) {
     }
 
     // ── CLIENTES ───────────────────────────────────────────
-    if (metodo === 'CLIENTES') {
-      const cantidad   = req.query.cantidad  || '50';
-      const pagina     = req.query.pagina    || '0';
-      const clienteId  = (req.query.clienteId || '').trim();
+if (metodo === 'CLIENTES') {
+  const cantidad  = req.query.cantidad  || '50';
+  const pagina    = req.query.pagina    || '0';
+  const clienteId = req.query.clienteId || '0';
 
-      // Si viene clienteId buscamos en páginas hasta encontrarlo (máx 5 páginas)
-      if (clienteId) {
-        for (let p = 0; p < 5; p++) {
-          const url = `${API_BASE}/exsim/servicios/metodo/CLIENTES/${TOKEN}/50/${p}`;
-          const data = await fetchMicrosip(url);
-          if (!Array.isArray(data) || data.length === 0) break;
-          const found = data.filter(c => String(c.clave).trim() === clienteId);
-          if (found.length) return res.status(200).json(found);
-        }
-        return res.status(200).json([]);
-      }
-
-      // Sin filtro: devuelve la página solicitada
-      const url = `${API_BASE}/exsim/servicios/metodo/CLIENTES/${TOKEN}/${cantidad}/${pagina}`;
-      const data = await fetchMicrosip(url);
-      return res.status(200).json(Array.isArray(data) ? data : []);
-    }
+  const url = `${API_BASE}/exsim/servicios/metodo/CLIENTES/${TOKEN}/${cantidad}/${pagina}/${clienteId}`;
+  const data = await fetchMicrosip(url);
+  return res.status(200).json(Array.isArray(data) ? data : []);
+}
 
     // ── PEDIDOS ────────────────────────────────────────────
     if (metodo === 'PEDIDOS') {
