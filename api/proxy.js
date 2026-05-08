@@ -1,15 +1,24 @@
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=600');
+export const config = { runtime: 'edge' };
 
-  if (req.method === 'OPTIONS') return res.status(200).end();
+export default async function handler(req) {
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Content-Type': 'application/json',
+    'Cache-Control': 's-maxage=3600, stale-while-revalidate=600'
+  };
+
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers });
+  }
+
+  const url = new URL(req.url);
+  const metodo = url.searchParams.get('metodo') || 'ARTICULOS';
+  const cantidad = url.searchParams.get('cantidad') || '700';
 
   const API_BASE = 'http://38.58.46.142:9091';
   const TOKEN = '6GmrWp2KvHh2R4682ciDY09Klu92bv';
-  const metodo = req.query.metodo || 'ARTICULOS';
-  const cantidad = req.query.cantidad || '50';
 
   let apiUrl = '';
   if (metodo === 'ARTICULOS') {
@@ -17,18 +26,17 @@ export default async function handler(req, res) {
   } else if (metodo === 'CLIENTES') {
     apiUrl = `${API_BASE}/exsim/servicios/metodo/CLIENTES/${TOKEN}/${cantidad}`;
   } else if (metodo === 'IMAGENES') {
-    apiUrl = `${API_BASE}/exsim/servicios/metodo/IMAGENES/${TOKEN}/${req.query.id||''}`;
-  } else if (metodo === 'DESCUENTO_CLIENTE') {
-    apiUrl = `${API_BASE}/exsim/servicios/metodo/DESCUENTO_CLIENTE/${TOKEN}/${req.query.clienteId||''}/${req.query.articuloId||''}`;
+    const id = url.searchParams.get('id') || '';
+    apiUrl = `${API_BASE}/exsim/servicios/metodo/IMAGENES/${TOKEN}/${id}`;
   } else {
-    return res.status(200).json({ ok: true });
+    return new Response(JSON.stringify({ ok: true }), { headers });
   }
 
   try {
-    const response = await fetch(apiUrl);
-    let text = await response.text();
+    const resp = await fetch(apiUrl);
+    let text = await resp.text();
     text = text.replace(/[\x00-\x1F\x7F]/g, ' ');
-    
+
     let data;
     try {
       data = JSON.parse(text);
@@ -49,8 +57,8 @@ export default async function handler(req, res) {
     }
 
     if(!data) data = [];
-    
-    // Filtrar solo campos necesarios para reducir tamaño
+
+    // Filtrar solo campos necesarios
     if(metodo === 'ARTICULOS' && Array.isArray(data)){
       data = data.map(a => ({
         id: a.id,
@@ -62,8 +70,8 @@ export default async function handler(req, res) {
       }));
     }
 
-    return res.status(200).json(data);
+    return new Response(JSON.stringify(data), { headers });
   } catch(err){
-    return res.status(500).json({ error: err.message });
+    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers });
   }
 }
