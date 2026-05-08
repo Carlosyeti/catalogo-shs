@@ -181,6 +181,7 @@ let catalogoPorCat = {};
 let catActiva = 'TODAS';
 let carrito = {};
 let preciosCache = {};
+let preciosCliente = {}; // precios fijos por cliente desde Redis
 let catalogoCargado = false;
 
 async function init() {
@@ -191,9 +192,10 @@ async function init() {
     return;
   }
   try {
-    const [clienteRes, historialRes] = await Promise.all([
+    const [clienteRes, historialRes, preciosRes] = await Promise.all([
       fetch(`${PROXY}?metodo=CLIENTES&clienteId=${CLIENTE_ID}`),
-      fetch(`${PROXY}?metodo=HISTORIAL&clienteId=${CLIENTE_ID}`)
+      fetch(`${PROXY}?metodo=HISTORIAL&clienteId=${CLIENTE_ID}`),
+      fetch(`${PROXY}?metodo=PRECIOS_CLIENTE&clienteId=${CLIENTE_ID}`)
     ]);
     const clienteArr = await clienteRes.json();
     clienteData = clienteArr[0] || null;
@@ -205,6 +207,7 @@ async function init() {
     document.getElementById('clienteNombre').textContent = clienteData.nombre;
     const historial = await historialRes.json();
     historialArticulos = historial.articulos || [];
+    preciosCliente = await preciosRes.json() || {};
     document.getElementById('countFrecuentes').textContent = historialArticulos.length;
     await renderFrecuentes();
     cargarCatalogo();
@@ -304,32 +307,34 @@ async function cargarPrecio(nombre, index, tipo) {
   const elId = `precio-${tipo}-${index}`;
   const el = document.getElementById(elId);
   if (!el) return;
+
+  // 1. Precio fijo del cliente (instantáneo desde Redis)
+  if (preciosCliente[nombre] !== undefined) {
+    const p = preciosCliente[nombre];
+    preciosCache[nombre] = p;
+    el.textContent = fmt(p);
+    el.classList.remove('cargando');
+    return;
+  }
+
+  // 2. Ya en caché local
   if (preciosCache[nombre] !== undefined) {
     el.textContent = fmt(preciosCache[nombre]);
     el.classList.remove('cargando');
     return;
   }
-  // Buscar en catálogo
+
+  // 3. Buscar en catálogo y usar PRECIO 1 como fallback
   const art = catalogoCompleto.find(a => a.nombre === nombre);
   if (!art) {
     if (!catalogoCargado) setTimeout(() => cargarPrecio(nombre, index, tipo), 3000);
     return;
   }
-  try {
-    const res = await fetch(`${PROXY}?metodo=DESCUENTO_CLIENTE&clienteId=${clienteData.id}&articuloId=${art.id}&unidades=1`);
-    const data = await res.json();
-    let precio = null;
-    if (Array.isArray(data) && data[0]) precio = data[0].precio || data[0].Precio;
-    else if (data?.precio) precio = data.precio;
-    if (!precio) precio = getPrecio1(art.precios);
-    if (precio !== null) {
-      preciosCache[nombre] = precio;
-      el.textContent = fmt(precio);
-      el.classList.remove('cargando');
-    }
-  } catch {
-    const p = getPrecio1(art?.precios);
-    if (p) { preciosCache[nombre] = p; el.textContent = fmt(p); el.classList.remove('cargando'); }
+  const p1 = getPrecio1(art.precios);
+  if (p1 !== null) {
+    preciosCache[nombre] = p1;
+    el.textContent = fmt(p1);
+    el.classList.remove('cargando');
   }
 }
 
