@@ -1,8 +1,14 @@
+import { Redis } from '@upstash/redis';
+
+const redis = new Redis({
+  url: process.env.KV_REST_API_URL,
+  token: process.env.KV_REST_API_TOKEN,
+});
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=3600');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const API_BASE = 'http://38.58.46.142:9091';
@@ -41,7 +47,7 @@ export default async function handler(req, res) {
       const cantidad = req.query.cantidad || '50';
       const pagina   = req.query.pagina   || '0';
       const artId    = req.query.articuloId || '0';
-      let url = `${API_BASE}/exsim/servicios/metodo/ARTICULOS/${TOKEN}/${cantidad}/${pagina}/${artId}`;
+      const url = `${API_BASE}/exsim/servicios/metodo/ARTICULOS/${TOKEN}/${cantidad}/${pagina}/${artId}`;
       let data = await fetchMicrosip(url);
       if (Array.isArray(data)) {
         data = data.map(a => ({
@@ -53,51 +59,20 @@ export default async function handler(req, res) {
     }
 
     // ── CLIENTES ───────────────────────────────────────────
-if (metodo === 'CLIENTES') {
-  const cantidad  = req.query.cantidad  || '50';
-  const pagina    = req.query.pagina    || '0';
-  const clienteId = req.query.clienteId || '0';
+    if (metodo === 'CLIENTES') {
+      const clienteId = (req.query.clienteId || '').trim();
+      const buscar    = (req.query.buscar || '').trim().toUpperCase();
+      const forzar    = req.query.forzar === '1';
 
-  const url = `${API_BASE}/exsim/servicios/metodo/CLIENTES/${TOKEN}/${cantidad}/${pagina}/${clienteId}`;
-  const data = await fetchMicrosip(url);
-  return res.status(200).json(Array.isArray(data) ? data : []);
-}
-
-    // ── PEDIDOS ────────────────────────────────────────────
-    if (metodo === 'PEDIDOS') {
-      if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Método no permitido. Usa POST.' });
+      // Buscar en caché primero
+      if (clienteId && !forzar) {
+        const cached = await redis.get(`cliente:${clienteId}`);
+        if (cached) return res.status(200).json([cached]);
       }
-      const body = req.body;
-      if (!body || !body.Documento) {
-        return res.status(400).json({ error: 'Body inválido. Se requiere { Documento: {...} }' });
-      }
-      const response = await fetch(
-        `${API_BASE}/exsim/servicios/metodo/PEDIDOS/${TOKEN}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        }
-      );
-      const text = await response.text();
-      let result;
-      try { result = JSON.parse(text); } catch { result = { respuesta: text }; }
-      return res.status(200).json(result);
-    }
 
-    // ── IMAGENES ───────────────────────────────────────────
-    if (metodo === 'IMAGENES') {
-      const pagina = req.query.pagina || '0';
-      const artId  = req.query.articuloId || '0';
-      const url = `${API_BASE}/exsim/servicios/metodo/IMAGENES/${TOKEN}/50/${pagina}/${artId}`;
-      const data = await fetchMicrosip(url);
-      return res.status(200).json(data);
-    }
-
-    return res.status(200).json({ ok: true });
-
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
-}
+      // Si piden reconstruir caché o no encuentran por clave, descargar todo
+      if (forzar || (!clienteId && !buscar)) {
+        // Descargar todos los clientes en background y cachear
+        let pagina = 0;
+        let total = 0;
+        while (tr
