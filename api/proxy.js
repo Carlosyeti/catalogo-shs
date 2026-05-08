@@ -5,6 +5,9 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
+  // Cache de respuesta — Vercel guarda los artículos 1 hora
+  res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=600');
+
   const API_BASE = 'http://38.58.46.142:9091';
   const TOKEN = '6GmrWp2KvHh2R4682ciDY09Klu92bv';
   const metodo = req.query.metodo || 'ARTICULOS';
