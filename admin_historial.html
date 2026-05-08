@@ -4,7 +4,28 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin SHS</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
+async function sincronizarCatalogo() {
+  document.getElementById('btn3').disabled = true;
+  document.getElementById('p3').style.display = 'block';
+  document.getElementById('r3').style.display = 'none';
+  setProg('3', 20, 'Descargando catálogo de Microsip...');
+  try {
+    const res = await fetch(`${PROXY}?metodo=SYNC_ARTICULOS`);
+    const data = await res.json();
+    if (data.ok) {
+      setProg('3', 100, '¡Completado!');
+      showResult('3', true, `✅ ${data.total} artículos sincronizados`);
+    } else {
+      showResult('3', false, '❌ Error: ' + JSON.stringify(data));
+    }
+  } catch(e) {
+    showResult('3', false, '❌ Error: ' + e.message);
+  } finally {
+    document.getElementById('btn3').disabled = false;
+  }
+}
+</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
@@ -57,6 +78,20 @@ input[type=file]{display:none}
     <button class="btn" id="btn1" disabled onclick="subirHistorial()">Actualizar historial</button>
     <div class="progress" id="p1"><div class="bar-bg"><div class="bar" id="b1"></div></div><div class="progress-txt" id="pt1"></div></div>
     <div class="result" id="r1"></div>
+  </div>
+
+  <!-- CATALOGO -->
+  <div class="seccion">
+    <h2>📦 Catálogo de artículos</h2>
+    <div class="instrucciones">
+      <ul>
+        <li>Sincroniza el catálogo completo de Microsip a Redis</li>
+        <li>Hazlo una vez al mes o cuando agregues productos nuevos</li>
+      </ul>
+    </div>
+    <button class="btn" id="btn3" onclick="sincronizarCatalogo()">Sincronizar catálogo desde Microsip</button>
+    <div class="progress" id="p3"><div class="bar-bg"><div class="bar" id="b3"></div></div><div class="progress-txt" id="pt3"></div></div>
+    <div class="result" id="r3"></div>
   </div>
 
   <!-- PRECIOS -->
