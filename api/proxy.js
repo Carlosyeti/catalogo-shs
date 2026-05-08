@@ -193,6 +193,59 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, total, mensaje: `${total} clientes sincronizados` });
     }
 
+    // ── TEST_PEDIDO — prueba con JSON mínimo de la documentación ──
+    if (metodo === 'TEST_PEDIDO') {
+      const body = {
+        Documento: {
+          Cliente: {
+            Nombre: "FARMACIAS DE SIMILARES",
+            DirClienteID: 10432,
+            NomDireccion: "Direccion principal",
+            RFC: "FSI970908ML5",
+            Clave: "0135",
+            Calle: "ALEMANIA",
+            Num_interior: "",
+            Num_exterior: "10",
+            Poblacion: "",
+            Referencia: "",
+            Colonia: "INDEPENDENCIA",
+            Ciudad: "DELEGACION BENITO JUAREZ",
+            Estado: "CIUDAD DE MEXICO",
+            Pais: "MEXICO",
+            Telefono1: "314 35 49",
+            Telefono2: "",
+            Fax: "",
+            Email: "0099@fsimilares.com",
+            CodigoPostal: "03630",
+            Notas: "Pedido de prueba"
+          },
+          Encabezado: {
+            OrdenCompra: "TEST001",
+            Descripcion: "Pedido de prueba",
+            MetodoPago: "Pago manual",
+            EstatusPago: "Pendiente",
+            Almacen: "CEDIS COLIMA"
+          },
+          Detalle: [{
+            NombreArticulo: "PASTILLA WIESE 70 GRS",
+            Unidades: 1,
+            Precio: 11.27,
+            Descuento: 0,
+            Importe: 11.27,
+            DescuentoExtra: 0
+          }]
+        }
+      };
+      const response = await fetch(
+        `${API_BASE}/exsim/servicios/metodo/PEDIDOS/${TOKEN}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+      );
+      const text = await response.text();
+      let result;
+      try { result = JSON.parse(text); } catch { result = { respuesta: text }; }
+      return res.status(200).json(result);
+    }
+
     if (metodo === 'PEDIDOS') {
       if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido.' });
       const body = req.body;
