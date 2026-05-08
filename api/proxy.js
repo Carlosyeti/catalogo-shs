@@ -57,13 +57,11 @@ export default async function handler(req, res) {
     if (metodo === 'CLIENTES') {
       const clienteId = (req.query.clienteId || '').trim();
       const buscar    = (req.query.buscar || '').trim().toUpperCase();
-
       if (clienteId) {
         const cached = await redis.get(`cliente:${clienteId}`);
         if (cached) return res.status(200).json([JSON.parse(cached)]);
         return res.status(200).json([]);
       }
-
       if (buscar) {
         const keys = await redis.keys('cliente:*');
         const resultados = [];
@@ -71,14 +69,11 @@ export default async function handler(req, res) {
           const raw = await redis.get(key);
           if (raw) {
             const c = JSON.parse(raw);
-            if (c.nombre && c.nombre.toUpperCase().includes(buscar)) {
-              resultados.push(c);
-            }
+            if (c.nombre && c.nombre.toUpperCase().includes(buscar)) resultados.push(c);
           }
         }
         return res.status(200).json(resultados);
       }
-
       return res.status(200).json([]);
     }
 
@@ -90,17 +85,34 @@ export default async function handler(req, res) {
       return res.status(200).json({ articulos: [] });
     }
 
+    // Devuelve precios personalizados del cliente
+    if (metodo === 'PRECIOS_CLIENTE') {
+      const clienteId = (req.query.clienteId || '').trim();
+      if (!clienteId) return res.status(400).json({ error: 'clienteId requerido' });
+      const cached = await redis.get(`precios:${clienteId}`);
+      if (cached) return res.status(200).json(JSON.parse(cached));
+      return res.status(200).json({});
+    }
+
     if (metodo === 'SYNC_HISTORIAL') {
-      if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Usar POST' });
-      }
+      if (req.method !== 'POST') return res.status(405).json({ error: 'Usar POST' });
       const payload = req.body;
-      if (!payload || typeof payload !== 'object') {
-        return res.status(400).json({ error: 'Body inválido' });
-      }
+      if (!payload || typeof payload !== 'object') return res.status(400).json({ error: 'Body inválido' });
       let total = 0;
       for (const [clave, data] of Object.entries(payload)) {
         await redis.set(`historial:${clave}`, JSON.stringify(data));
+        total++;
+      }
+      return res.status(200).json({ ok: true, total });
+    }
+
+    if (metodo === 'SYNC_PRECIOS') {
+      if (req.method !== 'POST') return res.status(405).json({ error: 'Usar POST' });
+      const payload = req.body;
+      if (!payload || typeof payload !== 'object') return res.status(400).json({ error: 'Body inválido' });
+      let total = 0;
+      for (const [clave, precios] of Object.entries(payload)) {
+        await redis.set(`precios:${clave}`, JSON.stringify(precios));
         total++;
       }
       return res.status(200).json({ ok: true, total });
@@ -133,20 +145,12 @@ export default async function handler(req, res) {
     }
 
     if (metodo === 'PEDIDOS') {
-      if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Método no permitido. Usa POST.' });
-      }
+      if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido. Usa POST.' });
       const body = req.body;
-      if (!body || !body.Documento) {
-        return res.status(400).json({ error: 'Body inválido. Se requiere { Documento: {...} }' });
-      }
+      if (!body || !body.Documento) return res.status(400).json({ error: 'Body inválido.' });
       const response = await fetch(
         `${API_BASE}/exsim/servicios/metodo/PEDIDOS/${TOKEN}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        }
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
       );
       const text = await response.text();
       let result;
