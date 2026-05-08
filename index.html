@@ -469,7 +469,7 @@ async function enviarPedido() {
           Descripcion: `Pedido app - ${clienteData.nombre}`,
           MetodoPago: clienteData.condicion_pago?.nombre_condicion || 'CONTADO',
           EstatusPago: 'Pendiente',
-          Almacen: ''
+          Almacen: 'CEDIS COLIMA'
         },
         Detalle: items.map(item => ({
           NombreArticulo: item.nombre,
