@@ -85,6 +85,10 @@ body{font-family:'Nunito',sans-serif;background:var(--gris);color:var(--texto);m
 .btn-enviar{width:100%;background:var(--verde);color:white;border:none;border-radius:12px;padding:16px;font-family:'Nunito',sans-serif;font-weight:800;font-size:16px;cursor:pointer;transition:background 0.2s}
 .btn-enviar:hover{background:var(--verde-dark)}
 .btn-enviar:disabled{background:#94a3b8;cursor:not-allowed}
+.btn-pagar{width:100%;background:white;color:var(--azul);border:2px solid var(--azul);border-radius:12px;padding:14px;font-family:'Nunito',sans-serif;font-weight:800;font-size:16px;cursor:pointer;transition:all 0.2s;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-pagar:hover{background:var(--azul-light)}
+.btn-pagar:disabled{opacity:0.5;cursor:not-allowed}
+.stripe-badge{font-size:11px;color:var(--texto-suave);text-align:center;margin-top:8px}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:300;align-items:center;justify-content:center}
 .modal-overlay.abierto{display:flex}
 .modal{background:white;border-radius:20px;padding:40px 32px;max-width:340px;width:90%;text-align:center}
@@ -151,6 +155,8 @@ body{font-family:'Nunito',sans-serif;background:var(--gris);color:var(--texto);m
   <div class="carrito-footer">
     <div class="carrito-total"><span>Total estimado:</span><strong id="carritoTotal">$0.00</strong></div>
     <button class="btn-enviar" id="btnEnviar" onclick="enviarPedido()">Enviar pedido a SHS</button>
+    <button class="btn-pagar" id="btnPagar" onclick="pagarConTarjeta()">💳 Pagar con tarjeta</button>
+    <div class="stripe-badge">Pago seguro procesado por Stripe 🔒</div>
   </div>
 </div>
 
@@ -166,6 +172,7 @@ body{font-family:'Nunito',sans-serif;background:var(--gris);color:var(--texto);m
 
 <script>
 const PROXY = 'https://catalogo-shs.vercel.app/api/proxy';
+const STRIPE_PK = 'pk_test_51TVOt48TiQRhmCErwixt3YcducL2Ra96H1NFkzq1lLtOI32jp7KQewwm5UelfmgFmsqFIswY22rcqyl5Ni2uvZgo00b9zViVsl';
 const params = new URLSearchParams(window.location.search);
 const CLIENTE_ID = params.get('cliente') || '';
 
