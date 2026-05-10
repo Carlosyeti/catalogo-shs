@@ -7,12 +7,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 /* SPLASH SCREEN */
-.splash{position:fixed;inset:0;background:var(--azul);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.5s ease}
+.splash{position:fixed;inset:0;background:#ffffff;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.5s ease}
 .splash.oculto{opacity:0;pointer-events:none}
-.splash-logo{font-size:56px;font-weight:900;color:white;letter-spacing:-2px}
+.splash-logo{font-size:56px;font-weight:900;color:#1e4bcc;letter-spacing:-2px}
 .splash-logo span{color:#7ac143}
-.splash-sub{color:rgba(255,255,255,0.7);font-size:14px;margin-top:8px;font-family:'Nunito',sans-serif}
-.splash-spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.7s linear infinite;margin-top:32px}
+.splash-sub{color:#64748b;font-size:14px;margin-top:8px;font-family:'Nunito',sans-serif}
+.splash-spinner{width:32px;height:32px;border:3px solid #e2e8f0;border-top-color:#1e4bcc;border-radius:50%;animation:spin 0.7s linear infinite;margin-top:32px}
 
 /* MODO OSCURO */
 [data-theme="dark"]{
@@ -156,7 +156,7 @@ body{font-family:'Nunito',sans-serif;background:var(--gris);color:var(--texto);m
   <img src="https://catalogo-shs.vercel.app/MASCOTA_2.png" alt="SHS" style="width:140px;height:auto;margin-bottom:8px;animation:splashBounce 0.6s ease">
   <div class="splash-logo">SHS<span>✓</span></div>
   <div class="splash-sub">Surtidora de Higiénicos y Servicios</div>
-  <div id="splashSaludo" style="color:rgba(255,255,255,0.9);font-size:15px;font-family:'Nunito',sans-serif;font-weight:700;margin-top:16px;text-align:center;max-width:280px;line-height:1.5;display:none"></div>
+  <div id="splashSaludo" style="color:#1e4bcc;font-size:15px;font-family:'Nunito',sans-serif;font-weight:700;margin-top:16px;text-align:center;max-width:280px;line-height:1.5;display:none"></div>
   <div class="splash-spinner"></div>
 </div>
 
