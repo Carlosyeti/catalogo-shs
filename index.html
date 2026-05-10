@@ -6,6 +6,37 @@
 <title>Pedidos SHS</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
+/* SPLASH SCREEN */
+.splash{position:fixed;inset:0;background:var(--azul);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.5s ease}
+.splash.oculto{opacity:0;pointer-events:none}
+.splash-logo{font-size:56px;font-weight:900;color:white;letter-spacing:-2px}
+.splash-logo span{color:#7ac143}
+.splash-sub{color:rgba(255,255,255,0.7);font-size:14px;margin-top:8px;font-family:'Nunito',sans-serif}
+.splash-spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.7s linear infinite;margin-top:32px}
+
+/* MODO OSCURO */
+[data-theme="dark"]{
+  --azul:#4d7cff;--azul-dark:#3d6be8;--azul-light:#1a2744;
+  --verde:#7ac143;--verde-dark:#5fa030;
+  --gris:#0f1117;--texto:#e8eaf0;--texto-suave:#8b92a5;
+  --borde:#2a2d3a;--blanco:#1a1d2e;--sombra:0 2px 16px rgba(0,0,0,0.4);
+}
+[data-theme="dark"] body{background:#0f1117}
+[data-theme="dark"] .producto-card,[data-theme="dark"] .carrito-panel,[data-theme="dark"] .tabs,[data-theme="dark"] .modal{background:#1a1d2e}
+[data-theme="dark"] .header{background:#0d1b3e}
+[data-theme="dark"] .bienvenida{background:linear-gradient(135deg,#0d1b3e 0%,#1a2d6e 100%)}
+[data-theme="dark"] .carrito-campo input,[data-theme="dark"] .carrito-campo textarea{background:#0f1117;color:var(--texto);border-color:var(--borde)}
+[data-theme="dark"] .cat-tab{background:#1a1d2e;border-color:#2a2d3a;color:var(--texto-suave)}
+[data-theme="dark"] .historial-card{background:#0f1117}
+
+/* BOTÓN MODO OSCURO */
+.btn-dark{background:rgba(255,255,255,0.15);border:none;color:white;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:background 0.2s}
+.btn-dark:hover{background:rgba(255,255,255,0.25)}
+
+/* WHATSAPP */
+.btn-whatsapp{position:fixed;bottom:24px;right:24px;background:#25D366;color:white;border:none;border-radius:50px;padding:12px 20px;font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 4px 16px rgba(37,211,102,0.4);display:flex;align-items:center;gap:8px;z-index:150;transition:all 0.2s}
+.btn-whatsapp:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(37,211,102,0.5)}
+
 :root {
   --azul:#1e4bcc; --azul-dark:#163799; --azul-light:#e8eefb;
   --verde:#7ac143; --verde-dark:#5fa030;
@@ -119,10 +150,24 @@ body{font-family:'Nunito',sans-serif;background:var(--gris);color:var(--texto);m
 </head>
 <body>
 
+<!-- SPLASH -->
+<div class="splash" id="splash">
+  <div class="splash-logo">SHS<span>✓</span></div>
+  <div class="splash-sub">Surtidora de Higiénicos y Servicios</div>
+  <div class="splash-spinner"></div>
+</div>
+
+<!-- WHATSAPP FLOTANTE -->
+<button class="btn-whatsapp" id="btnWhatsApp" onclick="abrirWhatsApp()" style="display:none">
+  💬 Contactar vendedora
+</button>
+
 <div class="header">
   <div class="header-inner">
     <div class="logo-text">SHS<span>✓</span></div>
-    <button class="carrito-btn" onclick="abrirCarrito()">
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="btn-dark" onclick="toggleDarkMode()" id="btnDark" title="Modo oscuro">🌙</button>
+        <button class="carrito-btn" onclick="abrirCarrito()">
       🛒 Carrito <div class="carrito-badge" id="carritoCount">0</div>
     </button>
   </div>
@@ -250,6 +295,7 @@ async function init() {
       return;
     }
     document.getElementById('clienteNombre').textContent = clienteData.nombre;
+    mostrarBtnWhatsApp();
     const historial = await historialRes.json();
     historialArticulos = historial.articulos || [];
     preciosCliente = await preciosRes.json() || {};
@@ -623,6 +669,50 @@ function cerrarCarrito() {
   document.getElementById('overlay').classList.remove('abierto');
 }
 function cerrarModal() { document.getElementById('modalExito').classList.remove('abierto'); }
+
+// SPLASH SCREEN
+function ocultarSplash() {
+  setTimeout(function() {
+    var splash = document.getElementById('splash');
+    if (splash) { splash.classList.add('oculto'); setTimeout(function(){ splash.style.display='none'; }, 500); }
+  }, 1500);
+}
+
+// MODO OSCURO
+function toggleDarkMode() {
+  var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('btnDark').textContent = isDark ? '🌙' : '☀️';
+  localStorage.setItem('shs_dark_mode', isDark ? '0' : '1');
+}
+
+function initDarkMode() {
+  if (localStorage.getItem('shs_dark_mode') === '1') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    var btn = document.getElementById('btnDark');
+    if (btn) btn.textContent = '☀️';
+  }
+}
+
+// WHATSAPP DIRECTO
+function abrirWhatsApp() {
+  var vendedora = clienteData?.vendedor?.nombre_vendedor || '';
+  var telefonos = {
+    'TELEMARKETING 1': '523121054317',
+    'TELEMARKETING 2': '523121054317',
+    'TELEMARKETING 3': '523121054317',
+    'TELEMARKETING 4': '523121054317'
+  };
+  var telefono = telefonos[vendedora] || '523121054317';
+  var nombre = clienteData?.nombre || 'cliente';
+  var msg = encodeURIComponent(`Hola, soy ${nombre}. Tengo una pregunta sobre mi pedido en la app de SHS.`);
+  window.open(`https://wa.me/${telefono}?text=${msg}`, '_blank');
+}
+
+function mostrarBtnWhatsApp() {
+  var btn = document.getElementById('btnWhatsApp');
+  if (btn) btn.style.display = 'flex';
+}
 
 // HISTORIAL DE PEDIDOS (localStorage del navegador)
 function guardarEnHistorial(items, total) {
