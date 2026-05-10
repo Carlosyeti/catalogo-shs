@@ -33,9 +33,32 @@ input[type=file]{display:none}
 .result{margin-top:16px;padding:14px;border-radius:10px;display:none;font-size:14px}
 .result.ok{background:#f0fdf4;border:1px solid #86efac;color:#166534}
 .result.err{background:#fef2f2;border:1px solid #fca5a5;color:#991b1b}
+
+/* LOGIN */
+.login-overlay{position:fixed;inset:0;background:#f0f4f8;display:flex;align-items:center;justify-content:center;z-index:9999}
+.login-box{background:white;border-radius:16px;padding:40px 32px;max-width:360px;width:90%;box-shadow:0 4px 24px rgba(0,0,0,0.10);text-align:center}
+.login-logo{font-size:28px;font-weight:900;color:#1e4bcc;margin-bottom:4px}
+.login-logo span{color:#7ac143}
+.login-sub{color:#64748b;font-size:13px;margin-bottom:28px}
+.login-box input{width:100%;padding:13px 16px;border:2px solid #e2e8f0;border-radius:10px;font-size:15px;font-family:'Segoe UI',sans-serif;outline:none;text-align:center;letter-spacing:2px;transition:border-color 0.2s;margin-bottom:12px}
+.login-box input:focus{border-color:#1e4bcc}
+.login-btn{width:100%;padding:13px;border-radius:10px;border:none;font-size:15px;font-weight:700;cursor:pointer;background:#1e4bcc;color:white;transition:background 0.2s}
+.login-btn:hover{background:#163799}
+.login-error{color:#dc2626;font-size:13px;font-weight:600;margin-top:10px;display:none}
 </style>
 </head>
 <body>
+
+<!-- LOGIN OVERLAY -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div class="login-logo">SHS<span>✓</span></div>
+    <div class="login-sub">Panel de administración</div>
+    <input type="password" id="loginInput" placeholder="Contraseña" onkeydown="if(event.key==='Enter') verificarLogin()">
+    <button class="login-btn" onclick="verificarLogin()">Entrar</button>
+    <div class="login-error" id="loginError">Contraseña incorrecta</div>
+  </div>
+</div>
 <div class="container">
   <h1>Administracion SHS</h1>
   <p class="subtitle">Actualizar historial, catalogo y precios por cliente</p>
@@ -96,6 +119,39 @@ input[type=file]{display:none}
 </div>
 
 <script>
+// ── CONTRASEÑA ADMIN ──────────────────────────────────────────
+// Hash SHA-256 de la contraseña. Para cambiarla, genera el nuevo hash en:
+// https://emn178.github.io/online-tools/sha256.html  y reemplaza PASS_HASH.
+// Contraseña actual: SHS2026
+var PASS_HASH = '1cbd0bb64247a05158a3344894a3a74bc1c58778edbe6f5cdded9e6e4d541d9b';
+
+async function hashStr(str) {
+  var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+}
+
+async function verificarLogin() {
+  var input = document.getElementById('loginInput').value;
+  var h = await hashStr(input);
+  if (h === PASS_HASH) {
+    sessionStorage.setItem('shs_admin_ok', '1');
+    document.getElementById('loginOverlay').style.display = 'none';
+  } else {
+    var err = document.getElementById('loginError');
+    err.style.display = 'block';
+    document.getElementById('loginInput').value = '';
+    setTimeout(function(){ err.style.display = 'none'; }, 2000);
+  }
+}
+
+(function() {
+  if (sessionStorage.getItem('shs_admin_ok') === '1') {
+    document.getElementById('loginOverlay').style.display = 'none';
+  }
+  setTimeout(function(){ document.getElementById('loginInput').focus(); }, 100);
+})();
+// ─────────────────────────────────────────────────────────────
+
 var PROXY = 'https://catalogo-shs.vercel.app/api/proxy';
 var archivos = {};
 
