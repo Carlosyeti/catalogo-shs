@@ -89,6 +89,22 @@ body{font-family:'Nunito',sans-serif;background:var(--gris);color:var(--texto);m
 .btn-pagar:hover{background:var(--azul-light)}
 .btn-pagar:disabled{opacity:0.5;cursor:not-allowed}
 .stripe-badge{font-size:11px;color:var(--texto-suave);text-align:center;margin-top:8px}
+.carrito-extras{padding:0 0 12px 0}
+.carrito-campo{margin-bottom:10px}
+.carrito-campo label{font-size:12px;font-weight:700;color:var(--texto-suave);display:block;margin-bottom:4px}
+.carrito-campo input,.carrito-campo textarea,.carrito-campo select{width:100%;padding:10px 12px;border:2px solid var(--borde);border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s}
+.carrito-campo input:focus,.carrito-campo textarea:focus{border-color:var(--azul)}
+.carrito-campo textarea{resize:none;height:60px}
+.alerta-hora{background:#FFF3CD;border:1px solid #FFC107;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:700;color:#856404;margin-bottom:10px;display:none}
+.alerta-rollo{background:#FFF3CD;border:1px solid #FFC107;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:700;color:#856404;margin-bottom:10px;display:none}
+.modal-gracias{font-size:13px;color:var(--texto-suave);margin-bottom:12px;line-height:1.5}
+.historial-section{margin-top:20px;border-top:2px solid var(--borde);padding-top:16px}
+.historial-title{font-size:14px;font-weight:800;color:var(--texto);margin-bottom:12px}
+.historial-card{background:var(--gris);border-radius:10px;padding:12px;margin-bottom:8px}
+.historial-fecha{font-size:11px;color:var(--texto-suave);font-weight:700}
+.historial-items{font-size:12px;color:var(--texto);margin-top:4px}
+.historial-total{font-size:13px;font-weight:800;color:var(--azul);margin-top:4px}
+.cat-count{font-size:10px;color:var(--texto-suave);background:var(--gris);border-radius:50px;padding:1px 6px;margin-left:4px}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:300;align-items:center;justify-content:center}
 .modal-overlay.abierto{display:flex}
 .modal{background:white;border-radius:20px;padding:40px 32px;max-width:340px;width:90%;text-align:center}
@@ -152,7 +168,29 @@ body{font-family:'Nunito',sans-serif;background:var(--gris);color:var(--texto);m
   <div class="carrito-items" id="carritoItems">
     <div class="empty"><div class="empty-icon">🛒</div><h3>Tu pedido está vacío</h3><p>Agrega productos para continuar</p></div>
   </div>
+  <div style="padding:0 16px 16px">
+    <div class="historial-section">
+      <div class="historial-title">🕐 Mis últimos pedidos</div>
+      <div id="historialPedidos"><p style="font-size:13px;color:var(--texto-suave);text-align:center">Aún no tienes pedidos registrados</p></div>
+    </div>
+  </div>
   <div class="carrito-footer">
+    <div class="carrito-extras">
+      <div class="alerta-hora" id="alertaHora">⚠️ Tu pedido fue realizado después de las 2:00 pm. No se garantiza entrega el mismo día — podría ser al día siguiente, salvo que haya chofer disponible.</div>
+      <div class="alerta-rollo" id="alertaRollo">⚠️ Tu pedido incluye bolsas en rollo. El monto total es un <strong>aproximado</strong> ya que cada rollo tiene un peso diferente. El importe final puede variar.</div>
+      <div class="carrito-campo">
+        <label>📅 Fecha de entrega deseada</label>
+        <input type="date" id="fechaEntrega" min="">
+      </div>
+      <div class="carrito-campo">
+        <label>📍 Dirección de entrega <span style="font-weight:400;color:#94a3b8">(opcional — solo si es diferente a tu dirección registrada)</span></label>
+        <textarea id="direccionEntrega" placeholder="Ej: Av. Tecnológico 123, Col. Centro, Colima"></textarea>
+      </div>
+      <div class="carrito-campo">
+        <label>📝 Notas adicionales <span style="font-weight:400;color:#94a3b8">(opcional)</span></label>
+        <input type="text" id="notasExtra" placeholder="Instrucciones especiales para tu pedido">
+      </div>
+    </div>
     <div class="carrito-total"><span>Total estimado:</span><strong id="carritoTotal">$0.00</strong></div>
     <button class="btn-enviar" id="btnEnviar" onclick="enviarPedido()">Enviar pedido a SHS</button>
     <button class="btn-pagar" id="btnPagar" onclick="pagarConTarjeta()">💳 Pagar con tarjeta</button>
@@ -164,7 +202,7 @@ body{font-family:'Nunito',sans-serif;background:var(--gris);color:var(--texto);m
   <div class="modal">
     <div class="modal-icon">🎉</div>
     <h3>¡Pedido enviado!</h3>
-    <p>Tu pedido fue recibido correctamente. Te contactaremos pronto.</p>
+    <p class="modal-gracias">Gracias por tu preferencia, <strong id="modalClienteNombre"></strong>. Tu pedido fue recibido y pronto nos pondremos en contacto contigo. 🙌</p>
     <div class="modal-folio" id="modalFolio">Folio: —</div>
     <button class="btn-modal" onclick="cerrarModal()">Listo</button>
   </div>
@@ -281,10 +319,13 @@ async function cargarCatalogo() {
 
 function renderCatTabs() {
   const cats = ['TODAS', ...Object.keys(CAT_EMOJIS).filter(c => catalogoPorCat[c])];
-  document.getElementById('catTabs').innerHTML = cats.map(cat => `
-    <button class="cat-tab ${cat === catActiva ? 'activo' : ''}" onclick="selCat('${cat}')">
+  document.getElementById('catTabs').innerHTML = cats.map(cat => {
+    const count = cat === 'TODAS' ? catalogoCompleto.length : (catalogoPorCat[cat]?.length || 0);
+    return `<button class="cat-tab ${cat === catActiva ? 'activo' : ''}" onclick="selCat('${cat}')">
       ${cat === 'TODAS' ? '🔍 Todas' : (CAT_EMOJIS[cat] || '📦') + ' ' + cat}
-    </button>`).join('');
+      <span class="cat-count">${count}</span>
+    </button>`;
+  }).join('');
 }
 
 function selCat(cat) {
@@ -408,11 +449,34 @@ function actualizarCtrl(nombre, tipo, index) {
     : `<button class="btn-agregar" onclick="agregar('${esc(nombre)}','${tipo}',${index})">Agregar</button>`;
 }
 
+function verificarAlertas() {
+  const items = Object.values(carrito);
+  
+  // Alerta hora
+  const hora = new Date().getHours();
+  const alertaHora = document.getElementById('alertaHora');
+  if (alertaHora) alertaHora.style.display = (items.length > 0 && hora >= 14) ? 'block' : 'none';
+  
+  // Alerta bolsas en rollo
+  const tieneRollo = items.some(i => i.nombre.toUpperCase().includes('BOLSA') && i.nombre.toUpperCase().includes('ROLLO'));
+  const alertaRollo = document.getElementById('alertaRollo');
+  if (alertaRollo) alertaRollo.style.display = tieneRollo ? 'block' : 'none';
+  
+  // Deshabilitar pago con tarjeta si hay bolsas en rollo
+  const btnPagar = document.getElementById('btnPagar');
+  if (btnPagar) {
+    btnPagar.disabled = tieneRollo;
+    btnPagar.title = tieneRollo ? 'No disponible cuando el pedido incluye bolsas en rollo' : '';
+    btnPagar.style.opacity = tieneRollo ? '0.4' : '1';
+  }
+}
+
 function actualizarCarritoUI() {
   const items = Object.values(carrito);
   const totalUnid = items.reduce((s, i) => s + i.cantidad, 0);
   const totalPesos = items.reduce((s, i) => s + i.precio * i.cantidad, 0);
   document.getElementById('carritoCount').textContent = totalUnid;
+  verificarAlertas();
   document.getElementById('carritoTotal').textContent = fmt(totalPesos);
   if (items.length === 0) {
     document.getElementById('carritoItems').innerHTML = `<div class="empty"><div class="empty-icon">🛒</div><h3>Tu pedido está vacío</h3><p>Agrega productos para continuar</p></div>`;
@@ -469,7 +533,7 @@ async function enviarPedido() {
           Telefono2: '', Fax: '',
           Email: clienteData.email || '',
           CodigoPostal: dir.codigo_postal || '',
-          Notas: 'Pedido realizado desde app web SHS'
+          Notas: `Pedido app web SHS | Entrega: ${document.getElementById('fechaEntrega')?.value || 'No especificada'} | Dir: ${document.getElementById('direccionEntrega')?.value || 'Dirección registrada'} | ${document.getElementById('notasExtra')?.value || ''}`
         },
         Encabezado: {
           OrdenCompra: '',
@@ -488,13 +552,17 @@ async function enviarPedido() {
         }))
       }
     };
+    const totalPesos = items.reduce((s, i) => s + i.precio * i.cantidad, 0);
     const res = await fetch(`${PROXY}?metodo=PEDIDOS`, {
       method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
     });
     const data = await res.json();
     const folio = data.Folio || data.folio || data.respuesta || '—';
+    // Guardar en historial local
+    guardarEnHistorial(items, totalPesos);
     carrito = {}; actualizarCarritoUI(); cerrarCarrito();
     document.getElementById('modalFolio').textContent = `Folio: ${folio}`;
+    document.getElementById('modalClienteNombre').textContent = clienteData?.nombre || '';
     document.getElementById('modalExito').classList.add('abierto');
   } catch {
     alert('Error al enviar. Intenta de nuevo.');
@@ -542,7 +610,12 @@ function cambiarTab(tab) {
 }
 
 function abrirCarrito() {
+  // Establecer fecha mínima de entrega (hoy)
+  const hoy = new Date().toISOString().split('T')[0];
+  const fechaInput = document.getElementById('fechaEntrega');
+  if (fechaInput) { fechaInput.min = hoy; if (!fechaInput.value) fechaInput.value = hoy; }
   document.getElementById('carritoPanel').classList.add('abierto');
+  renderHistorial();
   document.getElementById('overlay').classList.add('abierto');
 }
 function cerrarCarrito() {
@@ -550,6 +623,40 @@ function cerrarCarrito() {
   document.getElementById('overlay').classList.remove('abierto');
 }
 function cerrarModal() { document.getElementById('modalExito').classList.remove('abierto'); }
+
+// HISTORIAL DE PEDIDOS (localStorage del navegador)
+function guardarEnHistorial(items, total) {
+  try {
+    const historial = JSON.parse(localStorage.getItem(`historial_pedidos_${CLIENTE_ID}`) || '[]');
+    const nuevo = {
+      fecha: new Date().toLocaleDateString('es-MX', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'}),
+      items: items.map(i => ({ nombre: i.nombre, cantidad: i.cantidad, precio: i.precio })),
+      total: total
+    };
+    historial.unshift(nuevo);
+    const ultimos3 = historial.slice(0, 3);
+    localStorage.setItem(`historial_pedidos_${CLIENTE_ID}`, JSON.stringify(ultimos3));
+    renderHistorial();
+  } catch(e) {}
+}
+
+function renderHistorial() {
+  try {
+    const historial = JSON.parse(localStorage.getItem(`historial_pedidos_${CLIENTE_ID}`) || '[]');
+    const container = document.getElementById('historialPedidos');
+    if (!container) return;
+    if (historial.length === 0) {
+      container.innerHTML = '<p style="font-size:13px;color:var(--texto-suave);text-align:center">Aún no tienes pedidos registrados</p>';
+      return;
+    }
+    container.innerHTML = historial.map(p => `
+      <div class="historial-card">
+        <div class="historial-fecha">📅 ${p.fecha}</div>
+        <div class="historial-items">${p.items.map(i => `${i.cantidad}x ${i.nombre}`).join(' · ')}</div>
+        <div class="historial-total">${fmt(p.total)}</div>
+      </div>`).join('');
+  } catch(e) {}
+}
 
 // PAGO CON STRIPE
 async function pagarConTarjeta() {
