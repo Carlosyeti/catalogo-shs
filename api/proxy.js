@@ -272,8 +272,10 @@ export default async function handler(req, res) {
     // ── STRIPE — crear sesión de pago ──────────────────
     if (metodo === 'CREAR_PAGO') {
       if (req.method !== 'POST') return res.status(405).json({ error: 'Usar POST' });
-      const { items, clienteNombre, clienteId } = req.body;
-      if (!items || !items.length) return res.status(400).json({ error: 'Sin artículos' });
+      let bodyData = req.body;
+      if (typeof bodyData === 'string') { try { bodyData = JSON.parse(bodyData); } catch(e) {} }
+      const { items, clienteNombre, clienteId } = bodyData || {};
+      if (!items || !items.length) return res.status(400).json({ error: 'Sin artículos', body: bodyData });
 
       const lineItems = items.map(item => ({
         price_data: {
