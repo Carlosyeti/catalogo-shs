@@ -74,7 +74,7 @@ body{font-family:'Nunito',sans-serif;background:var(--gris);color:var(--texto);m
 .cat-tabs::-webkit-scrollbar{display:none}
 .cat-tab{background:white;border:2px solid var(--borde);border-radius:50px;padding:7px 14px;font-family:'Nunito',sans-serif;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;transition:all 0.2s;flex-shrink:0}
 .cat-tab.activo{background:var(--azul);border-color:var(--azul);color:white}
-.producto-card{background:white;border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--sombra);display:flex;align-items:center;gap:14px;transition:transform 0.15s}
+.producto-card{background:#ffffff;border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:0 2px 12px rgba(30,75,204,0.08);display:flex;align-items:center;gap:14px;transition:transform 0.15s;border:1px solid #f0f4ff}
 .producto-card:active{transform:scale(0.98)}
 .producto-icono{width:44px;height:44px;background:var(--azul-light);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
 .producto-info{flex:1;min-width:0}
@@ -92,6 +92,7 @@ body{font-family:'Nunito',sans-serif;background:var(--gris);color:var(--texto);m
 .loading{text-align:center;padding:40px;color:var(--texto-suave)}
 .spinner{width:36px;height:36px;border:3px solid var(--azul-light);border-top-color:var(--azul);border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 12px}
 @keyframes spin{to{transform:rotate(360deg)}}
+@keyframes splashBounce{0%{transform:scale(0.5);opacity:0}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
 .empty{text-align:center;padding:48px 24px;color:var(--texto-suave)}
 .empty-icon{font-size:48px;margin-bottom:12px}
 .empty h3{font-weight:800;color:var(--texto);margin-bottom:6px}
@@ -152,9 +153,10 @@ body{font-family:'Nunito',sans-serif;background:var(--gris);color:var(--texto);m
 
 <!-- SPLASH -->
 <div class="splash" id="splash">
+  <img src="https://catalogo-shs.vercel.app/MASCOTA_2.png" alt="SHS" style="width:140px;height:auto;margin-bottom:8px;animation:splashBounce 0.6s ease">
   <div class="splash-logo">SHS<span>✓</span></div>
   <div class="splash-sub">Surtidora de Higiénicos y Servicios</div>
-  <div id="splashSaludo" style="color:rgba(255,255,255,0.9);font-size:15px;font-family:'Nunito',sans-serif;font-weight:700;margin-top:20px;text-align:center;max-width:280px;line-height:1.5;display:none"></div>
+  <div id="splashSaludo" style="color:rgba(255,255,255,0.9);font-size:15px;font-family:'Nunito',sans-serif;font-weight:700;margin-top:16px;text-align:center;max-width:280px;line-height:1.5;display:none"></div>
   <div class="splash-spinner"></div>
 </div>
 
