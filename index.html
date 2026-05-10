@@ -154,6 +154,7 @@ body{font-family:'Nunito',sans-serif;background:var(--gris);color:var(--texto);m
 <div class="splash" id="splash">
   <div class="splash-logo">SHS<span>✓</span></div>
   <div class="splash-sub">Surtidora de Higiénicos y Servicios</div>
+  <div id="splashSaludo" style="color:rgba(255,255,255,0.9);font-size:15px;font-family:'Nunito',sans-serif;font-weight:700;margin-top:20px;text-align:center;max-width:280px;line-height:1.5;display:none"></div>
   <div class="splash-spinner"></div>
 </div>
 
@@ -296,7 +297,8 @@ async function init() {
     }
     document.getElementById('clienteNombre').textContent = clienteData.nombre;
     mostrarBtnWhatsApp();
-    ocultarSplash();
+    mostrarSaludoSplash(clienteData.nombre);
+    setTimeout(ocultarSplash, 2000);
     const historial = await historialRes.json();
     historialArticulos = historial.articulos || [];
     preciosCliente = await preciosRes.json() || {};
@@ -673,6 +675,17 @@ function cerrarCarrito() {
 function cerrarModal() { document.getElementById('modalExito').classList.remove('abierto'); }
 
 // SPLASH SCREEN
+function mostrarSaludoSplash(nombre) {
+  var saludo = document.getElementById('splashSaludo');
+  if (saludo) {
+    saludo.textContent = 'Hola ' + nombre + ' 👋 Tus productos de limpieza cuando los necesitas — pide fácil y recibe rápido.';
+    saludo.style.display = 'block';
+    // Spinner ya no necesario
+    var spinner = document.querySelector('.splash-spinner');
+    if (spinner) spinner.style.display = 'none';
+  }
+}
+
 function ocultarSplash() {
   var splash = document.getElementById('splash');
   if (splash) { splash.classList.add('oculto'); setTimeout(function(){ splash.style.display='none'; }, 400); }
