@@ -551,6 +551,47 @@ function cerrarCarrito() {
 }
 function cerrarModal() { document.getElementById('modalExito').classList.remove('abierto'); }
 
+// PAGO CON STRIPE
+async function pagarConTarjeta() {
+  var items = Object.values(carrito);
+  if (!items.length || !clienteData) return;
+  var btn = document.getElementById('btnPagar');
+  btn.disabled = true;
+  btn.textContent = 'Procesando...';
+  try {
+    var res = await fetch(PROXY+'?metodo=CREAR_PAGO', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        items: items,
+        clienteNombre: clienteData.nombre,
+        clienteId: CLIENTE_ID
+      })
+    });
+    var data = await res.json();
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      alert('Error al procesar el pago. Intenta de nuevo.');
+    }
+  } catch(err) {
+    alert('Error de conexion. Intenta de nuevo.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '💳 Pagar con tarjeta';
+  }
+}
+
+var pagoStatus = new URLSearchParams(window.location.search).get('pago');
+if (pagoStatus === 'exitoso') {
+  setTimeout(function() {
+    document.getElementById('modalFolio').textContent = 'Pago procesado correctamente';
+    document.getElementById('modalExito').classList.add('abierto');
+  }, 500);
+} else if (pagoStatus === 'cancelado') {
+  setTimeout(function() { alert('El pago fue cancelado. Puedes intentarlo de nuevo.'); }, 500);
+}
+
 init();
 </script>
 </body>
