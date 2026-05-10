@@ -40,12 +40,12 @@
 :root {
   --azul:#1e4bcc; --azul-dark:#163799; --azul-light:#e8eefb;
   --verde:#7ac143; --verde-dark:#5fa030;
-  --gris:#ffffff; --texto:#1a1a2e; --texto-suave:#64748b;
+  --gris:#f4f6fb; --texto:#1a1a2e; --texto-suave:#64748b;
   --borde:#e2e8f0; --blanco:#ffffff;
   --sombra:0 2px 16px rgba(30,75,204,0.10);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:'Nunito',sans-serif;background:#ffffff;color:var(--texto);min-height:100vh;max-width:700px;margin:0 auto;box-shadow:0 0 30px rgba(0,0,0,0.08)}
+body{font-family:'Nunito',sans-serif;background:#f4f6fb;color:var(--texto);min-height:100vh}
 .header{background:var(--azul);padding:0 16px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,75,204,0.25)}
 .header-inner{max-width:700px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:60px}
 .logo-text{color:white;font-size:22px;font-weight:900;letter-spacing:-0.5px}
@@ -63,7 +63,7 @@ body{font-family:'Nunito',sans-serif;background:#ffffff;color:var(--texto);min-h
 .tab{padding:14px 18px;text-align:center;font-weight:700;font-size:13px;color:var(--texto-suave);cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s;white-space:nowrap}
 .tab.activo{color:var(--azul);border-bottom-color:var(--azul)}
 .tab-count{background:var(--azul-light);color:var(--azul);border-radius:50px;padding:1px 7px;font-size:11px;margin-left:4px}
-.contenido{max-width:700px;margin:0 auto;padding:16px;background:#ffffff}
+.contenido{max-width:700px;margin:0 auto;padding:16px}
 .seccion{display:none;background:#ffffff}
 .seccion.activa{display:block}
 .busqueda-box{position:relative;margin-bottom:16px}
