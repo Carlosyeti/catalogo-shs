@@ -319,7 +319,7 @@ async function init() {
     document.getElementById('clienteNombre').textContent = clienteData.nombre;
     mostrarBtnWhatsApp();
     mostrarSaludoSplash(clienteData.nombre);
-    setTimeout(ocultarSplash, 5000);
+    setTimeout(ocultarSplash, 3000);
     const historial = await historialRes.json();
     historialArticulos = historial.articulos || [];
     preciosCliente = await preciosRes.json() || {};
