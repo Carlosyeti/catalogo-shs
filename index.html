@@ -296,6 +296,7 @@ async function init() {
     }
     document.getElementById('clienteNombre').textContent = clienteData.nombre;
     mostrarBtnWhatsApp();
+    ocultarSplash();
     const historial = await historialRes.json();
     historialArticulos = historial.articulos || [];
     preciosCliente = await preciosRes.json() || {};
@@ -305,6 +306,7 @@ async function init() {
   } catch(err) {
     document.getElementById('error-global').textContent = 'Error de conexión. Intenta de nuevo.';
     document.getElementById('error-global').style.display = 'block';
+    ocultarSplash();
   }
 }
 
@@ -672,10 +674,8 @@ function cerrarModal() { document.getElementById('modalExito').classList.remove(
 
 // SPLASH SCREEN
 function ocultarSplash() {
-  setTimeout(function() {
-    var splash = document.getElementById('splash');
-    if (splash) { splash.classList.add('oculto'); setTimeout(function(){ splash.style.display='none'; }, 500); }
-  }, 1500);
+  var splash = document.getElementById('splash');
+  if (splash) { splash.classList.add('oculto'); setTimeout(function(){ splash.style.display='none'; }, 400); }
 }
 
 // MODO OSCURO
