@@ -298,7 +298,7 @@ export default async function handler(req, res) {
           'mode': 'payment',
           'success_url': `https://pedidos.surtidorahigienicos.com/?cliente=${clienteId}&pago=exitoso`,
           'cancel_url': `https://pedidos.surtidorahigienicos.com/?cliente=${clienteId}&pago=cancelado`,
-          'customer_email': '',
+
           'metadata[clienteId]': clienteId,
           'metadata[clienteNombre]': clienteNombre,
           ...Object.fromEntries(lineItems.flatMap((item, i) => [
