@@ -45,6 +45,22 @@ input[type=file]{display:none}
 .login-btn{width:100%;padding:13px;border-radius:10px;border:none;font-size:15px;font-weight:700;cursor:pointer;background:#1e4bcc;color:white;transition:background 0.2s}
 .login-btn:hover{background:#163799}
 .login-error{color:#dc2626;font-size:13px;font-weight:600;margin-top:10px;display:none}
+
+/* BUSCAR CLIENTE */
+.buscar-row{display:flex;gap:10px;margin-bottom:12px}
+.buscar-row input{flex:1;padding:11px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Segoe UI',sans-serif;outline:none;transition:border-color 0.2s}
+.buscar-row input:focus{border-color:#1e4bcc}
+.btn-buscar{padding:11px 20px;border-radius:10px;border:none;background:#1e4bcc;color:white;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;transition:background 0.2s}
+.btn-buscar:hover{background:#163799}
+.cliente-lista{margin-top:4px;max-height:320px;overflow-y:auto}
+.cliente-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:10px;background:#f8fafc;margin-bottom:6px;gap:10px}
+.cliente-info{flex:1;min-width:0}
+.cliente-nombre{font-weight:700;font-size:13px;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cliente-clave{font-size:11px;color:#64748b;margin-top:1px}
+.btn-copiar{background:#e8eefb;color:#1e4bcc;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 0.2s;flex-shrink:0}
+.btn-copiar:hover{background:#1e4bcc;color:white}
+.btn-copiar.copiado{background:#dcfce7;color:#166534}
+.buscar-empty{text-align:center;color:#64748b;font-size:13px;padding:16px 0}
 </style>
 </head>
 <body>
@@ -62,6 +78,19 @@ input[type=file]{display:none}
 <div class="container">
   <h1>Administracion SHS</h1>
   <p class="subtitle">Actualizar historial, catalogo y precios por cliente</p>
+
+  <div class="seccion">
+    <h2>🔗 Buscar cliente — Copiar link</h2>
+    <div class="instrucciones"><ul>
+      <li>Escribe el nombre o parte del nombre del cliente</li>
+      <li>Copia el link y enviaselo por WhatsApp o correo</li>
+    </ul></div>
+    <div class="buscar-row">
+      <input type="text" id="buscarInput" placeholder="Ej: COMERCIAL GARCIA..." onkeydown="if(event.key==='Enter') buscarCliente()">
+      <button class="btn-buscar" onclick="buscarCliente()">Buscar</button>
+    </div>
+    <div class="cliente-lista" id="clienteLista"></div>
+  </div>
 
   <div class="seccion">
     <h2>Historial de compras</h2>
@@ -154,6 +183,50 @@ async function verificarLogin() {
 
 var PROXY = 'https://catalogo-shs.vercel.app/api/proxy';
 var archivos = {};
+// ── BUSCAR CLIENTE + COPIAR LINK ─────────────────────────────
+async function buscarCliente() {
+  var q = document.getElementById('buscarInput').value.trim();
+  var lista = document.getElementById('clienteLista');
+  if (!q) { lista.innerHTML = ''; return; }
+  lista.innerHTML = '<div class="buscar-empty">Buscando...</div>';
+  try {
+    var res = await fetch(PROXY + '?metodo=CLIENTES&buscar=' + encodeURIComponent(q.toUpperCase()));
+    var data = await res.json();
+    if (!data.length) {
+      lista.innerHTML = '<div class="buscar-empty">No se encontraron clientes con ese nombre</div>';
+      return;
+    }
+    data.sort(function(a,b){ return a.nombre.localeCompare(b.nombre); });
+    lista.innerHTML = data.map(function(c) {
+      var clave = String(c.clave).trim();
+      var link = 'https://pedidos.surtidorahigienicos.com/?cliente=' + clave;
+      return '<div class="cliente-row">' +
+        '<div class="cliente-info">' +
+          '<div class="cliente-nombre">' + c.nombre + '</div>' +
+          '<div class="cliente-clave">Clave: ' + clave + ' &nbsp;|&nbsp; ' + link + '</div>' +
+        '</div>' +
+        '<button class="btn-copiar" onclick="copiarLink(this, \'' + link + '\')">' +
+          '📋 Copiar link' +
+        '</button>' +
+      '</div>';
+    }).join('');
+  } catch(e) {
+    lista.innerHTML = '<div class="buscar-empty">Error al buscar. Intenta de nuevo.</div>';
+  }
+}
+
+function copiarLink(btn, link) {
+  navigator.clipboard.writeText(link).then(function() {
+    btn.textContent = '✅ Copiado';
+    btn.classList.add('copiado');
+    setTimeout(function() {
+      btn.textContent = '📋 Copiar link';
+      btn.classList.remove('copiado');
+    }, 2000);
+  });
+}
+// ─────────────────────────────────────────────────────────────
+
 
 ['1','2'].forEach(function(n) {
   var dz = document.getElementById('dz'+n);
