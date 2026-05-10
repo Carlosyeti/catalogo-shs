@@ -275,17 +275,32 @@ export default async function handler(req, res) {
       if (req.method !== 'POST') return res.status(405).json({ error: 'Usar POST' });
       let bodyData = req.body;
       if (typeof bodyData === 'string') { try { bodyData = JSON.parse(bodyData); } catch(e) {} }
-      const { items, clienteNombre, clienteId } = bodyData || {};
+      const { items, clienteNombre, clienteId, conComision } = bodyData || {};
       if (!items || !items.length) return res.status(400).json({ error: 'Sin artículos', body: bodyData });
+
+      const subtotal = items.reduce((s, i) => s + i.precio * i.cantidad, 0);
+      const totalConIva = subtotal * 1.16;
+      const comision = conComision ? totalConIva * 0.03 : 0;
 
       const lineItems = items.map(item => ({
         price_data: {
           currency: 'mxn',
           product_data: { name: item.nombre },
-          unit_amount: Math.round(item.precio * 100)
+          unit_amount: Math.round(item.precio * 1.16 * 100)
         },
         quantity: item.cantidad
       }));
+
+      if (conComision && comision > 0) {
+        lineItems.push({
+          price_data: {
+            currency: 'mxn',
+            product_data: { name: 'Comisión pago con tarjeta (3%)' },
+            unit_amount: Math.round(comision * 100)
+          },
+          quantity: 1
+        });
+      }
 
       const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
         method: 'POST',
