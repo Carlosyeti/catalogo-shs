@@ -1,6 +1,7 @@
 import Redis from 'ioredis';
 
 const redis = new Redis(process.env.REDIS_URL);
+const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY;
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -266,6 +267,49 @@ export default async function handler(req, res) {
       const url = `${API_BASE}/exsim/servicios/metodo/IMAGENES/${TOKEN}/50/${pagina}/${artId}`;
       const data = await fetchMicrosip(url);
       return res.status(200).json(data);
+    }
+
+    // ── STRIPE — crear sesión de pago ──────────────────
+    if (metodo === 'CREAR_PAGO') {
+      if (req.method !== 'POST') return res.status(405).json({ error: 'Usar POST' });
+      const { items, clienteNombre, clienteId } = req.body;
+      if (!items || !items.length) return res.status(400).json({ error: 'Sin artículos' });
+
+      const lineItems = items.map(item => ({
+        price_data: {
+          currency: 'mxn',
+          product_data: { name: item.nombre },
+          unit_amount: Math.round(item.precio * 100)
+        },
+        quantity: item.cantidad
+      }));
+
+      const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${STRIPE_SECRET}`,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+          'payment_method_types[]': 'card',
+          'mode': 'payment',
+          'success_url': `https://pedidos.surtidorahigienicos.com/?cliente=${clienteId}&pago=exitoso`,
+          'cancel_url': `https://pedidos.surtidorahigienicos.com/?cliente=${clienteId}&pago=cancelado`,
+          'customer_email': '',
+          'metadata[clienteId]': clienteId,
+          'metadata[clienteNombre]': clienteNombre,
+          ...Object.fromEntries(lineItems.flatMap((item, i) => [
+            [`line_items[${i}][price_data][currency]`, item.price_data.currency],
+            [`line_items[${i}][price_data][product_data][name]`, item.price_data.product_data.name],
+            [`line_items[${i}][price_data][unit_amount]`, item.price_data.unit_amount],
+            [`line_items[${i}][quantity]`, item.quantity]
+          ]))
+        }).toString()
+      });
+
+      const session = await stripeRes.json();
+      if (session.error) return res.status(400).json({ error: session.error.message });
+      return res.status(200).json({ url: session.url });
     }
 
     return res.status(200).json({ ok: true });
