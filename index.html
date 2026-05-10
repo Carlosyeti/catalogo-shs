@@ -45,20 +45,20 @@
   --sombra:0 2px 16px rgba(30,75,204,0.10);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html{background:#ffffff}body{font-family:'Nunito',sans-serif;background:#ffffff;color:var(--texto);min-height:100vh}
-.header{background:var(--azul);padding:0 16px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,75,204,0.25)}
+html{background:#ffffff}body{font-family:'Nunito',sans-serif;background:#ffffff;color:var(--texto);min-height:100vh;padding-top:60px}
+.header{background:var(--azul);padding:0 16px;position:fixed;top:0;left:0;right:0;z-index:100;box-shadow:0 2px 12px rgba(30,75,204,0.25)}
 .header-inner{max-width:700px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:60px}
 .logo-text{color:white;font-size:22px;font-weight:900;letter-spacing:-0.5px}
 .logo-text span{color:var(--verde)}
 .carrito-btn{background:var(--verde);border:none;border-radius:50px;color:white;font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;padding:8px 16px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background 0.2s}
 .carrito-btn:hover{background:var(--verde-dark)}
 .carrito-badge{background:white;color:var(--azul);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900}
-.bienvenida{background:linear-gradient(135deg,var(--azul) 0%,#2d5ee8 100%);padding:20px 16px;width:100%}
+.bienvenida{background:linear-gradient(135deg,var(--azul) 0%,#2d5ee8 100%);padding:20px 16px;width:100%;margin-top:0}
 .bienvenida-inner{max-width:700px;margin:0 auto}
 .bienvenida h2{color:white;font-size:18px;font-weight:800}
 .bienvenida p{color:rgba(255,255,255,0.75);font-size:13px;margin-top:2px}
 .bienvenida-nombre{color:var(--verde)}
-.tabs{background:#ffffff;border-bottom:2px solid var(--borde);position:sticky;top:60px;z-index:99;overflow-x:auto;width:100%;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.tabs{background:#ffffff;border-bottom:2px solid var(--borde);position:sticky;top:0;z-index:99;overflow-x:auto;width:100%}
 .tabs-inner{max-width:700px;margin:0 auto;display:flex;min-width:max-content}
 .tab{padding:14px 18px;text-align:center;font-weight:700;font-size:13px;color:var(--texto-suave);cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s;white-space:nowrap}
 .tab.activo{color:var(--azul);border-bottom-color:var(--azul)}
