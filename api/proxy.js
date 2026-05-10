@@ -184,7 +184,7 @@ export default async function handler(req, res) {
         const data = await fetchMicrosip(url);
         if (!Array.isArray(data) || data.length === 0) break;
         for (const c of data) {
-          await redis.set(`cliente:${String(c.clave).trim()}`, JSON.stringify(c), 'EX', 86400);
+          await redis.set(`cliente:${String(c.clave).trim()}`, JSON.stringify(c));
           total++;
         }
         if (data.length < 100) break;
