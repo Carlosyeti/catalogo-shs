@@ -615,7 +615,9 @@ async function enviarPedido() {
           Notas: `Pedido app web SHS | Entrega: ${document.getElementById('fechaEntrega')?.value || 'No especificada'} | Dir: ${document.getElementById('direccionEntrega')?.value || 'Dirección registrada'} | ${document.getElementById('notasExtra')?.value || ''}`
         },
         Encabezado: {
-          OrdenCompra: '',
+          Folio: '',
+          Serie: 'P',
+          OrdenCompra: `APP-${Date.now()}`,
           Descripcion: `Pedido app - ${clienteData.nombre}`,
           MetodoPago: clienteData.condicion_pago?.nombre_condicion || 'CONTADO',
           EstatusPago: 'Pendiente',
