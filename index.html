@@ -595,34 +595,32 @@ async function enviarPedido() {
       Documento: {
         Cliente: {
           Nombre: clienteData.nombre,
-          DirClienteID: dir.consignatario_id > 0 ? dir.consignatario_id : undefined,
-          NomDireccion: dir.consignatario || clienteData.nombre,
-          RFC: clienteData.rfc || 'XAXX010101000',
+          RFC: clienteData.rfc || '',
           Clave: String(clienteData.clave).trim(),
+          DirClienteID: parseInt(dir.consignatario_id) || 0,
+          NomDireccion: dir.consignatario || clienteData.nombre,
           Calle: dir.nombre_calle || 'S/N',
           Num_interior: dir.num_interior || '',
-          Num_exterior: dir.num_exterior || 'S/N',
+          Num_exterior: dir.num_exterior ? (isNaN(dir.num_exterior) ? dir.num_exterior : parseInt(dir.num_exterior)) : 0,
           Poblacion: dir.poblacion || '',
           Referencia: dir.referencia || '',
           Colonia: dir.colonia || 'CENTRO',
           Ciudad: dir.ciudad || 'COLIMA',
           Estado: dir.estado || 'COLIMA',
           Pais: dir.pais || 'MEXICO',
-          Telefono1: clienteData.telefono || '3120000000',
+          Telefono1: parseInt(String(clienteData.telefono || '3120000000').replace(/\D/g,'')) || 3120000000,
           Telefono2: '',
           Fax: '',
           Email: clienteData.email || '',
-          CodigoPostal: dir.codigo_postal || '28000',
+          CodigoPostal: parseInt(String(dir.codigo_postal || '28000').replace(/\D/g,'')) || 28000,
           Notas: `Pedido app web SHS | Entrega: ${document.getElementById('fechaEntrega')?.value || 'No especificada'} | Dir: ${document.getElementById('direccionEntrega')?.value || 'Dirección registrada'} | ${document.getElementById('notasExtra')?.value || ''}`
         },
         Encabezado: {
           Folio: '',
-          Serie: 'P',
           OrdenCompra: `APP-${Date.now()}`,
-          Descripcion: `Pedido app - ${clienteData.nombre}`,
-          MetodoPago: clienteData.condicion_pago?.nombre_condicion || 'CONTADO',
-          EstatusPago: 'Pendiente',
-          Almacen: 'CEDIS COLIMA'
+          Descripcion: `Pedido app SHS - ${clienteData.nombre}`,
+          MetodoPago: clienteData.condicion_pago?.nombre_condicion || 'Pago manual',
+          EstatusPago: 'Pendiente'
         },
         Detalle: items.map(item => ({
           NombreArticulo: item.nombre,
