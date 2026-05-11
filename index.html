@@ -633,11 +633,17 @@ async function enviarPedido() {
       }
     };
     const totalPesos = items.reduce((s, i) => s + i.precio * i.cantidad, 0);
+    console.log('JSON enviado a Microsip:', JSON.stringify(body, null, 2));
     const res = await fetch(`${PROXY}?metodo=PEDIDOS`, {
       method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
     });
     const data = await res.json();
-    const folio = data.Folio || data.folio || data.respuesta || '—';
+    // Verificar si Microsip regresó error
+    if (data.Error) {
+      alert('Error al registrar pedido en el sistema. Por favor contacta a tu vendedora. (Error: ' + data.Error.substring(0, 60) + ')');
+      return;
+    }
+    const folio = data.Folio || data.folio || data.NumeroDocumento || data.respuesta || '—';
     // Guardar en historial local
     guardarEnHistorial(items, totalPesos * 1.16);
     carrito = {}; actualizarCarritoUI(); cerrarCarrito();
