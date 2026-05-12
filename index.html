@@ -596,8 +596,8 @@ async function enviarPedido() {
         Cliente: {
           Nombre: clienteData.nombre,
           RFC: clienteData.rfc || '',
-          Clave: '',
-          DirClienteID: parseInt(dir.consignatario_id) || 0,
+          Clave: String(clienteData.clave || '').trim(),
+          DirClienteID: parseInt(dir.consignatario_id || dir.id || dir.dir_id || 0) || 0,
           NomDireccion: dir.consignatario || clienteData.nombre,
           Calle: dir.nombre_calle || 'S/N',
           Num_interior: dir.num_interior || '',
@@ -643,6 +643,8 @@ async function enviarPedido() {
       }
     };
     const totalPesos = items.reduce((s, i) => s + i.precio * i.cantidad, 0);
+    console.log('clienteData completo:', JSON.stringify(clienteData, null, 2));
+    console.log('dir:', JSON.stringify(dir, null, 2));
     console.log('JSON enviado a Microsip:', JSON.stringify(body, null, 2));
     const res = await fetch(`${PROXY}?metodo=PEDIDOS`, {
       method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
