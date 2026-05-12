@@ -609,15 +609,11 @@ async function enviarPedido() {
           Estado: dir.estado || 'COLIMA',
           Pais: dir.pais || 'MEXICO',
           Telefono1: parseInt(String(clienteData.telefono || '3120000000').replace(/\D/g,'')) || 3120000000,
-          Telefono2: '',
+          Telefono2: 0,
           Fax: '',
           Email: clienteData.email || '',
           CodigoPostal: parseInt(String(dir.codigo_postal || '28000').replace(/\D/g,'')) || 28000,
           Notas: `Pedido app web SHS | Entrega: ${document.getElementById('fechaEntrega')?.value || 'No especificada'} | Dir: ${document.getElementById('direccionEntrega')?.value || 'Dirección registrada'} | ${document.getElementById('notasExtra')?.value || ''}`,
-          CP_FechaNacimiento: '',
-          CP_CURP: '',
-          CP_TelefonoSucesor: '',
-          CP_CorreoElectronicoSucesor: ''
         },
         Encabezado: {
           Folio: '',
@@ -627,22 +623,22 @@ async function enviarPedido() {
           EstatusPago: 'Pendiente',
           CP_inv_inicial: 0.00,
           CP_pagos: 0.00,
-          CP_pagos_letra: '',
+          CP_pagos_letra: 0,
           CP_meses: 0,
-          CP_meses_letra: '',
-          CP_consultor: '',
-          CP_nota: '',
-          CP_n_solicitud: '',
-          CP_contrato: '',
-          CP_empresa: ''
+          CP_meses_letra: 0,
+          CP_consultor: 0,
+          CP_nota: 0,
+          CP_n_solicitud: 0,
+          CP_contrato: 0,
+          CP_empresa: 0
         },
         Detalle: items.map(item => ({
           NombreArticulo: item.nombre,
           Unidades: item.cantidad,
           Precio: item.precio,
-          Descuento: 0,
+          Descuento: 0.00,
           Importe: item.precio * item.cantidad,
-          DescuentoExtra: 0
+          DescuentoExtra: 0.00
         }))
       }
     };
