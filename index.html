@@ -590,7 +590,11 @@ async function enviarPedido() {
   const btn = document.getElementById('btnEnviar');
   btn.disabled = true; btn.textContent = 'Enviando...';
   try {
-    const dir = clienteData.direcciones?.[0] || {};
+    // Prefer Colima address, fallback to first
+    const dirs = clienteData.direcciones || [];
+    const dir = dirs.find(d => d.ciudad && d.ciudad.toUpperCase().includes('COLIMA')) || 
+                dirs.find(d => d.usarParaEnvios) || 
+                dirs[0] || {};
     const body = {
       Documento: {
         Cliente: {
@@ -619,7 +623,7 @@ async function enviarPedido() {
           Folio: '',
           OrdenCompra: `APP-${Date.now()}`,
           Descripcion: `Pedido app SHS - ${clienteData.nombre}`,
-          MetodoPago: clienteData.condicion_pago?.nombre_condicion || 'Pago manual',
+          MetodoPago: 'Pago manual',
           EstatusPago: 'Pendiente',
           CP_inv_inicial: 0.00,
           CP_pagos: 0.00,
