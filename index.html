@@ -613,14 +613,28 @@ async function enviarPedido() {
           Fax: '',
           Email: clienteData.email || '',
           CodigoPostal: parseInt(String(dir.codigo_postal || '28000').replace(/\D/g,'')) || 28000,
-          Notas: `Pedido app web SHS | Entrega: ${document.getElementById('fechaEntrega')?.value || 'No especificada'} | Dir: ${document.getElementById('direccionEntrega')?.value || 'Dirección registrada'} | ${document.getElementById('notasExtra')?.value || ''}`
+          Notas: `Pedido app web SHS | Entrega: ${document.getElementById('fechaEntrega')?.value || 'No especificada'} | Dir: ${document.getElementById('direccionEntrega')?.value || 'Dirección registrada'} | ${document.getElementById('notasExtra')?.value || ''}`,
+          CP_FechaNacimiento: '',
+          CP_CURP: '',
+          CP_TelefonoSucesor: '',
+          CP_CorreoElectronicoSucesor: ''
         },
         Encabezado: {
           Folio: '',
           OrdenCompra: `APP-${Date.now()}`,
           Descripcion: `Pedido app SHS - ${clienteData.nombre}`,
           MetodoPago: clienteData.condicion_pago?.nombre_condicion || 'Pago manual',
-          EstatusPago: 'Pendiente'
+          EstatusPago: 'Pendiente',
+          CP_inv_inicial: 0,
+          CP_pagos: 0,
+          CP_pagos_letra: '',
+          CP_meses: 0,
+          CP_meses_letra: '',
+          CP_consultor: '',
+          CP_nota: '',
+          CP_n_solicitud: '',
+          CP_contrato: '',
+          CP_empresa: ''
         },
         Detalle: items.map(item => ({
           NombreArticulo: item.nombre,
