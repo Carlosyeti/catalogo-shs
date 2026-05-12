@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const API_BASE = 'http://38.58.46.142:9091';
-  const TOKEN = '6GmrWp2KvHh2R4682ciDY09Klu92bv';
+  const TOKEN = '0hHps6mamAd6qDwcjqp5S5lUUu86JP';
   const metodo = req.query.metodo || 'ARTICULOS';
 
   function repairJSON(text) {
