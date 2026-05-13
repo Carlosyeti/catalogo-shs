@@ -39,6 +39,18 @@ export default async function handler(req, res) {
     return repairJSON(text) || [];
   }
 
+  // ── Convierte campos numéricos que Microsip espera como número ──
+  function fixClienteTypes(c) {
+    return {
+      ...c,
+      Num_exterior:  c.Num_exterior  !== undefined && c.Num_exterior !== '' ? parseInt(c.Num_exterior)  || 0 : 0,
+      Telefono1:     c.Telefono1     !== undefined && c.Telefono1    !== '' ? parseInt(String(c.Telefono1).replace(/\D/g,''))  || 0 : 0,
+      Telefono2:     c.Telefono2     !== undefined && c.Telefono2    !== '' ? parseInt(String(c.Telefono2).replace(/\D/g,''))  || 0 : 0,
+      CodigoPostal:  c.CodigoPostal  !== undefined && c.CodigoPostal !== '' ? parseInt(String(c.CodigoPostal).replace(/\D/g,'')) || 0 : 0,
+      DirClienteID:  c.DirClienteID  !== undefined ? parseInt(c.DirClienteID) || 0 : 0,
+    };
+  }
+
   try {
 
     // ── ARTICULOS — sirve desde Redis si está cacheado ──
@@ -47,7 +59,6 @@ export default async function handler(req, res) {
       const pagina   = req.query.pagina   || '0';
       const artId    = req.query.articuloId || '0';
 
-      // Si piden catálogo completo (artId=0), intentar desde Redis
       if (artId === '0') {
         const cached = await redis.get('catalogo:completo');
         if (cached) {
@@ -59,7 +70,6 @@ export default async function handler(req, res) {
         }
       }
 
-      // Fallback: Microsip directo
       const url = `${API_BASE}/exsim/servicios/metodo/ARTICULOS/${TOKEN}/${cantidad}/${pagina}/${artId}`;
       let data = await fetchMicrosip(url);
       if (Array.isArray(data)) {
@@ -71,7 +81,7 @@ export default async function handler(req, res) {
       return res.status(200).json(data);
     }
 
-    // ── SYNC_ARTICULOS — descarga UNA página y la agrega al caché ──
+    // ── SYNC_ARTICULOS ──
     if (metodo === 'SYNC_ARTICULOS') {
       const pagina = parseInt(req.query.pagina || '0');
       const reset  = req.query.reset === '1';
@@ -89,7 +99,6 @@ export default async function handler(req, res) {
         unidadmed: a.unidadmed, imagen: a.imagen, precios: a.precios
       }));
 
-      // Si es página 0 o reset, empezar de cero; si no, agregar al existente
       let existentes = [];
       if (!reset && pagina > 0) {
         const cached = await redis.get('catalogo:completo');
@@ -108,7 +117,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // ── CATALOGO_COMPLETO — devuelve todo de una vez desde Redis ──
+    // ── CATALOGO_COMPLETO ──
     if (metodo === 'CATALOGO_COMPLETO') {
       const cached = await redis.get('catalogo:completo');
       if (cached) return res.status(200).json(JSON.parse(cached));
@@ -195,49 +204,64 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, total, mensaje: `${total} clientes sincronizados` });
     }
 
-    // ── TEST_PEDIDO — prueba con JSON mínimo de la documentación ──
+    // ── TEST_PEDIDO — usa tipos correctos igual que Postman ──
     if (metodo === 'TEST_PEDIDO') {
       const body = {
         Documento: {
-          Cliente: {
+          Cliente: fixClienteTypes({
             Nombre: "PUBLICO EN GENERAL",
             DirClienteID: 10922,
-            NomDireccion: "Otra direccion",
+            NomDireccion: "PUBLICO EN GENERAL",
             RFC: "XAXX010101000",
             Clave: "MOST",
-            Calle: "CENTRO",
-            Num_interior: "305",
-            Num_exterior: "4",
-            Poblacion: "Puebla",
-            Referencia: "Centro",
-            Colonia: "Centro",
-            Ciudad: "Colima",
-            Estado: "Colima",
-            Pais: "Mexico",
-            Telefono1: "2220000000",
+            Calle: "AV. CRISTOBAL COLON",
+            Num_interior: "",
+            Num_exterior: 501,
+            Poblacion: "",
+            Referencia: "",
+            Colonia: "LOS VIVEROS",
+            Ciudad: "COLIMA",
+            Estado: "COLIMA",
+            Pais: "MEXICO",
+            Telefono1: 3120000000,
             Telefono2: "",
             Fax: "",
-            Email: "SOPORTE@EXSIM.COM.MX",
-            CodigoPostal: "72000",
-            Notas: "El cliente solo compra los viernes"
-          },
+            Email: "asesores_vargas@hotmail.com",
+            CodigoPostal: 28070,
+            Notas: "Pedido de prueba app SHS",
+            CP_FechaNacimiento: "",
+            CP_CURP: "",
+            CP_TelefonoSucesor: "",
+            CP_CorreoElectronicoSucesor: ""
+          }),
           Encabezado: {
-            OrdenCompra: "QUO451",
-            Descripcion: "QUO451QUO451",
+            Folio: "",
+            OrdenCompra: "TEST-001",
+            Descripcion: "COMPRA ONLINE",
             MetodoPago: "Pago manual",
             EstatusPago: "Pendiente",
-            Almacen: "CEDIS COLIMA"
+            CP_inv_inicial: 0,
+            CP_pagos: 0,
+            CP_pagos_letra: "",
+            CP_meses: 0,
+            CP_meses_letra: "",
+            CP_consultor: "",
+            CP_nota: "",
+            CP_n_solicitud: "",
+            CP_contrato: "",
+            CP_empresa: ""
           },
           Detalle: [{
-            NombreArticulo: "AGUA",
+            NombreArticulo: "AGUA PURIFICADA",
             Unidades: 1,
-            Precio: 880.00,
+            Precio: 41.85,
             Descuento: 0,
-            Importe: 880.00,
+            Importe: 41.85,
             DescuentoExtra: 0
           }]
         }
       };
+
       const response = await fetch(
         `${API_BASE}/exsim/servicios/metodo/PEDIDOS/${TOKEN}`,
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
@@ -252,6 +276,12 @@ export default async function handler(req, res) {
       if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido.' });
       const body = req.body;
       if (!body || !body.Documento) return res.status(400).json({ error: 'Body inválido.' });
+
+      // Corregir tipos del Cliente antes de mandar a Microsip
+      if (body.Documento.Cliente) {
+        body.Documento.Cliente = fixClienteTypes(body.Documento.Cliente);
+      }
+
       const response = await fetch(
         `${API_BASE}/exsim/servicios/metodo/PEDIDOS/${TOKEN}`,
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
@@ -270,7 +300,7 @@ export default async function handler(req, res) {
       return res.status(200).json(data);
     }
 
-    // ── STRIPE — crear sesión de pago ──────────────────
+    // ── STRIPE ──
     if (metodo === 'CREAR_PAGO') {
       if (req.method !== 'POST') return res.status(405).json({ error: 'Usar POST' });
       let bodyData = req.body;
@@ -313,7 +343,6 @@ export default async function handler(req, res) {
           'mode': 'payment',
           'success_url': `https://pedidos.surtidorahigienicos.com/?cliente=${clienteId}&pago=exitoso`,
           'cancel_url': `https://pedidos.surtidorahigienicos.com/?cliente=${clienteId}&pago=cancelado`,
-
           'metadata[clienteId]': clienteId,
           'metadata[clienteNombre]': clienteNombre,
           ...Object.fromEntries(lineItems.flatMap((item, i) => [
