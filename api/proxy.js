@@ -201,7 +201,7 @@ export default async function handler(req, res) {
         Documento: {
           Cliente: {
             Nombre: "PUBLICO EN GENERAL",
-            DirClienteID: 26376,
+            DirClienteID: 10922,
             NomDireccion: "Otra direccion",
             RFC: "XAXX010101000",
             Clave: "MOST",
