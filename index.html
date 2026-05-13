@@ -367,6 +367,7 @@ async function cargarCatalogo() {
   try {
     const res = await fetch(`${PROXY}?metodo=CATALOGO_COMPLETO`);
     const data = await res.json();
+alert(JSON.stringify(data.debug || data));
     if (!Array.isArray(data) || data.length === 0) {
       document.getElementById('lista-catalogo').innerHTML = `<div class="error-box">Catálogo no disponible. Contacta al administrador.</div>`;
       return;
