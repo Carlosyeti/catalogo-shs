@@ -252,7 +252,7 @@ export default async function handler(req, res) {
             CP_empresa: ""
           },
           Detalle: [{
-            NombreArticulo: "AGUA PURIFICADA",
+            NombreArticulo: "AGUA",
             Unidades: 1,
             Precio: 41.85,
             Descuento: 0,
