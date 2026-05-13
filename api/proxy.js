@@ -39,7 +39,7 @@ export default async function handler(req, res) {
     return repairJSON(text) || [];
   }
 
-  // Limpia cualquier valor a número entero — quita espacios, guiones, paréntesis, etc.
+  // Limpia cualquier valor a número entero
   function toNum(v) {
     if (v === undefined || v === null || v === '' || v === 0) return 0;
     const limpio = String(v).replace(/\D/g, '');
@@ -50,6 +50,7 @@ export default async function handler(req, res) {
     return {
       ...c,
       Num_exterior: toNum(c.Num_exterior),
+      Num_interior: toNum(c.Num_interior),
       Telefono1:    toNum(c.Telefono1),
       Telefono2:    toNum(c.Telefono2),
       Fax:          toNum(c.Fax),
@@ -284,6 +285,9 @@ export default async function handler(req, res) {
       if (body.Documento.Cliente) {
         body.Documento.Cliente = fixClienteTypes(body.Documento.Cliente);
       }
+
+      // LOG TEMPORAL — borrar después de confirmar que funciona
+      // return res.status(200).json({ debug: body.Documento.Cliente });
 
       const response = await fetch(
         `${API_BASE}/exsim/servicios/metodo/PEDIDOS/${TOKEN}`,
