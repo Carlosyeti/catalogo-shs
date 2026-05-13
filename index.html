@@ -293,7 +293,7 @@ let catalogoPorCat = {};
 let catActiva = 'TODAS';
 let carrito = {};
 let preciosCache = {};
-let preciosCliente = {}; // precios fijos por cliente desde Redis
+let preciosCliente = {};
 let catalogoCargado = false;
 
 async function init() {
@@ -301,6 +301,7 @@ async function init() {
     document.getElementById('error-global').textContent = 'Link inválido. Contacta a tu vendedor.';
     document.getElementById('error-global').style.display = 'block';
     document.getElementById('clienteNombre').textContent = '';
+    ocultarSplash();
     return;
   }
   try {
@@ -314,6 +315,7 @@ async function init() {
     if (!clienteData) {
       document.getElementById('error-global').textContent = 'Cliente no encontrado. Contacta a tu vendedor.';
       document.getElementById('error-global').style.display = 'block';
+      ocultarSplash();
       return;
     }
     document.getElementById('clienteNombre').textContent = clienteData.nombre;
@@ -340,7 +342,6 @@ async function renderFrecuentes() {
     return;
   }
   lista.innerHTML = historialArticulos.map((art, i) => cardHTML(art.nombre, '', '', i, 'frec', true)).join('');
-  // Mostrar precios inmediatamente desde Redis (sin esperar catálogo)
   historialArticulos.forEach((art, i) => {
     const el = document.getElementById(`precio-frec-${i}`);
     if (!el) return;
@@ -351,7 +352,6 @@ async function renderFrecuentes() {
       el.classList.remove('cargando');
     }
   });
-  // Para los que no tienen precio fijo, esperar catálogo y usar PRECIO 1
   const sinPrecio = historialArticulos.filter(art => preciosCliente[art.nombre] === undefined);
   if (sinPrecio.length > 0) {
     if (!catalogoCargado) await cargarCatalogo();
@@ -365,7 +365,6 @@ async function renderFrecuentes() {
 async function cargarCatalogo() {
   if (catalogoCargado) return;
   try {
-    // Cargar catálogo completo de Redis en una sola llamada rápida
     const res = await fetch(`${PROXY}?metodo=CATALOGO_COMPLETO`);
     const data = await res.json();
     if (!Array.isArray(data) || data.length === 0) {
@@ -373,7 +372,6 @@ async function cargarCatalogo() {
       return;
     }
     catalogoCompleto = data;
-    // Agrupar por categoría
     catalogoPorCat = { 'TODAS': catalogoCompleto };
     for (const art of catalogoCompleto) {
       const cat = CLAVE_CAT[art.clave] || 'OTRAS';
@@ -439,8 +437,6 @@ async function cargarPrecio(nombre, index, tipo) {
   const elId = `precio-${tipo}-${index}`;
   const el = document.getElementById(elId);
   if (!el) return;
-
-  // 1. Precio fijo del cliente (instantáneo desde Redis)
   if (preciosCliente[nombre] !== undefined) {
     const p = preciosCliente[nombre];
     preciosCache[nombre] = p;
@@ -448,15 +444,11 @@ async function cargarPrecio(nombre, index, tipo) {
     el.classList.remove('cargando');
     return;
   }
-
-  // 2. Ya en caché local
   if (preciosCache[nombre] !== undefined) {
     el.textContent = fmt(preciosCache[nombre]);
     el.classList.remove('cargando');
     return;
   }
-
-  // 3. Buscar en catálogo y usar PRECIO 1 como fallback
   const art = catalogoCompleto.find(a => a.nombre === nombre);
   if (!art) {
     if (!catalogoCargado) setTimeout(() => cargarPrecio(nombre, index, tipo), 3000);
@@ -522,18 +514,12 @@ function actualizarCtrl(nombre, tipo, index) {
 
 function verificarAlertas() {
   const items = Object.values(carrito);
-  
-  // Alerta hora
   const hora = new Date().getHours();
   const alertaHora = document.getElementById('alertaHora');
   if (alertaHora) alertaHora.style.display = (items.length > 0 && hora >= 14) ? 'block' : 'none';
-  
-  // Alerta bolsas en rollo
   const tieneRollo = items.some(i => i.nombre.toUpperCase().includes('BOLSA') && i.nombre.toUpperCase().includes('ROLLO'));
   const alertaRollo = document.getElementById('alertaRollo');
   if (alertaRollo) alertaRollo.style.display = tieneRollo ? 'block' : 'none';
-  
-  // Deshabilitar pago con tarjeta si hay bolsas en rollo
   const btnPagar = document.getElementById('btnPagar');
   if (btnPagar) {
     btnPagar.disabled = tieneRollo;
@@ -590,10 +576,9 @@ async function enviarPedido() {
   const btn = document.getElementById('btnEnviar');
   btn.disabled = true; btn.textContent = 'Enviando...';
   try {
-    // Prefer Colima address, fallback to first
     const dirs = clienteData.direcciones || [];
-    const dir = dirs.find(d => d.ciudad && d.ciudad.toUpperCase().includes('COLIMA')) || 
-                dirs.find(d => d.usarParaEnvios) || 
+    const dir = dirs.find(d => d.ciudad && d.ciudad.toUpperCase().includes('COLIMA')) ||
+                dirs.find(d => d.usarParaEnvios) ||
                 dirs[0] || {};
     const body = {
       Documento: {
@@ -605,7 +590,7 @@ async function enviarPedido() {
           NomDireccion: dir.consignatario || clienteData.nombre,
           Calle: dir.nombre_calle || 'S/N',
           Num_interior: dir.num_interior || '',
-          Num_exterior: String(dir.num_exterior || '0'),
+          Num_exterior: parseInt(dir.num_exterior) || 0,
           Poblacion: dir.poblacion || '',
           Referencia: dir.referencia || '',
           Colonia: dir.colonia || 'CENTRO',
@@ -613,15 +598,15 @@ async function enviarPedido() {
           Estado: dir.estado || 'COLIMA',
           Pais: dir.pais || 'MEXICO',
           Telefono1: parseInt(String(clienteData.telefono || '3120000000').replace(/\D/g,'')) || 3120000000,
-          Telefono2: '',
+          Telefono2: 0,
           Fax: '',
           Email: clienteData.email || '',
-          CodigoPostal: String(dir.codigo_postal || '28000').replace(/\D/g,''),
+          CodigoPostal: parseInt(String(dir.codigo_postal || '28000').replace(/\D/g,'')) || 28000,
           Notas: `Pedido app web SHS | Entrega: ${document.getElementById('fechaEntrega')?.value || 'No especificada'} | Dir: ${document.getElementById('direccionEntrega')?.value || 'Dirección registrada'} | ${document.getElementById('notasExtra')?.value || ''}`,
           CP_FechaNacimiento: '',
           CP_CURP: '',
           CP_TelefonoSucesor: '',
-          CP_CorreoElectronicoSucesor: '',
+          CP_CorreoElectronicoSucesor: ''
         },
         Encabezado: {
           Folio: '',
@@ -629,9 +614,9 @@ async function enviarPedido() {
           Descripcion: `Pedido app SHS - ${clienteData.nombre}`,
           MetodoPago: 'Pago manual',
           EstatusPago: 'Pendiente',
-          Almacen: 'CEDIS COLIMA'
-          CP_inv_inicial: 0.00,
-          CP_pagos: 0.00,
+          Almacen: 'CEDIS COLIMA',
+          CP_inv_inicial: 0,
+          CP_pagos: 0,
           CP_pagos_letra: '',
           CP_meses: 0,
           CP_meses_letra: '',
@@ -645,27 +630,22 @@ async function enviarPedido() {
           NombreArticulo: item.nombre,
           Unidades: item.cantidad,
           Precio: item.precio,
-          Descuento: 0.00,
+          Descuento: 0,
           Importe: item.precio * item.cantidad,
-          DescuentoExtra: 0.00
+          DescuentoExtra: 0
         }))
       }
     };
     const totalPesos = items.reduce((s, i) => s + i.precio * i.cantidad, 0);
-    console.log('clienteData completo:', JSON.stringify(clienteData, null, 2));
-    console.log('dir:', JSON.stringify(dir, null, 2));
-    console.log('JSON enviado a Microsip:', JSON.stringify(body, null, 2));
     const res = await fetch(`${PROXY}?metodo=PEDIDOS`, {
       method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
     });
     const data = await res.json();
-    // Verificar si Microsip regresó error
     if (data.Error) {
       alert('Error al registrar pedido en el sistema. Por favor contacta a tu vendedora. (Error: ' + data.Error.substring(0, 60) + ')');
       return;
     }
     const folio = data.Folio || data.folio || data.NumeroDocumento || data.respuesta || '—';
-    // Guardar en historial local
     guardarEnHistorial(items, totalPesos * 1.16);
     carrito = {}; actualizarCarritoUI(); cerrarCarrito();
     document.getElementById('modalFolio').textContent = `Folio: ${folio}`;
@@ -717,7 +697,6 @@ function cambiarTab(tab) {
 }
 
 function abrirCarrito() {
-  // Establecer fecha mínima de entrega (hoy)
   const hoy = new Date().toISOString().split('T')[0];
   const fechaInput = document.getElementById('fechaEntrega');
   if (fechaInput) { fechaInput.min = hoy; if (!fechaInput.value) fechaInput.value = hoy; }
@@ -731,13 +710,11 @@ function cerrarCarrito() {
 }
 function cerrarModal() { document.getElementById('modalExito').classList.remove('abierto'); }
 
-// SPLASH SCREEN
 function mostrarSaludoSplash(nombre) {
   var saludo = document.getElementById('splashSaludo');
   if (saludo) {
     saludo.textContent = 'Hola ' + nombre + ' 👋 Tus productos de limpieza cuando los necesitas — pide fácil y recibe rápido.';
     saludo.style.display = 'block';
-    // Spinner ya no necesario
     var spinner = document.querySelector('.splash-spinner');
     if (spinner) spinner.style.display = 'none';
   }
@@ -748,7 +725,6 @@ function ocultarSplash() {
   if (splash) { splash.classList.add('oculto'); setTimeout(function(){ splash.style.display='none'; }, 400); }
 }
 
-// MODO OSCURO
 function toggleDarkMode() {
   var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
@@ -764,7 +740,6 @@ function initDarkMode() {
   }
 }
 
-// WHATSAPP DIRECTO
 function abrirWhatsApp() {
   var vendedora = clienteData?.vendedor?.nombre_vendedor || '';
   var telefonos = {
@@ -784,7 +759,6 @@ function mostrarBtnWhatsApp() {
   if (btn) btn.style.display = 'flex';
 }
 
-// HISTORIAL DE PEDIDOS (localStorage del navegador)
 function guardarEnHistorial(items, total) {
   try {
     const historial = JSON.parse(localStorage.getItem(`historial_pedidos_${CLIENTE_ID}`) || '[]');
@@ -818,7 +792,6 @@ function renderHistorial() {
   } catch(e) {}
 }
 
-// COMISIÓN TARJETA
 var comisionVisible = false;
 function mostrarComision() {
   document.getElementById('lineaComision').style.display = 'flex';
@@ -834,7 +807,6 @@ function toggleComision() {
   document.getElementById('lineaTotalTarjeta').style.display = comisionVisible ? 'flex' : 'none';
 }
 
-// PAGO CON STRIPE
 async function pagarConTarjeta() {
   var items = Object.values(carrito);
   if (!items.length || !clienteData) return;
