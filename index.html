@@ -585,7 +585,7 @@ async function enviarPedido() {
         Cliente: {
           Nombre: clienteData.nombre,
           RFC: clienteData.rfc || '',
-          Clave: String(clienteData.clave || '').trim(),
+          Clave: '',
           DirClienteID: parseInt(dir.consignatario_id || dir.id || dir.dir_id || 0) || 0,
           NomDireccion: dir.consignatario || clienteData.nombre,
           Calle: dir.nombre_calle || 'S/N',
