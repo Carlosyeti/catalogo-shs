@@ -39,21 +39,27 @@ export default async function handler(req, res) {
     return repairJSON(text) || [];
   }
 
-  // ── Convierte campos numéricos que Microsip espera como número ──
+  // Limpia cualquier valor a número entero — quita espacios, guiones, paréntesis, etc.
+  function toNum(v) {
+    if (v === undefined || v === null || v === '' || v === 0) return 0;
+    const limpio = String(v).replace(/\D/g, '');
+    return limpio.length > 0 ? parseInt(limpio) || 0 : 0;
+  }
+
   function fixClienteTypes(c) {
     return {
       ...c,
-      Num_exterior:  c.Num_exterior  !== undefined && c.Num_exterior !== '' ? parseInt(c.Num_exterior)  || 0 : 0,
-      Telefono1:     c.Telefono1     !== undefined && c.Telefono1    !== '' ? parseInt(String(c.Telefono1).replace(/\D/g,''))  || 0 : 0,
-      Telefono2:     c.Telefono2     !== undefined && c.Telefono2    !== '' ? parseInt(String(c.Telefono2).replace(/\D/g,''))  || 0 : 0,
-      CodigoPostal:  c.CodigoPostal  !== undefined && c.CodigoPostal !== '' ? parseInt(String(c.CodigoPostal).replace(/\D/g,'')) || 0 : 0,
-      DirClienteID:  c.DirClienteID  !== undefined ? parseInt(c.DirClienteID) || 0 : 0,
+      Num_exterior: toNum(c.Num_exterior),
+      Telefono1:    toNum(c.Telefono1),
+      Telefono2:    toNum(c.Telefono2),
+      Fax:          toNum(c.Fax),
+      CodigoPostal: toNum(c.CodigoPostal),
+      DirClienteID: toNum(c.DirClienteID),
     };
   }
 
   try {
 
-    // ── ARTICULOS — sirve desde Redis si está cacheado ──
     if (metodo === 'ARTICULOS') {
       const cantidad = req.query.cantidad || '50';
       const pagina   = req.query.pagina   || '0';
@@ -81,7 +87,6 @@ export default async function handler(req, res) {
       return res.status(200).json(data);
     }
 
-    // ── SYNC_ARTICULOS ──
     if (metodo === 'SYNC_ARTICULOS') {
       const pagina = parseInt(req.query.pagina || '0');
       const reset  = req.query.reset === '1';
@@ -117,7 +122,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // ── CATALOGO_COMPLETO ──
     if (metodo === 'CATALOGO_COMPLETO') {
       const cached = await redis.get('catalogo:completo');
       if (cached) return res.status(200).json(JSON.parse(cached));
@@ -204,7 +208,6 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, total, mensaje: `${total} clientes sincronizados` });
     }
 
-    // ── TEST_PEDIDO — usa tipos correctos igual que Postman ──
     if (metodo === 'TEST_PEDIDO') {
       const body = {
         Documento: {
@@ -213,7 +216,7 @@ export default async function handler(req, res) {
             DirClienteID: 10922,
             NomDireccion: "PUBLICO EN GENERAL",
             RFC: "XAXX010101000",
-            Clave: "MOST",
+            Clave: "",
             Calle: "AV. CRISTOBAL COLON",
             Num_interior: "",
             Num_exterior: 501,
@@ -240,6 +243,7 @@ export default async function handler(req, res) {
             Descripcion: "COMPRA ONLINE",
             MetodoPago: "Pago manual",
             EstatusPago: "Pendiente",
+            Almacen: "CEDIS COLIMA",
             CP_inv_inicial: 0,
             CP_pagos: 0,
             CP_pagos_letra: "",
@@ -277,7 +281,6 @@ export default async function handler(req, res) {
       const body = req.body;
       if (!body || !body.Documento) return res.status(400).json({ error: 'Body inválido.' });
 
-      // Corregir tipos del Cliente antes de mandar a Microsip
       if (body.Documento.Cliente) {
         body.Documento.Cliente = fixClienteTypes(body.Documento.Cliente);
       }
@@ -300,7 +303,6 @@ export default async function handler(req, res) {
       return res.status(200).json(data);
     }
 
-    // ── STRIPE ──
     if (metodo === 'CREAR_PAGO') {
       if (req.method !== 'POST') return res.status(405).json({ error: 'Usar POST' });
       let bodyData = req.body;
