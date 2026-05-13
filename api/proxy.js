@@ -200,19 +200,19 @@ export default async function handler(req, res) {
       const body = {
         Documento: {
           Cliente: {
-            Nombre: "LUISD ALBERTO TERAN",
-            DirClienteID: 269084,
+            Nombre: "PUBLICO EN GENERAL",
+            DirClienteID: 26376,
             NomDireccion: "Otra direccion",
             RFC: "XAXX010101000",
-            Clave: "LA12",
+            Clave: "MOST",
             Calle: "CENTRO",
             Num_interior: "305",
             Num_exterior: "4",
             Poblacion: "Puebla",
             Referencia: "Centro",
             Colonia: "Centro",
-            Ciudad: "Oaxaca",
-            Estado: "Oaxaca",
+            Ciudad: "Colima",
+            Estado: "Colima",
             Pais: "Mexico",
             Telefono1: "2220000000",
             Telefono2: "",
@@ -226,10 +226,10 @@ export default async function handler(req, res) {
             Descripcion: "QUO451QUO451",
             MetodoPago: "Pago manual",
             EstatusPago: "Pendiente",
-            Almacen: "Nombre del almacen"
+            Almacen: "CEDIS COLIMA"
           },
           Detalle: [{
-            NombreArticulo: "Bola de Boliche No. 13",
+            NombreArticulo: "AGUA",
             Unidades: 1,
             Precio: 880.00,
             Descuento: 0,
