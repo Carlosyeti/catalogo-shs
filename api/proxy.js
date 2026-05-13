@@ -211,9 +211,9 @@ export default async function handler(req, res) {
           Cliente: fixClienteTypes({
             Nombre: "PUBLICO EN GENERAL",
             DirClienteID: 10922,
-            NomDireccion: "PUBLICO EN GENERAL",
+            NomDireccion: "PUBLICO EN GENERAL_100",
             RFC: "XAXX010101000",
-            Clave: "MOST",
+            Clave: "MOST100",
             Calle: "AV. CRISTOBAL COLON",
             Num_interior: "",
             Num_exterior: 501,
