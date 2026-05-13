@@ -39,7 +39,6 @@ export default async function handler(req, res) {
     return repairJSON(text) || [];
   }
 
-  // Limpia cualquier valor a número entero
   function toNum(v) {
     if (v === undefined || v === null || v === '' || v === 0) return 0;
     const limpio = String(v).replace(/\D/g, '');
@@ -286,17 +285,8 @@ export default async function handler(req, res) {
         body.Documento.Cliente = fixClienteTypes(body.Documento.Cliente);
       }
 
-      // LOG TEMPORAL — borrar después de confirmar que funciona
-      // return res.status(200).json({ debug: body.Documento.Cliente });
-
-      const response = await fetch(
-        `${API_BASE}/exsim/servicios/metodo/PEDIDOS/${TOKEN}`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
-      );
-      const text = await response.text();
-      let result;
-      try { result = JSON.parse(text); } catch { result = { respuesta: text }; }
-      return res.status(200).json(result);
+      // ── LOG TEMPORAL: devuelve el JSON que se mandaría a Microsip ──
+      return res.status(200).json({ debug: body.Documento.Cliente });
     }
 
     if (metodo === 'IMAGENES') {
