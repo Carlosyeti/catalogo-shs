@@ -211,9 +211,9 @@ export default async function handler(req, res) {
           Cliente: fixClienteTypes({
             Nombre: "PUBLICO EN GENERAL",
             DirClienteID: 10922,
-            NomDireccion: "PUBLICO EN GENERAL_100",
+            NomDireccion: "PUBLICO EN GENERAL",
             RFC: "XAXX010101000",
-            Clave: "MOST100",
+            Clave: "MOST",
             Calle: "AV. CRISTOBAL COLON",
             Num_interior: "",
             Num_exterior: 501,
@@ -224,8 +224,8 @@ export default async function handler(req, res) {
             Estado: "COLIMA",
             Pais: "MEXICO",
             Telefono1: 3120000000,
-            Telefono2: "",
-            Fax: "",
+            Telefono2: 0,
+            Fax: 0,
             Email: "asesores_vargas@hotmail.com",
             CodigoPostal: 28070,
             Notas: "Pedido de prueba app SHS",
@@ -252,7 +252,7 @@ export default async function handler(req, res) {
             CP_empresa: ""
           },
           Detalle: [{
-            NombreArticulo: "AGUA",
+            NombreArticulo: "AGUA PURIFICADA",
             Unidades: 1,
             Precio: 41.85,
             Descuento: 0,
