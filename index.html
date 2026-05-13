@@ -366,7 +366,7 @@ async function cargarCatalogo() {
   if (catalogoCargado) return;
   try {
     const res = await fetch(`${PROXY}?metodo=CATALOGO_COMPLETO`);
-    const data = await res.json();
+   const data = await res.json();
 alert(JSON.stringify(data.debug || data));
     if (!Array.isArray(data) || data.length === 0) {
       document.getElementById('lista-catalogo').innerHTML = `<div class="error-box">Catálogo no disponible. Contacta al administrador.</div>`;
@@ -641,7 +641,8 @@ async function enviarPedido() {
     const res = await fetch(`${PROXY}?metodo=PEDIDOS`, {
       method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
     });
-    const data = await res.json();
+   const data = await res.json();
+alert(JSON.stringify(data.debug || data));
     if (data.Error) {
       alert('Error al registrar pedido en el sistema. Por favor contacta a tu vendedora. (Error: ' + data.Error.substring(0, 60) + ')');
       return;
