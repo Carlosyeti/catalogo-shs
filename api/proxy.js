@@ -54,7 +54,7 @@ export default async function handler(req, res) {
       Telefono2:    toNum(c.Telefono2),
       Fax:          toNum(c.Fax),
       CodigoPostal: toNum(c.CodigoPostal),
-      DirClienteID: 0, // ← TEMPORAL: forzado a 0 para prueba
+      DirClienteID: toNum(c.DirClienteID),
     };
   }
 
@@ -213,7 +213,7 @@ export default async function handler(req, res) {
         Documento: {
           Cliente: fixClienteTypes({
             Nombre: "PUBLICO EN GENERAL",
-            DirClienteID: 0,
+            DirClienteID: 10922,
             NomDireccion: "PUBLICO EN GENERAL",
             RFC: "XAXX010101000",
             Clave: "",
@@ -276,14 +276,11 @@ export default async function handler(req, res) {
       return res.status(200).json(result);
     }
 
+    // ── PEDIDOS — pasa el body directo sin modificar ──
     if (metodo === 'PEDIDOS') {
       if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido.' });
       const body = req.body;
       if (!body || !body.Documento) return res.status(400).json({ error: 'Body inválido.' });
-
-      if (body.Documento.Cliente) {
-        body.Documento.Cliente = fixClienteTypes(body.Documento.Cliente);
-      }
 
       const response = await fetch(
         `${API_BASE}/exsim/servicios/metodo/PEDIDOS/${TOKEN}`,
