@@ -590,7 +590,7 @@ async function enviarPedido() {
           DirClienteID: parseInt(dir.consignatario_id || dir.id || dir.dir_id || 0) || 0,
           NomDireccion: dir.consignatario || clienteData.nombre,
           Calle: dir.nombre_calle || 'S/N',
-          Num_interior: dir.num_interior || '',
+          Num_interior: parseInt(dir.num_interior) || 0,
           Num_exterior: parseInt(dir.num_exterior) || 0,
           Poblacion: dir.poblacion || '',
           Referencia: dir.referencia || '',
