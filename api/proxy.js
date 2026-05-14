@@ -218,7 +218,7 @@ export default async function handler(req, res) {
             RFC: "XAXX010101000",
             Clave: "",
             Calle: "AV. CRISTOBAL COLON",
-            Num_interior: "",
+            Num_interior:0,
             Num_exterior: 501,
             Poblacion: "",
             Referencia: "",
@@ -256,7 +256,7 @@ export default async function handler(req, res) {
             CP_empresa: ""
           },
           Detalle: [{
-            NombreArticulo: "AGUA PURIFICADA",
+            NombreArticulo: "AGUA",
             Unidades: 1,
             Precio: 41.85,
             Descuento: 0,
