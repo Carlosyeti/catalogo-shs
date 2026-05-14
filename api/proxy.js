@@ -213,7 +213,7 @@ export default async function handler(req, res) {
         Documento: {
           Cliente: fixClienteTypes({
             Nombre: "PUBLICO EN GENERAL",
-            DirClienteID: 10922,
+            DirClienteID: 0,
             NomDireccion: "PUBLICO EN GENERAL",
             RFC: "XAXX010101000",
             Clave: "",
