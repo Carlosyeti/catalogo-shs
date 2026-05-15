@@ -573,6 +573,12 @@ function quitarItem(nombre) {
 async function enviarPedido() {
   const items = Object.values(carrito);
   if (!items.length || !clienteData) return;
+
+  // Leer campos ANTES de cualquier otra cosa
+  const fechaEntrega = document.getElementById('fechaEntrega')?.value || 'No especificada';
+  const direccionEntrega = document.getElementById('direccionEntrega')?.value || '';
+  const notasExtra = document.getElementById('notasExtra')?.value || '';
+
   const btn = document.getElementById('btnEnviar');
   btn.disabled = true; btn.textContent = 'Enviando...';
   try {
@@ -602,7 +608,7 @@ async function enviarPedido() {
           Fax: 0,
           Email: clienteData.email || '',
           CodigoPostal: parseInt(String(dir.codigo_postal || '28000').replace(/\D/g,'')) || 28000,
-          Notas: `Pedido app web SHS | Entrega: ${document.getElementById('fechaEntrega')?.value || 'No especificada'} | Dir: ${document.getElementById('direccionEntrega')?.value || 'Dirección registrada'} | ${document.getElementById('notasExtra')?.value || ''}`,
+          Notas: `Entrega: ${fechaEntrega} | Dir: ${direccionEntrega || 'Dirección registrada'} | Notas: ${notasExtra}`, || 'No especificada'} | Dir: ${document.getElementById('direccionEntrega')?.value || 'Dirección registrada'} | ${document.getElementById('notasExtra')?.value || ''}`,
           CP_FechaNacimiento: '',
           CP_CURP: '',
           CP_TelefonoSucesor: '',
