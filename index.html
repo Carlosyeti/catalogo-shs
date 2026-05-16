@@ -608,7 +608,7 @@ async function enviarPedido() {
           Fax: 0,
           Email: clienteData.email || '',
           CodigoPostal: parseInt(String(dir.codigo_postal || '28000').replace(/\D/g,'')) || 28000,
-          Notas: `Entrega: ${fechaEntrega} | Dir: ${direccionEntrega || 'Dirección registrada'} | Notas: ${notasExtra}`, || 'No especificada'} | Dir: ${document.getElementById('direccionEntrega')?.value || 'Dirección registrada'} | ${document.getElementById('notasExtra')?.value || ''}`,
+          Notas: `Entrega: ${fechaEntrega} | Dir: ${direccionEntrega || 'Dirección registrada'} | Notas: ${notasExtra}`,
           CP_FechaNacimiento: '',
           CP_CURP: '',
           CP_TelefonoSucesor: '',
