@@ -575,9 +575,9 @@ async function enviarPedido() {
   if (!items.length || !clienteData) return;
 
   // Leer campos ANTES de cualquier otra cosa
-  const fechaEntrega = document.getElementById('fechaEntrega')?.value || ${fechaEntrega};
-  const direccionEntrega = document.getElementById('direccionEntrega')?.value || '';
-  const notasExtra = document.getElementById('notasExtra')?.value || '';
+  const fechaEntrega = document.getElementById('fechaEntrega')?.value || 'No especificada';
+const direccionEntrega = document.getElementById('direccionEntrega')?.value || '';
+const notasExtra = document.getElementById('notasExtra')?.value || '';
 
   const btn = document.getElementById('btnEnviar');
   btn.disabled = true; btn.textContent = 'Enviando...';
