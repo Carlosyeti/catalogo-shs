@@ -575,7 +575,7 @@ async function enviarPedido() {
   if (!items.length || !clienteData) return;
 
   // Leer campos ANTES de cualquier otra cosa
-  const fechaEntrega = document.getElementById('fechaEntrega')?.value || 'No especificada';
+  const fechaEntrega = document.getElementById('fechaEntrega')?.value || ${fechaEntrega};
   const direccionEntrega = document.getElementById('direccionEntrega')?.value || '';
   const notasExtra = document.getElementById('notasExtra')?.value || '';
 
