@@ -114,6 +114,23 @@ html{background:#ffffff}body{font-family:'Nunito',sans-serif;background:#ffffff;
 .btn-quitar{background:#fef2f2;border:none;color:#ef4444;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .carrito-footer{padding:16px;border-top:2px solid var(--borde);flex-shrink:0}
 .carrito-resumen{margin-bottom:16px;border-top:2px solid var(--borde);padding-top:12px}
+
+/* CLIENTE NUEVO */
+.btn-cliente-nuevo{width:100%;padding:12px;border-radius:12px;border:2px dashed #1e4bcc;background:#f0f6ff;color:#1e4bcc;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:12px;transition:all 0.2s}
+.btn-cliente-nuevo:hover{background:#dbeafe}
+.modal-cliente{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;padding:16px}
+.modal-cliente.abierto{display:flex}
+.modal-cliente-box{background:white;border-radius:20px;padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.modal-cliente-titulo{font-size:18px;font-weight:800;color:#1a1a2e;margin-bottom:4px}
+.modal-cliente-sub{font-size:13px;color:#64748b;margin-bottom:20px}
+.mc-campo{margin-bottom:14px}
+.mc-campo label{display:block;font-size:12px;font-weight:600;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px}
+.mc-campo input,.mc-campo select,.mc-campo textarea{width:100%;padding:11px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Segoe UI',sans-serif;outline:none;transition:border-color 0.2s;box-sizing:border-box}
+.mc-campo input:focus,.mc-campo select:focus,.mc-campo textarea:focus{border-color:#1e4bcc}
+.mc-campo textarea{resize:vertical;min-height:70px}
+.mc-btns{display:flex;gap:10px;margin-top:20px}
+.mc-btn-enviar{flex:1;padding:13px;border-radius:12px;border:none;background:#1e4bcc;color:white;font-size:15px;font-weight:700;cursor:pointer}
+.mc-btn-cancelar{padding:13px 18px;border-radius:12px;border:2px solid #e2e8f0;background:white;color:#64748b;font-size:14px;font-weight:600;cursor:pointer}
 .carrito-linea{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:14px}
 .carrito-linea span:first-child{color:var(--texto-suave);font-weight:600}
 .carrito-linea span:last-child{font-weight:700;color:var(--texto)}
@@ -249,6 +266,9 @@ html{background:#ffffff}body{font-family:'Nunito',sans-serif;background:#ffffff;
         <div class="carrito-campo">
           <label>📝 Notas adicionales <span style="font-weight:400;color:#94a3b8">(opcional)</span></label>
           <input type="text" id="notasExtra" placeholder="Instrucciones especiales para tu pedido">
+        </div>
+        <div class="carrito-campo">
+          <button class="btn-cliente-nuevo" onclick="abrirModalClienteNuevo()">🙋 ¿Eres cliente nuevo? Regístra tus datos aquí</button>
         </div>
       </div>
       <div class="carrito-resumen">
@@ -957,7 +977,116 @@ if (pagoStatus === 'exitoso') {
   setTimeout(function() { alert('El pago fue cancelado. Puedes intentarlo de nuevo.'); }, 500);
 }
 
+// ── CLIENTE NUEVO ──────────────────────────────────────────────
+var datosClienteNuevo = null;
+
+function abrirModalClienteNuevo() {
+  document.getElementById('modalClienteNuevo').classList.add('abierto');
+}
+
+function cerrarModalClienteNuevo() {
+  document.getElementById('modalClienteNuevo').classList.remove('abierto');
+}
+
+function guardarClienteNuevo() {
+  const nombre    = document.getElementById('cnNombre').value.trim();
+  const giro      = document.getElementById('cnGiro').value;
+  const telefono  = document.getElementById('cnTelefono').value.trim();
+  const ciudad    = document.getElementById('cnCiudad').value.trim();
+  const correo    = document.getElementById('cnCorreo').value.trim();
+  const direccion = document.getElementById('cnDireccion').value.trim();
+  const fuente    = document.getElementById('cnFuente').value;
+  const res       = document.getElementById('cnResult');
+
+  if (!nombre || !giro || !telefono || !ciudad) {
+    res.className = 'result err';
+    res.textContent = 'Por favor llena los campos obligatorios (*)';
+    res.style.display = 'block';
+    return;
+  }
+
+  datosClienteNuevo = { nombre, giro, telefono, correo, ciudad, direccion, fuente };
+
+  const resumenCliente = `CLIENTE NUEVO — Nombre: ${nombre} | Giro: ${giro} | Tel: ${telefono} | Ciudad: ${ciudad}${correo ? ' | Email: ' + correo : ''}${direccion ? ' | Dir: ' + direccion : ''}${fuente ? ' | Fuente: ' + fuente : ''}`;
+  const notasActuales = document.getElementById('notasExtra').value;
+  document.getElementById('notasExtra').value = notasActuales ? notasActuales + ' | ' + resumenCliente : resumenCliente;
+
+  res.className = 'result ok';
+  res.textContent = '✅ Datos guardados — se enviarán con tu pedido';
+  res.style.display = 'block';
+
+  const btn = document.querySelector('.btn-cliente-nuevo');
+  if (btn) {
+    btn.textContent = '✅ Datos de cliente nuevo registrados';
+    btn.style.background = '#dcfce7';
+    btn.style.borderColor = '#16a34a';
+    btn.style.color = '#166534';
+  }
+
+  setTimeout(function() { cerrarModalClienteNuevo(); }, 1500);
+}
+// ──────────────────────────────────────────────────────────────
+
 init();
 </script>
+<!-- MODAL CLIENTE NUEVO -->
+<div class="modal-cliente" id="modalClienteNuevo">
+  <div class="modal-cliente-box">
+    <div class="modal-cliente-titulo">🙋 Registro de cliente nuevo</div>
+    <div class="modal-cliente-sub">Tus datos se enviarán junto con tu pedido. Tu vendedora te contactará para formalizar el registro.</div>
+    <div class="mc-campo">
+      <label>Nombre completo o razón social *</label>
+      <input type="text" id="cnNombre" placeholder="Ej: Farmacia San José">
+    </div>
+    <div class="mc-campo">
+      <label>Giro del negocio *</label>
+      <select id="cnGiro">
+        <option value="">Selecciona...</option>
+        <option>Farmacia</option>
+        <option>Restaurante / Cocina</option>
+        <option>Hotel / Hospedaje</option>
+        <option>Limpieza / Intendencia</option>
+        <option>Oficina / Empresa</option>
+        <option>Tienda de abarrotes</option>
+        <option>Escuela / Universidad</option>
+        <option>Clínica / Hospital</option>
+        <option>Otro</option>
+      </select>
+    </div>
+    <div class="mc-campo">
+      <label>Teléfono de contacto *</label>
+      <input type="tel" id="cnTelefono" placeholder="312 123 4567">
+    </div>
+    <div class="mc-campo">
+      <label>Correo electrónico</label>
+      <input type="email" id="cnCorreo" placeholder="correo@ejemplo.com">
+    </div>
+    <div class="mc-campo">
+      <label>Ciudad / Municipio *</label>
+      <input type="text" id="cnCiudad" placeholder="Ej: Colima, Manzanillo, Tecomán...">
+    </div>
+    <div class="mc-campo">
+      <label>Dirección</label>
+      <textarea id="cnDireccion" placeholder="Calle, número, colonia..."></textarea>
+    </div>
+    <div class="mc-campo">
+      <label>¿Cómo nos conociste?</label>
+      <select id="cnFuente">
+        <option value="">Selecciona...</option>
+        <option>Recomendación de un conocido</option>
+        <option>Redes sociales</option>
+        <option>Vendedora SHS</option>
+        <option>Google</option>
+        <option>Otro</option>
+      </select>
+    </div>
+    <div class="mc-btns">
+      <button class="mc-btn-cancelar" onclick="cerrarModalClienteNuevo()">Cancelar</button>
+      <button class="mc-btn-enviar" onclick="guardarClienteNuevo()">✅ Guardar datos</button>
+    </div>
+    <div class="result" id="cnResult" style="margin-top:12px;display:none"></div>
+  </div>
+</div>
+
 </body>
 </html>
