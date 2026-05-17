@@ -345,7 +345,15 @@ async function renderFrecuentes() {
     lista.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><h3>Sin historial aún</h3><p>Ve al catálogo para hacer tu primer pedido</p></div>`;
     return;
   }
-  lista.innerHTML = historialArticulos.map((art, i) => cardHTML(art.nombre, '', '', i, 'frec', true)).join('');
+  if (!catalogoCargado) await cargarCatalogo();
+  const nombreAClave = {};
+  for (const art of catalogoCompleto) {
+    if (art.nombre && art.clave) nombreAClave[art.nombre] = art.clave;
+  }
+  lista.innerHTML = historialArticulos.map((art, i) => {
+    const clave = nombreAClave[art.nombre] || '';
+    return cardHTML(art.nombre, '', '', i, 'frec', true, clave);
+  }).join('');
   historialArticulos.forEach((art, i) => {
     const el = document.getElementById(`precio-frec-${i}`);
     if (!el) return;
