@@ -1041,9 +1041,10 @@ function guardarClienteNuevo() {
 
   datosClienteNuevo = { nombre, giro, telefono, correo, ciudad, direccion, fuente };
 
-  const resumenCliente = `CLIENTE NUEVO — Nombre: ${nombre} | Giro: ${giro} | Tel: ${telefono} | Ciudad: ${ciudad}${correo ? ' | Email: ' + correo : ''}${direccion ? ' | Dir: ' + direccion : ''}${fuente ? ' | Fuente: ' + fuente : ''}`;
+  const resumenCliente = `NUEVO: ${nombre} | ${giro} | ${telefono} | ${ciudad}${correo ? ' | ' + correo : ''}`;
+  const resumenRecortado = resumenCliente.substring(0, 99);
   const notasActuales = document.getElementById('notasExtra').value;
-  document.getElementById('notasExtra').value = notasActuales ? notasActuales + ' | ' + resumenCliente : resumenCliente;
+  document.getElementById('notasExtra').value = notasActuales ? (notasActuales + ' ' + resumenRecortado).substring(0, 99) : resumenRecortado;
 
   res.className = 'result ok';
   res.textContent = '✅ Datos guardados — se enviarán con tu pedido';
