@@ -669,7 +669,15 @@ const notasExtra = document.getElementById('notasExtra')?.value || '';
       alert('Error al registrar pedido en el sistema. Por favor contacta a tu vendedora. (Error: ' + data.Error.substring(0, 60) + ')');
       return;
     }
-    const folio = data.Folio || data.folio || data.NumeroDocumento || data.respuesta || '—';
+    const folio = data.Folio || data.folio || data.NumeroDocumento || '—';
+    // Si la respuesta contiene un error de Microsip
+    if (!data.Folio && !data.folio && !data.NumeroDocumento) {
+      const posibleError = data.respuesta || data.Error || '';
+      if (posibleError && posibleError !== '—') {
+        alert('Error al registrar el pedido en Microsip. Por favor contacta a tu vendedora.\n\n' + String(posibleError).substring(0, 120));
+        return;
+      }
+    }
     // Guardar datos para el PDF
     window._ultimoPedido = {
       folio, items, totalPesos,
