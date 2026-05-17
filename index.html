@@ -328,6 +328,38 @@ async function init() {
     ocultarSplash();
     return;
   }
+
+  // ── MODO CLIENTE NUEVO ─────────────────────────────────────
+  if (CLIENTE_ID === 'NUEVO') {
+    clienteData = {
+      nombre: 'Cliente Nuevo',
+      clave: '',
+      telefono: '3120000000',
+      email: '',
+      vendedor: {},
+      direcciones: [{
+        consignatario: 'PUBLICO EN GENERAL',
+        calle: 'AV. CRISTOBAL COLON',
+        num_exterior: '501', num_interior: '',
+        colonia: 'LOS VIVEROS', ciudad: 'COLIMA',
+        estado: 'COLIMA', pais: 'MEXICO',
+        codigo_postal: '28070',
+        consignatario_id: 10922, id: 10922, dir_id: 10922
+      }]
+    };
+    preciosCliente = {};
+    historialArticulos = [];
+    document.getElementById('clienteNombre').textContent = 'Visitante';
+    mostrarSaludoSplash('Visitante');
+    setTimeout(ocultarSplash, 3000);
+    document.getElementById('countFrecuentes').textContent = '0';
+    try { imagenesMap = await (await fetch(`${PROXY}?metodo=GET_IMAGENES`)).json() || {}; } catch(e) { imagenesMap = {}; }
+    cargarCatalogo();
+    // Ocultar pestaña "Mis productos" — no aplica para visitantes
+    document.querySelector('.tab[onclick*="frecuentes"]')?.style.setProperty('display','none');
+    return;
+  }
+  // ──────────────────────────────────────────────────────────
   try {
     const [clienteRes, historialRes, preciosRes, imagenesRes] = await Promise.all([
       fetch(`${PROXY}?metodo=CLIENTES&clienteId=${CLIENTE_ID}`),
@@ -611,6 +643,12 @@ function quitarItem(nombre) {
 async function enviarPedido() {
   const items = Object.values(carrito);
   if (!items.length || !clienteData) return;
+
+  // Validar que cliente nuevo haya llenado sus datos
+  if (CLIENTE_ID === 'NUEVO' && !datosClienteNuevo) {
+    alert('Por favor llena tus datos como cliente nuevo antes de enviar el pedido. Usa el botón "¿Eres cliente nuevo?"');
+    return;
+  }
 
   // Leer campos ANTES de cualquier otra cosa
   const fechaEntrega = document.getElementById('fechaEntrega')?.value || 'No especificada';
