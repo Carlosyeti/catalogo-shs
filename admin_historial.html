@@ -243,9 +243,53 @@ input[type=file]{display:none}
     </div>
   </div>
 
-</div>
+  <div class="seccion">
+    <h2>📊 Reporte de fotos faltantes</h2>
+    <div class="instrucciones"><ul>
+      <li>Compara los 675 artículos activos contra las fotos asignadas en Redis</li>
+      <li>Descarga el Excel con los artículos sin foto para llevar el control</li>
+    </ul></div>
+    <button class="btn" id="btnReporte" onclick="generarReporte()">Analizar productos sin foto</button>
+    <div class="progress" id="pReporte" style="display:none"><div class="bar-bg"><div class="bar" id="bReporte"></div></div><div class="progress-txt" id="ptReporte"></div></div>
 
-<script>
+    <div id="reporteResultado" style="display:none;margin-top:14px">
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+        <div style="background:#dcfce7;border-radius:10px;padding:12px 20px;text-align:center;flex:1;min-width:120px">
+          <div style="font-size:24px;font-weight:700;color:#166534" id="rConFoto">0</div>
+          <div style="font-size:12px;color:#166534">Con foto ✅</div>
+        </div>
+        <div style="background:#fee2e2;border-radius:10px;padding:12px 20px;text-align:center;flex:1;min-width:120px">
+          <div style="font-size:24px;font-weight:700;color:#dc2626" id="rSinFoto">0</div>
+          <div style="font-size:12px;color:#dc2626">Sin foto ❌</div>
+        </div>
+        <div style="background:#dbeafe;border-radius:10px;padding:12px 20px;text-align:center;flex:1;min-width:120px">
+          <div style="font-size:24px;font-weight:700;color:#1e4bcc" id="rTotal">0</div>
+          <div style="font-size:12px;color:#1e4bcc">Total activos</div>
+        </div>
+        <div style="background:#f0fdf4;border-radius:10px;padding:12px 20px;text-align:center;flex:1;min-width:120px">
+          <div style="font-size:24px;font-weight:700;color:#16a34a" id="rPct">0%</div>
+          <div style="font-size:12px;color:#16a34a">Completado</div>
+        </div>
+      </div>
+      <button onclick="exportarExcel()" style="padding:10px 20px;border-radius:10px;border:none;background:#1e4bcc;color:white;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:12px">
+        📥 Descargar Excel con faltantes
+      </button>
+      <div style="max-height:300px;overflow-y:auto;border:0.5px solid #e2e8f0;border-radius:10px">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="background:#f8fafc;position:sticky;top:0">
+              <th style="padding:8px 12px;text-align:left;font-weight:600;color:#64748b;border-bottom:1px solid #e2e8f0">#</th>
+              <th style="padding:8px 12px;text-align:left;font-weight:600;color:#64748b;border-bottom:1px solid #e2e8f0">Clave</th>
+              <th style="padding:8px 12px;text-align:left;font-weight:600;color:#64748b;border-bottom:1px solid #e2e8f0">Nombre</th>
+            </tr>
+          </thead>
+          <tbody id="reporteTabla"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
 // ── CONTRASEÑA ADMIN ──────────────────────────────────────────
 var PASS = 'SHS2026';
 
@@ -471,7 +515,64 @@ async function subirPrecios() {
   finally { document.getElementById('btn2').disabled = false; }
 }
 
-// ── GALERÍA VISUAL CLOUDINARY ──────────────────────────────────
+// ── REPORTE FOTOS FALTANTES ────────────────────────────────────
+var reporteData = [];
+
+async function generarReporte() {
+  document.getElementById('btnReporte').disabled = true;
+  document.getElementById('pReporte').style.display = 'block';
+  document.getElementById('reporteResultado').style.display = 'none';
+  document.getElementById('bReporte').style.width = '30%';
+  document.getElementById('ptReporte').textContent = 'Cargando catálogo e imágenes...';
+  try {
+    var [catRes, imgRes] = await Promise.all([
+      fetch(PROXY + '?metodo=CATALOGO_COMPLETO'),
+      fetch(PROXY + '?metodo=GET_IMAGENES')
+    ]);
+    var catalogo = (await catRes.json() || []).filter(function(a){ return !!CLAVE_CAT_ADMIN[a.clave]; });
+    var imagenes = await imgRes.json() || {};
+    document.getElementById('bReporte').style.width = '100%';
+
+    var conFoto = [], sinFoto = [];
+    catalogo.forEach(function(a) {
+      if (imagenes[a.clave]) conFoto.push(a);
+      else sinFoto.push(a);
+    });
+
+    reporteData = sinFoto;
+    document.getElementById('rConFoto').textContent = conFoto.length;
+    document.getElementById('rSinFoto').textContent = sinFoto.length;
+    document.getElementById('rTotal').textContent = catalogo.length;
+    document.getElementById('rPct').textContent = Math.round(conFoto.length / catalogo.length * 100) + '%';
+
+    document.getElementById('reporteTabla').innerHTML = sinFoto.map(function(a, i) {
+      return '<tr style="border-bottom:0.5px solid #f1f5f9;' + (i%2===0?'background:#fafafa':'') + '">' +
+        '<td style="padding:7px 12px;color:#94a3b8">' + (i+1) + '</td>' +
+        '<td style="padding:7px 12px;font-family:monospace;color:#1e4bcc;font-weight:600">' + a.clave + '</td>' +
+        '<td style="padding:7px 12px;color:#1a1a2e">' + a.nombre + '</td>' +
+      '</tr>';
+    }).join('');
+
+    document.getElementById('ptReporte').textContent = 'Listo — ' + sinFoto.length + ' artículos sin foto';
+    document.getElementById('reporteResultado').style.display = 'block';
+  } catch(e) {
+    document.getElementById('ptReporte').textContent = 'Error: ' + e.message;
+  }
+  document.getElementById('btnReporte').disabled = false;
+}
+
+function exportarExcel() {
+  if (!reporteData.length) return;
+  var wb = XLSX.utils.book_new();
+  var datos = [['Clave', 'Nombre', 'Unidad']].concat(
+    reporteData.map(function(a){ return [a.clave, a.nombre, a.unidadmed || '']; })
+  );
+  var ws = XLSX.utils.aoa_to_sheet(datos);
+  ws['!cols'] = [{wch:16},{wch:50},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Sin foto');
+  XLSX.writeFile(wb, 'productos_sin_foto_SHS.xlsx');
+}
+// ──────────────────────────────────────────────────────────────
 var galeriaFotos = [];
 var fotoSeleccionada = null;
 var galeriaArticulos = [];
