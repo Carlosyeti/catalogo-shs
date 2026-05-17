@@ -158,7 +158,6 @@ html{background:#ffffff}body{font-family:'Nunito',sans-serif;background:#ffffff;
 .error-box{background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;border-radius:12px;padding:16px;margin-bottom:16px;font-weight:600;font-size:14px}
 .info-precios{background:var(--azul-light);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--azul);font-weight:700;margin-bottom:12px;display:none}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
@@ -273,7 +272,6 @@ html{background:#ffffff}body{font-family:'Nunito',sans-serif;background:#ffffff;
     <h3>¡Pedido enviado!</h3>
     <p class="modal-gracias">Gracias por tu preferencia, <strong id="modalClienteNombre"></strong>. Tu pedido fue recibido y pronto nos pondremos en contacto contigo. 🙌</p>
     <div class="modal-folio" id="modalFolio">Folio: —</div>
-    <button class="btn-modal" onclick="descargarResumenPDF()" style="margin-bottom:10px;background:#f0fdf4;color:#166534;border:2px solid #86efac">📄 Descargar resumen</button>
     <button class="btn-modal" onclick="cerrarModal()">Listo</button>
   </div>
 </div>
@@ -669,22 +667,7 @@ const notasExtra = document.getElementById('notasExtra')?.value || '';
       alert('Error al registrar pedido en el sistema. Por favor contacta a tu vendedora. (Error: ' + data.Error.substring(0, 60) + ')');
       return;
     }
-    const folio = data.Folio || data.folio || data.NumeroDocumento || '—';
-    // Si la respuesta contiene un error de Microsip
-    if (!data.Folio && !data.folio && !data.NumeroDocumento) {
-      const posibleError = data.respuesta || data.Error || '';
-      if (posibleError && posibleError !== '—') {
-        alert('Error al registrar el pedido en Microsip. Por favor contacta a tu vendedora.\n\n' + String(posibleError).substring(0, 120));
-        return;
-      }
-    }
-    // Guardar datos para el PDF
-    window._ultimoPedido = {
-      folio, items, totalPesos,
-      cliente: clienteData?.nombre || '',
-      fecha: new Date().toLocaleDateString('es-MX', { day:'2-digit', month:'2-digit', year:'numeric' }),
-      fechaEntrega, notasExtra
-    };
+    const folio = data.Folio || data.folio || data.NumeroDocumento || data.respuesta || '—';
     guardarEnHistorial(items, totalPesos * 1.16);
     carrito = {}; actualizarCarritoUI(); cerrarCarrito();
     document.getElementById('modalFolio').textContent = `Folio: ${folio}`;
@@ -748,125 +731,6 @@ function cerrarCarrito() {
   document.getElementById('overlay').classList.remove('abierto');
 }
 function cerrarModal() { document.getElementById('modalExito').classList.remove('abierto'); }
-
-function descargarResumenPDF() {
-  const p = window._ultimoPedido;
-  if (!p) return;
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  const azul = [30, 75, 204];
-  const gris = [100, 116, 139];
-  const negro = [26, 26, 46];
-
-  // Encabezado azul
-  doc.setFillColor(...azul);
-  doc.rect(0, 0, 210, 32, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(22); doc.setFont('helvetica', 'bold');
-  doc.text('SHS✓', 14, 14);
-  doc.setFontSize(10); doc.setFont('helvetica', 'normal');
-  doc.text('Surtidora de Higiénicos y Servicios', 14, 21);
-  doc.setFontSize(9);
-  doc.text('pedidos.surtidorahigienicos.com', 14, 27);
-
-  // Folio y fecha arriba derecha
-  doc.setFontSize(11); doc.setFont('helvetica', 'bold');
-  doc.text('RESUMEN DE PEDIDO', 196, 12, { align: 'right' });
-  doc.setFontSize(9); doc.setFont('helvetica', 'normal');
-  doc.text(`Folio: ${p.folio}`, 196, 19, { align: 'right' });
-  doc.text(`Fecha: ${p.fecha}`, 196, 25, { align: 'right' });
-
-  // Datos del cliente
-  doc.setTextColor(...negro);
-  doc.setFontSize(10); doc.setFont('helvetica', 'bold');
-  doc.text('Cliente:', 14, 42);
-  doc.setFont('helvetica', 'normal');
-  doc.text(p.cliente, 36, 42);
-  if (p.fechaEntrega && p.fechaEntrega !== 'No especificada') {
-    doc.setFont('helvetica', 'bold');
-    doc.text('Entrega:', 14, 49);
-    doc.setFont('helvetica', 'normal');
-    doc.text(p.fechaEntrega, 36, 49);
-  }
-  if (p.notasExtra) {
-    doc.setFont('helvetica', 'bold');
-    doc.text('Notas:', 14, 56);
-    doc.setFont('helvetica', 'normal');
-    const notasLines = doc.splitTextToSize(p.notasExtra, 150);
-    doc.text(notasLines, 36, 56);
-  }
-
-  // Línea separadora
-  let y = 64;
-  doc.setDrawColor(...azul);
-  doc.setLineWidth(0.5);
-  doc.line(14, y, 196, y);
-  y += 7;
-
-  // Encabezados de tabla
-  doc.setFillColor(240, 244, 248);
-  doc.rect(14, y - 5, 182, 8, 'F');
-  doc.setTextColor(...gris);
-  doc.setFontSize(9); doc.setFont('helvetica', 'bold');
-  doc.text('PRODUCTO', 16, y);
-  doc.text('CANT.', 140, y, { align: 'right' });
-  doc.text('PRECIO', 163, y, { align: 'right' });
-  doc.text('IMPORTE', 196, y, { align: 'right' });
-  y += 7;
-
-  // Filas de productos
-  doc.setTextColor(...negro);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  p.items.forEach((item, idx) => {
-    if (idx % 2 === 0) {
-      doc.setFillColor(250, 252, 255);
-      doc.rect(14, y - 5, 182, 7, 'F');
-    }
-    const nombreCorto = doc.splitTextToSize(item.nombre, 110)[0];
-    doc.text(nombreCorto, 16, y);
-    doc.text(String(item.cantidad), 140, y, { align: 'right' });
-    doc.text(fmt(item.precio), 163, y, { align: 'right' });
-    doc.text(fmt(item.precio * item.cantidad), 196, y, { align: 'right' });
-    y += 7;
-    if (y > 260) {
-      doc.addPage();
-      y = 20;
-    }
-  });
-
-  // Totales
-  y += 4;
-  doc.setDrawColor(...azul);
-  doc.line(120, y, 196, y);
-  y += 6;
-  const subtotal = p.totalPesos;
-  const iva = subtotal * 0.16;
-  const total = subtotal + iva;
-  doc.setFontSize(9); doc.setTextColor(...gris);
-  doc.text('Subtotal (sin IVA):', 148, y, { align: 'right' });
-  doc.setTextColor(...negro);
-  doc.text(fmt(subtotal), 196, y, { align: 'right' });
-  y += 6;
-  doc.setTextColor(...gris);
-  doc.text('IVA (16%):', 148, y, { align: 'right' });
-  doc.setTextColor(...negro);
-  doc.text(fmt(iva), 196, y, { align: 'right' });
-  y += 6;
-  doc.setFillColor(...azul);
-  doc.rect(120, y - 5, 76, 9, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(10); doc.setFont('helvetica', 'bold');
-  doc.text('TOTAL:', 148, y, { align: 'right' });
-  doc.text(fmt(total), 196, y, { align: 'right' });
-
-  // Pie
-  doc.setTextColor(...gris);
-  doc.setFontSize(8); doc.setFont('helvetica', 'normal');
-  doc.text('Gracias por tu preferencia — SHS Surtidora de Higiénicos y Servicios', 105, 287, { align: 'center' });
-
-  doc.save(`Pedido_SHS_${p.folio}.pdf`);
-}
 
 function mostrarSaludoSplash(nombre) {
   var saludo = document.getElementById('splashSaludo');
