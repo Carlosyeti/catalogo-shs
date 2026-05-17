@@ -2,6 +2,9 @@ import Redis from 'ioredis';
 
 const redis = new Redis(process.env.REDIS_URL);
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY;
+const CLD_KEY    = '642717449888493';
+const CLD_SECRET = 'loHF1m-IHkYwZHyBzbuWu2YJ_dI';
+const CLD_CLOUD  = 'dkaqcxipf';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -300,7 +303,26 @@ export default async function handler(req, res) {
       return res.status(200).json(data);
     }
 
-    // ── IMÁGENES CLOUDINARY ────────────────────────────────────
+    // ── LISTAR IMÁGENES DE CLOUDINARY ─────────────────────────
+    if (metodo === 'CLOUDINARY_IMAGENES') {
+      const auth = Buffer.from(`${CLD_KEY}:${CLD_SECRET}`).toString('base64');
+      let todas = [];
+      let nextCursor = null;
+      do {
+        const url = `https://api.cloudinary.com/v1_1/${CLD_CLOUD}/resources/image?max_results=500${nextCursor ? '&next_cursor=' + nextCursor : ''}`;
+        const r = await fetch(url, { headers: { 'Authorization': `Basic ${auth}` } });
+        const d = await r.json();
+        if (Array.isArray(d.resources)) todas = todas.concat(d.resources);
+        nextCursor = d.next_cursor || null;
+      } while (nextCursor);
+      const resultado = todas.map(img => ({
+        public_id: img.public_id,
+        format: img.format,
+        url: `https://res.cloudinary.com/${CLD_CLOUD}/image/upload/w_200,h_200,c_fit/${img.public_id}.${img.format}`
+      }));
+      return res.status(200).json(resultado);
+    }
+    // ──────────────────────────────────────────────────────────
     if (metodo === 'GET_IMAGEN') {
       const clave = (req.query.clave || '').trim();
       if (!clave) return res.status(400).json({ error: 'clave requerida' });
