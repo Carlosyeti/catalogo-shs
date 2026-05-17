@@ -300,6 +300,40 @@ export default async function handler(req, res) {
       return res.status(200).json(data);
     }
 
+    // ── IMÁGENES CLOUDINARY ────────────────────────────────────
+    if (metodo === 'GET_IMAGEN') {
+      const clave = (req.query.clave || '').trim();
+      if (!clave) return res.status(400).json({ error: 'clave requerida' });
+      const url = await redis.get(`imagen:${clave}`);
+      return res.status(200).json({ url: url || null });
+    }
+
+    if (metodo === 'SET_IMAGEN') {
+      if (req.method !== 'POST') return res.status(405).json({ error: 'Usar POST' });
+      const { clave, url } = req.body || {};
+      if (!clave || !url) return res.status(400).json({ error: 'clave y url requeridos' });
+      await redis.set(`imagen:${clave.trim()}`, url.trim());
+      return res.status(200).json({ ok: true });
+    }
+
+    if (metodo === 'DELETE_IMAGEN') {
+      const clave = (req.query.clave || '').trim();
+      if (!clave) return res.status(400).json({ error: 'clave requerida' });
+      await redis.del(`imagen:${clave}`);
+      return res.status(200).json({ ok: true });
+    }
+
+    if (metodo === 'GET_IMAGENES') {
+      const keys = await redis.keys('imagen:*');
+      const result = {};
+      for (const key of keys) {
+        const clave = key.replace('imagen:', '');
+        result[clave] = await redis.get(key);
+      }
+      return res.status(200).json(result);
+    }
+    // ──────────────────────────────────────────────────────────
+
     if (metodo === 'CREAR_PAGO') {
       if (req.method !== 'POST') return res.status(405).json({ error: 'Usar POST' });
       let bodyData = req.body;
