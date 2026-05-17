@@ -331,31 +331,26 @@ async function init() {
 
   // ── MODO CLIENTE NUEVO ─────────────────────────────────────
   if (CLIENTE_ID === 'NUEVO') {
-    clienteData = {
-      nombre: 'Cliente Nuevo',
-      clave: '',
-      telefono: '3120000000',
-      email: '',
-      vendedor: {},
-      direcciones: [{
-        consignatario: 'PUBLICO EN GENERAL',
-        calle: 'AV. CRISTOBAL COLON',
-        num_exterior: '501', num_interior: '',
-        colonia: 'LOS VIVEROS', ciudad: 'COLIMA',
-        estado: 'COLIMA', pais: 'MEXICO',
-        codigo_postal: '28070',
-        consignatario_id: 10922, id: 10922, dir_id: 10922
-      }]
-    };
+    try {
+      const [mostRes, imagenesRes] = await Promise.all([
+        fetch(`${PROXY}?metodo=CLIENTES&clienteId=MOST`),
+        fetch(`${PROXY}?metodo=GET_IMAGENES`)
+      ]);
+      const mostArr = await mostRes.json();
+      clienteData = mostArr[0] || null;
+      if (!clienteData) throw new Error('no encontrado');
+      try { imagenesMap = await imagenesRes.json() || {}; } catch(e) { imagenesMap = {}; }
+    } catch(e) {
+      document.getElementById('error-global').textContent = 'Error al cargar. Intenta de nuevo.';
+      document.getElementById('error-global').style.display = 'block';
+      ocultarSplash(); return;
+    }
     preciosCliente = {};
     historialArticulos = [];
     document.getElementById('clienteNombre').textContent = 'Visitante';
     mostrarSaludoSplash('Visitante');
     setTimeout(ocultarSplash, 3000);
     document.getElementById('countFrecuentes').textContent = '0';
-    try { imagenesMap = await (await fetch(`${PROXY}?metodo=GET_IMAGENES`)).json() || {}; } catch(e) { imagenesMap = {}; }
-    cargarCatalogo();
-    // Ocultar pestaña "Mis productos" — no aplica para visitantes
     document.querySelector('.tab[onclick*="frecuentes"]')?.style.setProperty('display','none');
     cambiarTab('catalogo');
     return;
