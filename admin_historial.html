@@ -86,6 +86,27 @@ input[type=file]{display:none}
 .btn-guardar-img:hover{background:#163799}
 .btn-borrar-img{padding:10px 16px;border-radius:10px;border:none;background:#fee2e2;color:#dc2626;font-size:13px;font-weight:700;cursor:pointer;transition:background 0.2s}
 .btn-borrar-img:hover{background:#fca5a5}
+
+/* GALERÍA VISUAL CLOUDINARY */
+.galeria-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-top:12px;max-height:480px;overflow-y:auto}
+.galeria-item{border-radius:10px;border:2px solid #e2e8f0;overflow:hidden;cursor:pointer;transition:all 0.15s;background:#f8fafc;position:relative}
+.galeria-item:hover{border-color:#1e4bcc;transform:scale(1.03)}
+.galeria-item.asignada{border-color:#16a34a}
+.galeria-item img{width:100%;height:90px;object-fit:contain;display:block;background:#f1f5f9;padding:4px}
+.galeria-item-nombre{font-size:10px;color:#64748b;padding:3px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+.galeria-item-badge{position:absolute;top:4px;right:4px;background:#16a34a;color:white;font-size:9px;font-weight:700;border-radius:4px;padding:1px 4px}
+.asignar-panel{background:#f8fafc;border:2px solid #1e4bcc;border-radius:12px;padding:16px;margin-top:14px;display:none}
+.asignar-foto-preview{width:80px;height:80px;object-fit:contain;border-radius:8px;border:1px solid #e2e8f0;float:left;margin-right:14px;background:#fff}
+.asignar-titulo{font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:8px}
+.asignar-buscar{width:100%;padding:9px 12px;border:2px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:'Segoe UI',sans-serif;outline:none;box-sizing:border-box;margin-bottom:8px}
+.asignar-buscar:focus{border-color:#1e4bcc}
+.asignar-lista{max-height:180px;overflow-y:auto}
+.asignar-art{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;background:white;margin-bottom:4px;border:1px solid #e2e8f0;cursor:pointer;transition:all 0.15s}
+.asignar-art:hover{border-color:#1e4bcc;background:#eff6ff}
+.asignar-art-nombre{font-size:12px;font-weight:700;color:#1a1a2e}
+.asignar-art-clave{font-size:11px;color:#64748b}
+.btn-asignar{background:#1e4bcc;color:white;border:none;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn-asignar:hover{background:#163799}
 </style>
 </head>
 <body>
@@ -170,6 +191,30 @@ input[type=file]{display:none}
     <div class="progress" id="p2"><div class="bar-bg"><div class="bar" id="b2"></div></div><div class="progress-txt" id="pt2"></div></div>
     <div class="result" id="r2"></div>
   </div>
+  <div class="seccion">
+    <h2>🖼️ Asignar fotos — Galería visual</h2>
+    <div class="instrucciones"><ul>
+      <li>Haz clic en una foto → busca el artículo por nombre → Asignar</li>
+      <li>Las fotos con borde verde ya están asignadas</li>
+    </ul></div>
+    <button class="btn" id="btnCargarGaleria" onclick="cargarGaleria()" style="margin-top:0">Ver mis fotos de Cloudinary</button>
+    <div class="progress" id="pGaleria"><div class="bar-bg"><div class="bar" id="bGaleria"></div></div><div class="progress-txt" id="ptGaleria"></div></div>
+
+    <div id="asignarPanel" class="asignar-panel">
+      <img id="asignarPreview" class="asignar-foto-preview" src="" alt="">
+      <div style="overflow:hidden">
+        <div class="asignar-titulo" id="asignarTitulo">Foto seleccionada</div>
+        <input type="text" class="asignar-buscar" id="asignarBuscar" placeholder="Buscar artículo por nombre..." oninput="asignarFiltrar()">
+        <div class="asignar-lista" id="asignarLista"></div>
+      </div>
+      <div style="clear:both;margin-top:8px">
+        <div class="result" id="asignarResult"></div>
+      </div>
+    </div>
+
+    <div class="galeria-grid" id="galeriaGrid"></div>
+  </div>
+
   <div class="seccion" id="seccionImagenes">
     <h2>🖼️ Fotos de productos (Cloudinary)</h2>
     <div class="instrucciones"><ul>
@@ -426,8 +471,109 @@ async function subirPrecios() {
   finally { document.getElementById('btn2').disabled = false; }
 }
 
-// ── GESTIÓN DE IMÁGENES CLOUDINARY ────────────────────────────
+// ── GALERÍA VISUAL CLOUDINARY ──────────────────────────────────
+var galeriaFotos = [];
+var fotoSeleccionada = null;
+var galeriaArticulos = [];
+var galeriaCargada = false;
+
+async function cargarGaleria() {
+  if (galeriaCargada) return;
+  document.getElementById('btnCargarGaleria').disabled = true;
+  document.getElementById('pGaleria').style.display = 'block';
+  document.getElementById('ptGaleria').textContent = 'Cargando fotos de Cloudinary...';
+  document.getElementById('bGaleria').style.width = '30%';
+  try {
+    var [fRes, iRes, cRes] = await Promise.all([
+      fetch(PROXY + '?metodo=CLOUDINARY_IMAGENES'),
+      fetch(PROXY + '?metodo=GET_IMAGENES'),
+      fetch(PROXY + '?metodo=CATALOGO_COMPLETO')
+    ]);
+    galeriaFotos    = await fRes.json() || [];
+    imagenesImg     = await iRes.json() || {};
+    galeriaArticulos = (await cRes.json() || []).filter(function(a){ return !!CLAVE_CAT_ADMIN[a.clave]; });
+    document.getElementById('bGaleria').style.width = '100%';
+    document.getElementById('ptGaleria').textContent = galeriaFotos.length + ' fotos cargadas';
+    galeriaCargada = true;
+    renderGaleria();
+  } catch(e) {
+    document.getElementById('ptGaleria').textContent = 'Error: ' + e.message;
+    document.getElementById('btnCargarGaleria').disabled = false;
+  }
+}
+
+function renderGaleria() {
+  var grid = document.getElementById('galeriaGrid');
+  var urlsAsignadas = {};
+  Object.values(imagenesImg).forEach(function(url) { urlsAsignadas[url] = true; });
+  grid.innerHTML = galeriaFotos.map(function(f) {
+    var asignada = urlsAsignadas[f.url.replace('w_200,h_200,c_fit','w_300,h_300,c_fit,f_webp,q_80')] || false;
+    return '<div class="galeria-item' + (asignada ? ' asignada' : '') + '" onclick="seleccionarFoto(\'' + f.public_id + '\',\'' + f.format + '\',\'' + f.url + '\')">' +
+      (asignada ? '<div class="galeria-item-badge">✓</div>' : '') +
+      '<img src="' + f.url + '" alt="" loading="lazy">' +
+      '<div class="galeria-item-nombre">' + f.public_id.split('/').pop() + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function seleccionarFoto(publicId, format, thumbUrl) {
+  fotoSeleccionada = { publicId: publicId, format: format, thumbUrl: thumbUrl };
+  document.getElementById('asignarPreview').src = thumbUrl;
+  document.getElementById('asignarTitulo').textContent = publicId.split('/').pop() + '.' + format;
+  document.getElementById('asignarBuscar').value = '';
+  document.getElementById('asignarLista').innerHTML = '';
+  document.getElementById('asignarResult').style.display = 'none';
+  document.getElementById('asignarPanel').style.display = 'block';
+  document.getElementById('asignarBuscar').focus();
+  document.getElementById('asignarPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function asignarFiltrar() {
+  var q = (document.getElementById('asignarBuscar').value || '').trim().toUpperCase();
+  var lista = document.getElementById('asignarLista');
+  if (!q) { lista.innerHTML = ''; return; }
+  var res = galeriaArticulos.filter(function(a) {
+    return a.nombre.toUpperCase().includes(q) || a.clave.toUpperCase().includes(q);
+  }).slice(0, 20);
+  if (!res.length) { lista.innerHTML = '<div class="buscar-empty">No encontrado</div>'; return; }
+  lista.innerHTML = res.map(function(a) {
+    return '<div class="asignar-art" onclick="asignarFoto(\'' + a.clave + '\',\'' + a.nombre.replace(/'/g,"&#39;") + '\')">' +
+      '<div><div class="asignar-art-nombre">' + a.nombre + '</div><div class="asignar-art-clave">Clave: ' + a.clave + '</div></div>' +
+      '<button class="btn-asignar">Asignar</button>' +
+    '</div>';
+  }).join('');
+}
+
+async function asignarFoto(clave, nombre) {
+  if (!fotoSeleccionada) return;
+  var url = 'https://res.cloudinary.com/dkaqcxipf/image/upload/w_300,h_300,c_fit,f_webp,q_80/' + fotoSeleccionada.publicId + '.' + fotoSeleccionada.format;
+  try {
+    var res = await fetch(PROXY + '?metodo=SET_IMAGEN', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ clave: clave, url: url })
+    });
+    var data = await res.json();
+    if (data.ok) {
+      imagenesImg[clave] = url;
+      var result = document.getElementById('asignarResult');
+      result.className = 'result ok';
+      result.textContent = '✅ Asignada a: ' + nombre;
+      result.style.display = 'block';
+      renderGaleria();
+      document.getElementById('asignarBuscar').value = '';
+      document.getElementById('asignarLista').innerHTML = '';
+      setTimeout(function(){ result.style.display = 'none'; }, 2500);
+    }
+  } catch(e) {
+    var result = document.getElementById('asignarResult');
+    result.className = 'result err';
+    result.textContent = 'Error: ' + e.message;
+    result.style.display = 'block';
+  }
+}
+// ──────────────────────────────────────────────────────────────
 var catalogoImg = [];
+var CLAVE_CAT_ADMIN = {"30710":1,"30711":1,"30712":1,"30714":1,"BIC250":1,"30524":1,"30520":1,"9P-30110BIO":1,"30111":1,"D0820":1,"30750-1":1,"30510":1,"30511":1,"Q3020":1,"Q3017":1,"Q3018":1,"370AA":1,"37001":1,"37042":1,"30610":1,"30611":1,"30612":1,"9P-5146":1,"NAEHO09":1,"45102":1,"NAEHO55":1,"NAEHO18":1,"NAEHO25":1,"NAEHO20":1,"NAEHO56":1,"NAEHO01":1,"NAEHO10":1,"NAEHO02":1,"NAEHO21":1,"NAEHO23":1,"NAEHO57":1,"45201":1,"31035":1,"DA2218":1,"DA0658":1,"DA0672":1,"DA0719":1,"DA0733":1,"DA0696":1,"DA2232":1,"DA2225":1,"DA0689":1,"NAEH074":1,"NAEHO65":1,"NDIDC03":1,"31043":1,"NLILG48":1,"NLILG50":1,"NMANG02":1,"NNOPA00":1,"DA1631":1,"NPARE00":1,"NPARE10":1,"31021":1,"NAEDC12":1,"NAEDC13":1,"NAEDC27":1,"NAEDC10":1,"NAEDC09":1,"NAEDC41":1,"NAEDC20":1,"NAEDC11":1,"NAEDC07":1,"NAEDC17":1,"NAEDC03":1,"NAEDC18":1,"NAEDC26":1,"NAEDC02":1,"NAEDC40":1,"NAEDC04":1,"NAEDC05":1,"45103":1,"45102-1":1,"31033":1,"DA0597":1,"DA1816":1,"NTAAS28":1,"NTAAS29":1,"NTAAS34":1,"NTAAS27":1,"NTAAS31":1,"NTAAS25":1,"NTACP01":1,"NTACP00":1,"DA0107":1,"NTALI01":1,"NTALI00":1,"21016":1,"21029":1,"21019":1,"21020":1,"21028":1,"21017":1,"21027":1,"21013":1,"21114":1,"21018":1,"21025":1,"20010":1,"20011":1,"20011K":1,"20012":1,"20012K":1,"20014":1,"20014K":1,"20013":1,"20013K":1,"20210":1,"20212":1,"20220":1,"20214":1,"20215":1,"20216":1,"20217":1,"20218":1,"20018":1,"20219":1,"20216R":1,"20217R":1,"20218R":1,"20219R":1,"23010":1,"22010":1,"23011":1,"23012":1,"22012":1,"23013":1,"22013":1,"22014":1,"23014":1,"23015":1,"23016":1,"23017":1,"23018":1,"CL24245C":1,"BIO2424-6":1,"BIO3035-9":1,"SA9074GR":1,"SA8769RJ":1,"SA8858CP":1,"CP200":1,"CP027":1,"D3041":1,"1906-AB":1,"D0210":1,"D0211":1,"9P-0816":1,"9P-810":1,"9P-D0222":1,"CT120":1,"CT021":1,"CT060":1,"CT070":1,"CT085":1,"D0228":1,"D0224":1,"CT135":1,"D0510":1,"D0512":1,"D0511":1,"D0518":1,"D0138":1,"D0014":1,"41017":1,"43118":1,"43117":1,"E4103":1,"E0007":1,"E3112":1,"D0330":1,"D0414":1,"E0002":1,"E0003":1,"D0153":1,"D0015":1,"D0517":1,"D0028":1,"D0029":1,"D0024":1,"D0025":1,"D0055":1,"D0117":1,"D0112":1,"D0613":1,"D0614":1,"DR615":1,"040301":1,"44229":1,"44231":1,"CP488":1,"CP492":1,"CP490":1,"CP321":1,"ODV009":1,"82863-8813":1,"46026":1,"60212":1,"46210":1,"46023":1,"46024":1,"60211":1,"4006":1,"ODV058":1,"ODV063":1,"ODV045":1,"ODV021":1,"ODV062":1,"45064":1,"60114":1,"81010":1,"19901":1,"46037":1,"46033":1,"G8351-02":1,"G5361-02":1,"G5161-04":1,"G1911-02":1,"G8371-02":1,"1999":1,"16101":1,"16102":1,"16103":1,"16102-I":1,"46141":1,"46142":1,"1906-FY":1,"1905-FB":1,"1901-MY":1,"1901-MB":1,"1901-MR":1,"1901-MG":1,"1905-MY":1,"1905-MB":1,"1905-MR":1,"1905-MG":1,"4191-AZ":1,"4191-B":1,"4191-R":1,"4191-V":1,"11904":1,"11905":1,"4192-RO":1,"M69":1,"1TC060-01":1,"1810-P":1,"1814-P":1,"1408-P":1,"40215":1,"40400":1,"15403":1,"14332Y":1,"4079":1,"40216":1,"40110":1,"OV058":1,"CU124":1,"40113":1,"CP123":1,"CP121":1,"CU114":1,"CU115":1,"CU116":1,"CU118":1,"CU112":1,"CU120":1,"A4020":1,"EN007":1,"1FP19-02":1,"44213":1,"44212":1,"40005":1,"M66":1,"M67":1,"41029-R":1,"18300Y":1,"18300B":1,"41028":1,"41010":1,"41029":1,"41029-BM":1,"18300R":1,"18300G":1,"14702Y":1,"18306B":1,"18306K":1,"41060":1,"41021":1,"TREM-22":1,"TREMX-22":1,"41022":1,"41018":1,"TREP-22R":1,"41034":1,"41014":1,"41016":1,"41020":1,"4105":1,"41012":1,"41212":1,"15120G":1,"41213":1,"41110":1,"41111":1,"41112":1,"15120B":1,"15400Y":1,"15400B":1,"15400W":1,"19203B":1,"44064":1,"43121":1,"43113":1,"43120":1,"SB-P66":1,"SB-P94":1,"SB-P76":1,"SB-P96":1,"44086":1,"44085":1,"44087":1,"44095":1,"16404B":1,"46150":1,"46151":1,"46152":1,"46160":1,"46161":1,"46162":1,"16403W":1,"16402R":1,"16402W":1,"16402B":1,"16403B":1,"16403R":1,"A3020":1,"A1003":1,"A1004":1,"A5007":1,"A6032":1,"A6031":1,"A6033":1,"A8073":1,"A8071":1,"49027":1,"49016":1,"49029":1,"A8072":1,"A2112":1,"A0091":1,"A0093":1,"A0092":1,"OV077":1,"OV079":1,"OV078":1,"43010":1,"43002":1,"43003":1,"1W20075B":1,"1HD45-B":1,"1HD55-B":1,"1HD75-B":1,"1HY75-B":1,"1HY55-B":1,"1FI45-B":1,"1W20065R":1,"1S18045":1,"43000":1,"43009":1,"17104":1,"44082":1,"44412":1,"CU300":1,"43124":1,"MOP90":1,"44012":1,"E45300Y":1,"E45300B":1,"E45300GY":1,"E45300P":1,"E45300O":1,"E45300K":1,"E45300R":1,"E45300PK":1,"E45300G":1,"60110":1,"19102K":1,"19102R":1,"40015":1,"40010":1,"40012":1,"40017":1,"40025":1,"18250PB":1,"18250PR":1,"45012":1,"45013":1,"42015":1,"45010":1,"44077":1,"44079":1,"18414Y":1,"18414B":1,"18414K":1,"18414R":1,"18414G":1,"18720R":1,"42031":1,"42028":1,"42030":1,"42034":1,"42029":1,"42010":1,"18002Y":1,"18002B":1,"18002R":1,"18002G":1,"42011":1,"42043":1,"44020":1,"00072":1,"DA0801":1,"00070":1,"36001":1,"00066":1,"00067":1,"30418":1,"30414":1,"30425":1,"0236-1":1,"Y9134":1,"Y9132":1,"Y9171":1,"Y9170":1,"00236":1,"00644":1,"DA0702":1,"DA0634":1,"DA0665":1,"Y9127":1,"00576B":1,"30330":1,"30764":1,"30423":1,"30422":1,"QG-00577":1,"Y9112":1,"00577":1,"Y9082":1,"Y9083":1,"00578":1,"00763":1,"30430":1,"00251-C":1,"00533-C":1,"Y9028":1,"Y9102":1,"Y9029":1,"Y9155":1,"Y9156":1,"Y9157":1,"Y9166":1,"Y9164":1,"Y9165":1,"00052":1,"Y9111":1,"30413":1,"00674":1,"30170":1,"30122":1,"30121":1,"30154":1,"Y9034":1,"Y9110":1,"Y9035":1,"30134 BIO":1,"30112":1,"30114":1,"30113":1,"Y9037":1,"Y9104":1,"Y9038":1,"Y9103":1,"Y9041":1,"00647":1,"30130":1,"30131":1,"30145":1,"30140":1,"30143":1,"00400":1,"00322":1,"00762":1,"30320":1,"30325":1,"30324":1,"00695":1,"00711":1,"G6463-02":1,"Y9159":1,"Y9161":1,"Y9160":1,"00729":1,"31010C":1,"31018":1,"31010":1,"31013":1,"31011":1,"00698":1,"30210":1,"00722":1,"30214":1,"Y9058":1,"Y9113":1,"Y9059":1,"Y9067":1,"Y9097":1,"Y9068":1,"Y9092":1,"Y9106":1,"Y9093":1,"Y9061":1,"Y9105":1,"Y9062":1,"Y9118":1,"Y9070":1,"Y9064":1,"30211":1,"30410":1,"SB-AINOX":1,"30426B":1,"30426":1,"30329":1,"Y9072":1,"00747":1,"Y9133":1,"Y9135":1,"Y9131":1,"00074":1,"30901":1,"Y9046":1,"Y9100":1,"Y9047":1,"00163-C":1,"Y9055":1,"Y9101":1,"Y9056":1,"Y9152":1,"Y9153":1,"Y9149":1,"Y9151":1,"Y9150":1,"00720":1,"040134-C":1,"Y9043":1,"Y9099":1,"Y9044":1,"Y9117":1,"Y9049":1,"Y9050":1,"040530-C":1,"Y9052":1,"Y9098":1,"Y9053":1,"00621-C":1,"Y9089C":1,"Y9089":1,"Y9108":1,"Y9088":1,"Y9115":1,"30412":1,"30313":1,"30312":1,"30314":1,"30338":1,"00257":1,"Y9130":1,"Y9128":1,"DA0580":1,"Y9136":1,"Y9138":1,"Y9137":1,"00713":1,"00702":1,"00703":1,"Y9146":1,"M80":1,"Y9076":1,"Y9114":1,"Y9096":1,"Y9079":1,"Y9109":1,"Y9073":1,"Y9107":1,"Y9074":1,"DA0412":1,"QH005":1,"30900":1,"0371":1,"33108":1,"86923":1,"ODV026":1,"ODV039":1,"ODV064":1,"ODV013":1,"ODV046":1,"ODV041":1,"ODV028":1,"80938":1,"9P-8064":1,"83182":1,"5200-11":1,"5200-15":1,"5H250-06":1,"5H400-06":1,"5LUH-160":1,"5S180-12":1,"85957":1,"88057":1,"86695":1,"9P-5957":1,"9P-8057":1,"9P-6695":1,"90506":1,"86810":1,"88064":1,"52000":1,"9P-90498":1,"86049":1,"9P-6049":1,"90498":1,"T15040":1,"30738":1,"86039":1,"9P-6039":1,"90497":1,"90449":1,"9P-6060":1,"989330":1,"9P-89330":1,"5SB6000":1,"91690":1,"80990":1,"91670":1,"80983":1,"5S5400":1,"9P-5S450":1,"86022":1,"9P-6022":1,"80884":1,"85971":1,"83021":1,"9P-5971":1,"5200-60":1,"5200-18":1,"5TB180-06":1,"5TB160-06":1,"9P-C180":1,"83045":1,"5TK180-06":1,"5200-68":1,"5200-16":1,"80907":1,"5200-70":1,"833052":1,"86015":1,"9P-3052":1,"9P-1000":1,"5TI1000":1,"5TIK2000":1,"9P-92113":1,"92201":1,"A5268":1};
 var imagenesImg = {};
 var artSeleccionado = null;
 
@@ -436,7 +582,7 @@ async function cargarDatosImagenes() {
   try {
     var r1 = await fetch(PROXY + '?metodo=CATALOGO_COMPLETO');
     var r2 = await fetch(PROXY + '?metodo=GET_IMAGENES');
-    catalogoImg = await r1.json() || [];
+    catalogoImg = (await r1.json() || []).filter(function(a){ return !!CLAVE_CAT_ADMIN[a.clave]; });
     imagenesImg = await r2.json() || {};
   } catch(e) { catalogoImg = []; imagenesImg = {}; }
 }
