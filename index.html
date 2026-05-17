@@ -357,6 +357,7 @@ async function init() {
     cargarCatalogo();
     // Ocultar pestaña "Mis productos" — no aplica para visitantes
     document.querySelector('.tab[onclick*="frecuentes"]')?.style.setProperty('display','none');
+    cambiarTab('catalogo');
     return;
   }
   // ──────────────────────────────────────────────────────────
