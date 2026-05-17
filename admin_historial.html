@@ -61,6 +61,31 @@ input[type=file]{display:none}
 .btn-copiar:hover{background:#1e4bcc;color:white}
 .btn-copiar.copiado{background:#dcfce7;color:#166534}
 .buscar-empty{text-align:center;color:#64748b;font-size:13px;padding:16px 0}
+
+/* GESTIÓN DE IMÁGENES */
+.img-buscar-row input{width:100%;padding:11px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Segoe UI',sans-serif;outline:none;transition:border-color 0.2s;box-sizing:border-box}
+.img-buscar-row input:focus{border-color:#1e4bcc}
+.art-lista{max-height:260px;overflow-y:auto;margin-bottom:14px}
+.art-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:#f8fafc;margin-bottom:6px;cursor:pointer;border:2px solid transparent;transition:all 0.15s}
+.art-row:hover,.art-row.seleccionado{border-color:#1e4bcc;background:#eff6ff}
+.art-row-icono{width:38px;height:38px;border-radius:8px;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;overflow:hidden}
+.art-row-icono img{width:38px;height:38px;object-fit:cover;border-radius:8px}
+.art-row-info{flex:1;min-width:0}
+.art-row-nombre{font-weight:700;font-size:13px;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.art-row-clave{font-size:11px;color:#64748b}
+.art-row-badge{font-size:11px;background:#dcfce7;color:#166534;border-radius:6px;padding:2px 7px;font-weight:700;white-space:nowrap;flex-shrink:0}
+.img-form{background:#f8fafc;border-radius:12px;padding:16px;border:2px solid #e2e8f0;margin-top:4px}
+.img-form-titulo{font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:10px}
+.img-url-row{display:flex;gap:8px;margin-bottom:12px}
+.img-url-row input{flex:1;padding:10px 13px;border:2px solid #e2e8f0;border-radius:10px;font-size:13px;font-family:'Segoe UI',sans-serif;outline:none;transition:border-color 0.2s}
+.img-url-row input:focus{border-color:#1e4bcc}
+.img-preview-box{display:none;margin-bottom:12px;text-align:center}
+.img-preview-box img{max-width:140px;max-height:140px;border-radius:12px;border:2px solid #e2e8f0;object-fit:contain;background:#f1f5f9}
+.img-preview-err{color:#dc2626;font-size:12px;margin-top:6px}
+.btn-guardar-img{padding:10px 22px;border-radius:10px;border:none;background:#1e4bcc;color:white;font-size:14px;font-weight:700;cursor:pointer;transition:background 0.2s}
+.btn-guardar-img:hover{background:#163799}
+.btn-borrar-img{padding:10px 16px;border-radius:10px;border:none;background:#fee2e2;color:#dc2626;font-size:13px;font-weight:700;cursor:pointer;transition:background 0.2s}
+.btn-borrar-img:hover{background:#fca5a5}
 </style>
 </head>
 <body>
@@ -145,24 +170,43 @@ input[type=file]{display:none}
     <div class="progress" id="p2"><div class="bar-bg"><div class="bar" id="b2"></div></div><div class="progress-txt" id="pt2"></div></div>
     <div class="result" id="r2"></div>
   </div>
+  <div class="seccion" id="seccionImagenes">
+    <h2>🖼️ Fotos de productos (Cloudinary)</h2>
+    <div class="instrucciones"><ul>
+      <li>Sube la foto en <strong>cloudinary.com → Media Library</strong></li>
+      <li>Genera la URL optimizada con la herramienta en el chat</li>
+      <li>Busca el artículo, pega la URL y guarda</li>
+    </ul></div>
+    <div class="img-buscar-row" style="margin-bottom:12px">
+      <input type="text" id="imgBuscarInput" placeholder="Buscar artículo por nombre o clave..." oninput="imgBuscar()">
+    </div>
+    <div class="art-lista" id="artLista"></div>
+    <div class="img-form" id="imgForm" style="display:none">
+      <div class="img-form-titulo" id="imgFormTitulo"></div>
+      <div class="img-preview-box" id="imgPreviewBox">
+        <img id="imgPreviewImg" src="" alt="Vista previa">
+        <div class="img-preview-err" id="imgPreviewErr" style="display:none">URL no válida o imagen no accesible</div>
+      </div>
+      <div class="img-url-row">
+        <input type="text" id="imgUrlInput" placeholder="https://res.cloudinary.com/dkaqcxipf/image/upload/..." oninput="imgPreview()">
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-guardar-img" onclick="imgGuardar()">💾 Guardar imagen</button>
+        <button class="btn-borrar-img" id="btnBorrarImg" onclick="imgBorrar()" style="display:none">🗑️ Quitar imagen</button>
+      </div>
+      <div class="result" id="imgResult" style="margin-top:10px"></div>
+    </div>
+  </div>
+
 </div>
 
 <script>
 // ── CONTRASEÑA ADMIN ──────────────────────────────────────────
-// Hash SHA-256 de la contraseña. Para cambiarla, genera el nuevo hash en:
-// https://emn178.github.io/online-tools/sha256.html  y reemplaza PASS_HASH.
-// Contraseña actual: SHS2026
-var PASS_HASH = '1cbd0bb64247a05158a3344894a3a74bc1c58778edbe6f5cdded9e6e4d541d9b';
+var PASS = 'SHS2026';
 
-async function hashStr(str) {
-  var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
-}
-
-async function verificarLogin() {
+function verificarLogin() {
   var input = document.getElementById('loginInput').value;
-  var h = await hashStr(input);
-  if (h === PASS_HASH) {
+  if (input === PASS) {
     sessionStorage.setItem('shs_admin_ok', '1');
     document.getElementById('loginOverlay').style.display = 'none';
   } else {
@@ -381,6 +425,117 @@ async function subirPrecios() {
   } catch(e) { showResult('2', false, 'Error: ' + e.message); }
   finally { document.getElementById('btn2').disabled = false; }
 }
+
+// ── GESTIÓN DE IMÁGENES CLOUDINARY ────────────────────────────
+var catalogoImg = [];
+var imagenesImg = {};
+var artSeleccionado = null;
+
+async function cargarDatosImagenes() {
+  if (catalogoImg.length > 0) return;
+  try {
+    var r1 = await fetch(PROXY + '?metodo=CATALOGO_COMPLETO');
+    var r2 = await fetch(PROXY + '?metodo=GET_IMAGENES');
+    catalogoImg = await r1.json() || [];
+    imagenesImg = await r2.json() || {};
+  } catch(e) { catalogoImg = []; imagenesImg = {}; }
+}
+
+async function imgBuscar() {
+  var q = (document.getElementById('imgBuscarInput').value || '').trim().toUpperCase();
+  var lista = document.getElementById('artLista');
+  if (!q) { lista.innerHTML = ''; return; }
+  if (catalogoImg.length === 0) {
+    lista.innerHTML = '<div class="buscar-empty">Cargando catálogo...</div>';
+    await cargarDatosImagenes();
+  }
+  var res = catalogoImg.filter(function(a) {
+    return (a.nombre && a.nombre.toUpperCase().includes(q)) || (a.clave && a.clave.toUpperCase().includes(q));
+  }).slice(0, 30);
+  if (!res.length) { lista.innerHTML = '<div class="buscar-empty">No se encontraron artículos</div>'; return; }
+  lista.innerHTML = res.map(function(a) {
+    var tieneImg = !!imagenesImg[a.clave];
+    var iconHTML = tieneImg ? '<img src="' + imagenesImg[a.clave] + '" alt="">' : '📦';
+    return '<div class="art-row" id="artrow-' + a.clave + '" onclick="imgSeleccionar(\'' + encodeURIComponent(JSON.stringify({clave:a.clave,nombre:a.nombre})) + '\')">' +
+      '<div class="art-row-icono">' + iconHTML + '</div>' +
+      '<div class="art-row-info"><div class="art-row-nombre">' + a.nombre + '</div><div class="art-row-clave">Clave: ' + a.clave + '</div></div>' +
+      (tieneImg ? '<span class="art-row-badge">✅ Con foto</span>' : '') +
+    '</div>';
+  }).join('');
+}
+
+function imgSeleccionar(encoded) {
+  artSeleccionado = JSON.parse(decodeURIComponent(encoded));
+  document.querySelectorAll('.art-row').forEach(function(r) { r.classList.remove('seleccionado'); });
+  var row = document.getElementById('artrow-' + artSeleccionado.clave);
+  if (row) row.classList.add('seleccionado');
+  var urlActual = imagenesImg[artSeleccionado.clave] || '';
+  document.getElementById('imgFormTitulo').textContent = artSeleccionado.nombre + '  [' + artSeleccionado.clave + ']';
+  document.getElementById('imgUrlInput').value = urlActual;
+  document.getElementById('btnBorrarImg').style.display = urlActual ? 'inline-block' : 'none';
+  document.getElementById('imgResult').style.display = 'none';
+  document.getElementById('imgForm').style.display = 'block';
+  imgPreview();
+  document.getElementById('imgForm').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function imgPreview() {
+  var url = (document.getElementById('imgUrlInput').value || '').trim();
+  var box = document.getElementById('imgPreviewBox');
+  var img = document.getElementById('imgPreviewImg');
+  var err = document.getElementById('imgPreviewErr');
+  if (!url) { box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  err.style.display = 'none';
+  img.src = url;
+  img.onerror = function() { err.style.display = 'block'; img.src = ''; };
+  img.onload  = function() { err.style.display = 'none'; };
+}
+
+async function imgGuardar() {
+  if (!artSeleccionado) return;
+  var url = (document.getElementById('imgUrlInput').value || '').trim();
+  if (!url) { mostrarImgResult(false, 'Pega la URL de Cloudinary primero'); return; }
+  try {
+    var res = await fetch(PROXY + '?metodo=SET_IMAGEN', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ clave: artSeleccionado.clave, url: url })
+    });
+    var data = await res.json();
+    if (data.ok) {
+      imagenesImg[artSeleccionado.clave] = url;
+      document.getElementById('btnBorrarImg').style.display = 'inline-block';
+      mostrarImgResult(true, '✅ Imagen guardada correctamente');
+      imgBuscar();
+    } else { mostrarImgResult(false, 'Error: ' + JSON.stringify(data)); }
+  } catch(e) { mostrarImgResult(false, 'Error de red: ' + e.message); }
+}
+
+async function imgBorrar() {
+  if (!artSeleccionado) return;
+  if (!confirm('¿Quitar la imagen de "' + artSeleccionado.nombre + '"?')) return;
+  try {
+    var res = await fetch(PROXY + '?metodo=DELETE_IMAGEN&clave=' + encodeURIComponent(artSeleccionado.clave));
+    var data = await res.json();
+    if (data.ok) {
+      delete imagenesImg[artSeleccionado.clave];
+      document.getElementById('imgUrlInput').value = '';
+      document.getElementById('imgPreviewBox').style.display = 'none';
+      document.getElementById('btnBorrarImg').style.display = 'none';
+      mostrarImgResult(true, 'Imagen eliminada');
+      imgBuscar();
+    }
+  } catch(e) { mostrarImgResult(false, 'Error: ' + e.message); }
+}
+
+function mostrarImgResult(ok, msg) {
+  var el = document.getElementById('imgResult');
+  el.className = 'result ' + (ok ? 'ok' : 'err');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(function() { el.style.display = 'none'; }, 3500);
+}
+// ──────────────────────────────────────────────────────────────
 </script>
 </body>
 </html>
