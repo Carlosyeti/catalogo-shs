@@ -383,10 +383,10 @@ async function cargarCatalogo() {
       document.getElementById('lista-catalogo').innerHTML = `<div class="error-box">Catálogo no disponible. Contacta al administrador.</div>`;
       return;
     }
-    catalogoCompleto = data;
-    catalogoPorCat = { 'TODAS': catalogoCompleto };
+    catalogoCompleto = data.filter(art => !!CLAVE_CAT[art.clave]);
+    catalogoPorCat = {};
     for (const art of catalogoCompleto) {
-      const cat = CLAVE_CAT[art.clave] || 'OTRAS';
+      const cat = CLAVE_CAT[art.clave];
       if (!catalogoPorCat[cat]) catalogoPorCat[cat] = [];
       catalogoPorCat[cat].push(art);
     }
