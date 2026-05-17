@@ -77,6 +77,7 @@ html{background:#ffffff}body{font-family:'Nunito',sans-serif;background:#ffffff;
 .producto-card{background:#ffffff;border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:0 2px 12px rgba(30,75,204,0.08);display:flex;align-items:center;gap:14px;transition:transform 0.15s;border:1px solid #f0f4ff}
 .producto-card:active{transform:scale(0.98)}
 .producto-icono{width:44px;height:44px;background:var(--azul-light);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.producto-icono img{width:44px;height:44px;border-radius:10px;object-fit:cover;display:block}
 .producto-info{flex:1;min-width:0}
 .producto-nombre{font-weight:700;font-size:14px;color:var(--texto);line-height:1.3}
 .producto-precio{font-weight:800;font-size:15px;color:var(--azul);margin-top:2px}
@@ -295,6 +296,7 @@ let carrito = {};
 let preciosCache = {};
 let preciosCliente = {};
 let catalogoCargado = false;
+let imagenesMap = {};
 
 async function init() {
   if (!CLIENTE_ID) {
@@ -305,10 +307,11 @@ async function init() {
     return;
   }
   try {
-    const [clienteRes, historialRes, preciosRes] = await Promise.all([
+    const [clienteRes, historialRes, preciosRes, imagenesRes] = await Promise.all([
       fetch(`${PROXY}?metodo=CLIENTES&clienteId=${CLIENTE_ID}`),
       fetch(`${PROXY}?metodo=HISTORIAL&clienteId=${CLIENTE_ID}`),
-      fetch(`${PROXY}?metodo=PRECIOS_CLIENTE&clienteId=${CLIENTE_ID}`)
+      fetch(`${PROXY}?metodo=PRECIOS_CLIENTE&clienteId=${CLIENTE_ID}`),
+      fetch(`${PROXY}?metodo=GET_IMAGENES`)
     ]);
     const clienteArr = await clienteRes.json();
     clienteData = clienteArr[0] || null;
@@ -325,6 +328,7 @@ async function init() {
     const historial = await historialRes.json();
     historialArticulos = historial.articulos || [];
     preciosCliente = await preciosRes.json() || {};
+    try { imagenesMap = await imagenesRes.json() || {}; } catch(e) { imagenesMap = {}; }
     document.getElementById('countFrecuentes').textContent = historialArticulos.length;
     await renderFrecuentes();
     cargarCatalogo();
@@ -465,9 +469,13 @@ async function cargarPrecio(nombre, index, tipo) {
 function cardHTML(nombre, precios, unidad, index, tipo, frecuente, clave) {
   const cant = carrito[nombre]?.cantidad || 0;
   const cat = clave ? (CLAVE_CAT[clave] || '') : '';
+  const imgUrl = clave ? (imagenesMap[clave] || null) : null;
+  const iconoHTML = imgUrl
+    ? `<img src="${imgUrl}" alt="${nombre}" onerror="this.parentElement.innerHTML='${getEmoji(nombre,cat)}';">`
+    : getEmoji(nombre, cat);
   return `
   <div class="producto-card" id="card-${tipo}-${index}">
-    <div class="producto-icono">${getEmoji(nombre, cat)}</div>
+    <div class="producto-icono">${iconoHTML}</div>
     <div class="producto-info">
       <div class="producto-nombre">${nombre}</div>
       ${frecuente ? '<span class="frecuente-badge">⭐ Frecuente</span>' : ''}
