@@ -1025,38 +1025,79 @@ function cerrarModalClienteNuevo() {
 function guardarClienteNuevo() {
   const nombre   = document.getElementById('cnNombre').value.trim();
   const telefono = document.getElementById('cnTelefono').value.trim();
+  const correo   = document.getElementById('cnCorreo').value.trim();
+  const calle    = document.getElementById('cnCalle').value.trim();
+  const colonia  = document.getElementById('cnColonia').value.trim();
+  const cp       = document.getElementById('cnCP').value.trim();
+  const ciudad   = document.getElementById('cnCiudad').value.trim();
+  const estado   = document.getElementById('cnEstado').value.trim();
+  const rfc      = document.getElementById('cnRFC').value.trim().toUpperCase();
+  const regimen  = document.getElementById('cnRegimen').value;
+  const cfdi     = document.getElementById('cnCFDI').value;
+  const metodoPago = document.getElementById('cnMetodoPago').value;
   const res      = document.getElementById('cnResult');
 
-  if (!nombre || !telefono) {
+  if (!nombre || !telefono || !correo) {
     res.className = 'result err';
-    res.textContent = 'Por favor llena tu nombre y teléfono';
+    res.textContent = 'Por favor llena nombre, teléfono y correo';
     res.style.display = 'block';
     return;
   }
 
   datosClienteNuevo = { nombre, telefono };
 
-  // Nota compacta que cabe en 99 chars de Microsip
+  // Nota compacta para Microsip (máx 99 chars)
   const nota = `NUEVO: ${nombre} | Tel: ${telefono}`.substring(0, 99);
   document.getElementById('notasExtra').value = nota;
-
-  // Limpiar dirección para evitar que exceda límite en Microsip
   const dirEl = document.getElementById('direccionEntrega');
   if (dirEl) dirEl.value = '';
 
+  // Armar resumen del pedido
+  const items = Object.values(carrito);
+  const subtotal = items.reduce((s,i) => s + i.precio * i.cantidad, 0);
+  const total = subtotal * 1.16;
+  const resumenPedido = items.map(i => `  • ${i.nombre} x${i.cantidad} = $${(i.precio*i.cantidad).toFixed(2)}`).join('\n');
+
+  // Mensaje de WhatsApp
+  const msg = [
+    '🆕 *CLIENTE NUEVO - SHS*',
+    '',
+    '📋 *DATOS DE CONTACTO*',
+    `• Nombre/Negocio: ${nombre}`,
+    `• Teléfono: ${telefono}`,
+    `• Correo: ${correo}`,
+    calle    ? `• Dirección: ${calle}${colonia ? ', Col. '+colonia : ''}` : '',
+    cp       ? `• C.P.: ${cp}` : '',
+    ciudad   ? `• Ciudad: ${ciudad}${estado ? ', '+estado : ''}` : '',
+    '',
+    rfc ? '🧾 *DATOS FISCALES*' : '',
+    rfc      ? `• RFC: ${rfc}` : '',
+    regimen  ? `• Régimen: ${regimen}` : '',
+    cfdi     ? `• Uso CFDI: ${cfdi}` : '',
+    metodoPago ? `• Método pago: ${metodoPago}` : '',
+    '',
+    '🛒 *PEDIDO*',
+    resumenPedido,
+    `• *Total con IVA: $${total.toFixed(2)}*`,
+  ].filter(l => l !== '').join('\n');
+
+  const waNumero = '523121054317';
+  const waUrl = `https://wa.me/${waNumero}?text=${encodeURIComponent(msg)}`;
+  window.open(waUrl, '_blank');
+
   res.className = 'result ok';
-  res.textContent = '✅ Listo — una vendedora te contactará pronto para completar tu registro';
+  res.textContent = '✅ Se abrió WhatsApp — solo presiona Enviar';
   res.style.display = 'block';
 
   const btn = document.querySelector('.btn-cliente-nuevo');
   if (btn) {
-    btn.textContent = '✅ Datos de cliente nuevo registrados';
+    btn.textContent = '✅ Datos enviados por WhatsApp';
     btn.style.background = '#dcfce7';
     btn.style.borderColor = '#16a34a';
     btn.style.color = '#166534';
   }
 
-  setTimeout(function() { cerrarModalClienteNuevo(); }, 2000);
+  setTimeout(function() { cerrarModalClienteNuevo(); }, 2500);
 }
 // ──────────────────────────────────────────────────────────────
 
@@ -1066,18 +1107,94 @@ init();
 <div class="modal-cliente" id="modalClienteNuevo">
   <div class="modal-cliente-box">
     <div class="modal-cliente-titulo">🙋 ¿Eres cliente nuevo?</div>
-    <div class="modal-cliente-sub">Deja tu nombre y teléfono — una vendedora de SHS te contactará pronto para completar tu registro y confirmar tu pedido.</div>
+    <div class="modal-cliente-sub">Llena tus datos — una vendedora de SHS te contactará pronto. Si necesitas factura, llena los datos fiscales.</div>
+
+    <div style="font-size:12px;font-weight:700;color:#1e4bcc;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #e2e8f0">📋 Datos de contacto</div>
+
     <div class="mc-campo">
-      <label>Nombre completo o negocio *</label>
-      <input type="text" id="cnNombre" placeholder="Ej: Farmacia San José" maxlength="40">
+      <label>Nombre del negocio o razón social *</label>
+      <input type="text" id="cnNombre" placeholder="Ej: Farmacia San José S.A. de C.V.">
     </div>
     <div class="mc-campo">
       <label>Teléfono de contacto *</label>
-      <input type="tel" id="cnTelefono" placeholder="312 123 4567" maxlength="15">
+      <input type="tel" id="cnTelefono" placeholder="312 123 4567">
     </div>
+    <div class="mc-campo">
+      <label>Correo electrónico *</label>
+      <input type="email" id="cnCorreo" placeholder="correo@ejemplo.com">
+    </div>
+    <div class="mc-campo">
+      <label>Calle y número</label>
+      <input type="text" id="cnCalle" placeholder="Ej: Av. Tecnológico 123">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="mc-campo">
+        <label>Colonia</label>
+        <input type="text" id="cnColonia" placeholder="Ej: Centro">
+      </div>
+      <div class="mc-campo">
+        <label>Código postal</label>
+        <input type="text" id="cnCP" placeholder="28000" maxlength="5">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="mc-campo">
+        <label>Ciudad</label>
+        <input type="text" id="cnCiudad" placeholder="Colima">
+      </div>
+      <div class="mc-campo">
+        <label>Estado</label>
+        <input type="text" id="cnEstado" placeholder="Colima">
+      </div>
+    </div>
+
+    <div style="font-size:12px;font-weight:700;color:#1e4bcc;text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 10px;padding-bottom:6px;border-bottom:2px solid #e2e8f0">🧾 Datos fiscales (si requieres factura)</div>
+
+    <div class="mc-campo">
+      <label>RFC</label>
+      <input type="text" id="cnRFC" placeholder="Ej: XAXX010101000" maxlength="13" style="text-transform:uppercase">
+    </div>
+    <div class="mc-campo">
+      <label>Régimen fiscal</label>
+      <select id="cnRegimen">
+        <option value="">Selecciona...</option>
+        <option value="601">601 - General de Ley Personas Morales</option>
+        <option value="603">603 - Personas Morales con Fines no Lucrativos</option>
+        <option value="605">605 - Sueldos y Salarios e Ingresos Asimilados</option>
+        <option value="606">606 - Arrendamiento</option>
+        <option value="608">608 - Demás ingresos</option>
+        <option value="612">612 - Personas Físicas con Actividades Empresariales</option>
+        <option value="616">616 - Sin obligaciones fiscales</option>
+        <option value="621">621 - Incorporación Fiscal</option>
+        <option value="625">625 - Régimen de las Actividades Empresariales con ingresos a través de plataformas</option>
+        <option value="626">626 - Régimen Simplificado de Confianza (RESICO)</option>
+      </select>
+    </div>
+    <div class="mc-campo">
+      <label>Uso de CFDI</label>
+      <select id="cnCFDI">
+        <option value="">Selecciona...</option>
+        <option value="G01">G01 - Adquisición de mercancias</option>
+        <option value="G03">G03 - Gastos en general</option>
+        <option value="I01">I01 - Construcciones</option>
+        <option value="I04">I04 - Equipo de computo y accesorios</option>
+        <option value="I06">I06 - Comunicaciones telefónicas</option>
+        <option value="D01">D01 - Honorarios médicos y dentales</option>
+        <option value="S01">S01 - Sin efectos fiscales</option>
+      </select>
+    </div>
+    <div class="mc-campo">
+      <label>Método de pago</label>
+      <select id="cnMetodoPago">
+        <option value="">Selecciona...</option>
+        <option value="PUE">PUE - Pago en una sola exhibición</option>
+        <option value="PPD">PPD - Pago en parcialidades o diferido</option>
+      </select>
+    </div>
+
     <div class="mc-btns">
       <button class="mc-btn-cancelar" onclick="cerrarModalClienteNuevo()">Cancelar</button>
-      <button class="mc-btn-enviar" onclick="guardarClienteNuevo()">✅ Guardar</button>
+      <button class="mc-btn-enviar" onclick="guardarClienteNuevo()">📲 Enviar por WhatsApp</button>
     </div>
     <div class="result" id="cnResult" style="margin-top:12px;display:none"></div>
   </div>
