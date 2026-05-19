@@ -649,7 +649,7 @@ function asignarFiltrar() {
 
 async function asignarFoto(clave, nombre) {
   if (!fotoSeleccionada) return;
-  var url = 'https://res.cloudinary.com/dkaqcxipf/image/upload/w_300,h_300,c_fit,f_webp,q_80/' + fotoSeleccionada.publicId + '.' + fotoSeleccionada.format;
+  var url = 'https://res.cloudinary.com/dkaqcxipf/image/upload/a_exif,w_300,h_300,c_fit,f_webp,q_80/' + fotoSeleccionada.publicId + '.' + fotoSeleccionada.format;
   try {
     var res = await fetch(PROXY + '?metodo=SET_IMAGEN', {
       method: 'POST', headers: {'Content-Type':'application/json'},
