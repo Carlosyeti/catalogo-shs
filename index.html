@@ -680,7 +680,7 @@ const notasExtra = document.getElementById('notasExtra')?.value || '';
           Fax: 0,
           Email: clienteData.email || '',
           CodigoPostal: parseInt(String(dir.codigo_postal || '28000').replace(/\D/g,'')) || 28000,
-          Notas: `Entrega: ${fechaEntrega} | Dir: ${direccionEntrega || 'Dirección registrada'} | Notas: ${notasExtra}`.substring(0, 99),
+          Notas: `Entrega: ${fechaEntrega} | Dir: ${direccionEntrega || 'Dirección registrada'} | Notas: ${notasExtra}`.substring(0, 200),
           CP_FechaNacimiento: '',
           CP_CURP: '',
           CP_TelefonoSucesor: '',
