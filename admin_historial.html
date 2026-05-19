@@ -95,6 +95,10 @@ input[type=file]{display:none}
 .galeria-item img{width:100%;height:90px;object-fit:contain;display:block;background:#f1f5f9;padding:4px}
 .galeria-item-nombre{font-size:10px;color:#64748b;padding:3px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
 .galeria-item-badge{position:absolute;top:4px;right:4px;background:#16a34a;color:white;font-size:9px;font-weight:700;border-radius:4px;padding:1px 4px}
+.btn-rotar{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;color:#1e4bcc}
+.btn-rotar:hover{background:#e8eefb;border-color:#1e4bcc}
+.rotar-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.rotar-label{font-size:12px;color:#64748b;font-weight:700}
 .asignar-panel{background:#f8fafc;border:2px solid #1e4bcc;border-radius:12px;padding:16px;margin-top:14px;display:none}
 .asignar-foto-preview{width:80px;height:80px;object-fit:contain;border-radius:8px;border:1px solid #e2e8f0;float:left;margin-right:14px;background:#fff}
 .asignar-titulo{font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:8px}
@@ -234,6 +238,13 @@ input[type=file]{display:none}
       </div>
       <div class="img-url-row">
         <input type="text" id="imgUrlInput" placeholder="https://res.cloudinary.com/dkaqcxipf/image/upload/..." oninput="imgPreview()">
+      </div>
+      <div class="rotar-row">
+        <span class="rotar-label">🔄 Rotar:</span>
+        <button class="btn-rotar" onclick="rotarImagen(-90)">↺ 90° izq</button>
+        <button class="btn-rotar" onclick="rotarImagen(90)">↻ 90° der</button>
+        <button class="btn-rotar" onclick="rotarImagen(180)">↕ 180°</button>
+        <button class="btn-rotar" onclick="rotarImagen(0, true)">✖ Sin rotación</button>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn-guardar-img" onclick="imgGuardar()">💾 Guardar imagen</button>
@@ -726,6 +737,29 @@ function imgSeleccionar(encoded) {
   document.getElementById('imgForm').style.display = 'block';
   imgPreview();
   document.getElementById('imgForm').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function rotarImagen(delta, reset) {
+  var url = (document.getElementById('imgUrlInput').value || '').trim();
+  if (!url) return;
+  // Remove existing manual rotation (a_NUMBER) but keep a_exif
+  url = url.replace(/,a_(\d+)/g, '').replace(/a_(\d+),/g, '');
+  if (reset) {
+    // Just remove rotation, keep as is
+  } else {
+    // Calculate new rotation
+    var match = url.match(/a_exif/);
+    var newRot = ((delta % 360) + 360) % 360;
+    if (newRot !== 0) {
+      if (url.includes('a_exif')) {
+        url = url.replace('a_exif', 'a_exif,a_' + newRot);
+      } else {
+        url = url.replace('/upload/', '/upload/a_' + newRot + ',');
+      }
+    }
+  }
+  document.getElementById('imgUrlInput').value = url;
+  imgPreview();
 }
 
 function imgPreview() {
