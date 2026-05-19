@@ -318,6 +318,13 @@ let carrito = {};
 let preciosCache = {};
 let preciosCliente = {};
 let catalogoCargado = false;
+function fixImageUrl(url) {
+  if (!url) return null;
+  if (url.includes('cloudinary.com')) {
+    return url.replace('/upload/', '/upload/a_exif/');
+  }
+  return url;
+}
 let imagenesMap = {};
 
 async function init() {
@@ -527,7 +534,7 @@ async function cargarPrecio(nombre, index, tipo) {
 function cardHTML(nombre, precios, unidad, index, tipo, frecuente, clave) {
   const cant = carrito[nombre]?.cantidad || 0;
   const cat = clave ? (CLAVE_CAT[clave] || '') : '';
-  const imgUrl = clave ? (imagenesMap[clave] || null) : null;
+  const imgUrl = clave ? fixImageUrl(imagenesMap[clave] || null) : null;
   const iconoHTML = imgUrl
     ? `<img src="${imgUrl}" alt="${nombre}" onerror="this.parentElement.innerHTML='${getEmoji(nombre,cat)}';">`
     : getEmoji(nombre, cat);
