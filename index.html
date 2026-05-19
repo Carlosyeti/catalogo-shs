@@ -689,7 +689,7 @@ const notasExtra = document.getElementById('notasExtra')?.value || '';
         Encabezado: {
           Folio: '',
           OrdenCompra: `APP-${Date.now()}`,
-          Descripcion: `Pedido app SHS - ${clienteData.nombre}|Entrega: ${fechaEntrega} | Dir: ${direccionEntrega || 'Dir. registrada'} | Notas: ${notasExtra}`.substring(0, 99),
+          Descripcion: `Pedido app SHS - ${clienteData.nombre}|Entrega: ${fechaEntrega} | Dir: ${direccionEntrega || 'Dir. registrada'} | Notas: ${notasExtra}`.substring(0, 200),
           MetodoPago: 'Pago manual',
           EstatusPago: 'Pendiente',
           Almacen: 'CEDIS COLIMA',
