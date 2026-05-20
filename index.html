@@ -483,9 +483,8 @@ function renderCatalogo() {
     lista.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><h3>Sin resultados</h3></div>`;
     return;
   }
-  const muestra = arts.slice(0, 60);
-  lista.innerHTML = muestra.map((art, i) => cardHTML(art.nombre, art.precios, art.unidadmed, i, 'cat', false, art.clave)).join('');
-  muestra.forEach((art, i) => {
+  lista.innerHTML = arts.map((art, i) => cardHTML(art.nombre, art.precios, art.unidadmed, i, 'cat', false, art.clave)).join('');
+  arts.forEach((art, i) => {
     const p1 = getPrecio1(art.precios);
     if (p1 !== null) {
       const el = document.getElementById(`precio-cat-${i}`);
