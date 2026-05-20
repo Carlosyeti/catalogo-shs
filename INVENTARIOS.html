@@ -98,10 +98,12 @@ body{font-family:'DM Sans',sans-serif;background:#F3F4F6;color:#111827;min-heigh
 .gc.list{border-left-color:#3B82F6;}
 .gc.proc{border-left-color:#F59E0B;}
 .gc.comp{border-left-color:#7DC642;}
+.gc.rev{border-left-color:#8B5CF6;}
 .gico{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;
   justify-content:center;font-size:14px;flex-shrink:0;}
 .gico.pend{background:#F3F4F6;}.gico.list{background:#EFF6FF;}
 .gico.proc{background:#FFFBEB;}.gico.comp{background:#F0FBE6;}
+.gico.rev{background:#F5F3FF;}
 .gnm{font-weight:700;font-size:13px;font-family:'Montserrat',sans-serif;}
 .gfr{display:flex;align-items:center;gap:6px;margin-top:4px;}
 .gfr input[type=date]{border:1px solid #E5E7EB;border-radius:5px;padding:2px 5px;
@@ -111,6 +113,7 @@ body{font-family:'DM Sans',sans-serif;background:#F3F4F6;color:#111827;min-heigh
 .bdg.list{background:#EFF6FF;color:#1D4ED8;}
 .bdg.proc{background:#FFFBEB;color:#92400E;}
 .bdg.comp{background:#F0FBE6;color:#5FA030;}
+.bdg.rev{background:#F5F3FF;color:#6D28D9;}
 .gacts{display:flex;flex-direction:column;gap:4px;align-items:flex-end;}
 .ibtn{background:none;border:none;cursor:pointer;padding:4px;border-radius:7px;font-size:14px;transition:background .15s;}
 .ibtn:hover{background:#F3F4F6;}
@@ -156,6 +159,7 @@ body{font-family:'DM Sans',sans-serif;background:#F3F4F6;color:#111827;min-heigh
   border:3px solid transparent;transition:all .2s;box-shadow:0 2px 8px rgba(0,0,0,.07);}
 .egc:hover{border-color:#1B4FD8;transform:translateY(-3px);box-shadow:0 6px 20px rgba(27,79,216,.15);}
 .egc.proc{border-color:#F59E0B;}
+.egc.rev{border-color:#8B5CF6;}
 .egc .ei{font-size:28px;margin-bottom:7px;}
 .egc h3{font-family:'Montserrat',sans-serif;font-weight:800;font-size:13px;}
 .egc .ef{font-size:11px;color:#9CA3AF;margin-top:3px;}
@@ -320,6 +324,7 @@ body{font-family:'DM Sans',sans-serif;background:#F3F4F6;color:#111827;min-heigh
       <button class="fpill" data-f="pend">⭕ Pendientes</button>
       <button class="fpill" data-f="list">🔵 Listos</button>
       <button class="fpill" data-f="proc">🟡 En Proceso</button>
+      <button class="fpill" data-f="rev">🟣 En Revisión</button>
       <button class="fpill" data-f="comp">✅ Completados</button>
     </div>
     <div class="gg" id="calList">
@@ -556,8 +561,8 @@ const GICO = {
   'PRETUL':'🔑','QUIMICOS':'🧫','SALCOM':'💧','WAL MART':'🏪','YETCLEAN':'✨'
 };
 
-const EL = {pend:'Pendiente',list:'Listo p/contar',proc:'En Proceso',comp:'Completado'};
-const ECSS = {pend:'pend',list:'list',proc:'proc',comp:'comp'};
+const EL = {pend:'Pendiente',list:'Listo p/contar',proc:'En Proceso',rev:'En Revisión',comp:'Completado'};
+const ECSS = {pend:'pend',list:'list',proc:'proc',rev:'rev',comp:'comp'};
 
 // ─── ESTADO ──────────────────────────────────────────
 let db = null;
@@ -900,7 +905,8 @@ function cargarCalendario() {
 
 function estadoCss(est) {
   if (est === 'completado') return 'comp';
-  if (est === 'listo') return 'list';
+  if (est === 'revision')   return 'rev';
+  if (est === 'listo')      return 'list';
   if (est === 'en_proceso') return 'proc';
   return 'pend';
 }
@@ -954,6 +960,7 @@ function renderCalendario() {
           '<option value="pendiente"'+(item.est==='pendiente'?' selected':'')+'>⭕ Pendiente</option>' +
           '<option value="listo"'+(item.est==='listo'?' selected':'')+'>🔵 Listo</option>' +
           '<option value="en_proceso"'+(item.est==='en_proceso'?' selected':'')+'>🟡 En proceso</option>' +
+          '<option value="revision"'+(item.est==='revision'?' selected':'')+'>🟣 En Revisión</option>' +
           '<option value="completado"'+(item.est==='completado'?' selected':'')+'>✅ Completado</option>' +
         '</select>' +
       '</div>';
@@ -1099,12 +1106,12 @@ function sc(cls, n, lbl) {
 }
 
 async function marcarCompletado() {
-  if (!confirm('¿Marcar "'+GRUPO_ACTIVO+'" como completado?')) return;
+  if (!confirm('¿Validar y cerrar el inventario de "'+GRUPO_ACTIVO+'"?\n\n✅ El encargado ya no podrá modificarlo.\nTodas las diferencias quedan aclaradas.')) return;
   const d = CAL_DATA[GRUPO_ACTIVO] || {};
   d.estado = 'completado'; d.fechaComp = hoy();
   CAL_DATA[GRUPO_ACTIVO] = d;
   await dbSet('calendario/'+GRUPO_ACTIVO, d);
-  toast('✓ Marcado como completado', 'ok');
+  toast('✅ Inventario validado y cerrado', 'ok');
   renderCalendario();
 }
 
@@ -1119,17 +1126,19 @@ async function renderEncGrupos() {
   let cnt = 0;
   GRUPOS.forEach(g => {
     const d = (calData||{})[g] || {estado:'pendiente'};
-    if (d.estado === 'completado') return;
+    if (d.estado === 'completado') return; // Validado por supervisor → ocultar
     const tieneArts = !!(gruposData && gruposData[g] && gruposData[g].articulos);
     cnt++;
     const css = estadoCss(d.estado);
     const c = document.createElement('div');
     c.className = 'egc ' + (d.estado==='en_proceso'?'proc':'');
+    const esRevision = d.estado === 'revision';
     c.innerHTML =
       '<div class="ei">'+(GICO[g]||'📦')+'</div>' +
       '<h3>'+g+'</h3>' +
       (d.fecha ? '<div class="ef">📅 '+fmtF(d.fecha)+'</div>' : '<div class="ef">Sin fecha asignada</div>') +
       '<div style="margin-top:4px"><span class="bdg '+css+'">'+(EL[css]||d.estado)+'</span></div>' +
+      (esRevision ? '<div style="margin-top:5px;font-size:10px;color:#6D28D9;font-weight:600">✏️ Puedes hacer correcciones</div>' : '') +
       (!tieneArts ? '<div style="margin-top:5px;font-size:10px;color:#9CA3AF">⚠️ Sin artículos cargados</div>' : '');
     c.addEventListener('click', () => abrirCaptura(g));
     cont.appendChild(c);
@@ -1152,7 +1161,17 @@ async function abrirCaptura(grupo) {
   document.getElementById('capTit').textContent = 'Captura de Conteo';
   document.getElementById('capSub').textContent = 'Ingresa las cantidades. La existencia NO es visible en este modo.';
   document.getElementById('capHdr').style.background = '#5FA030';
-  document.getElementById('btnFinalizar').style.display = '';
+  // Cambiar texto del botón según si ya está en revisión
+  const calEstado = (await dbGet('calendario/'+grupo)||{}).estado;
+  const btnFin = document.getElementById('btnFinalizar');
+  btnFin.style.display = '';
+  if (calEstado === 'revision') {
+    btnFin.textContent = '✏️ En Revisión — Guardar corrección';
+    btnFin.style.background = '#7C3AED';
+  } else {
+    btnFin.textContent = '✓ Finalizar';
+    btnFin.style.background = '';
+  }
   document.getElementById('capLoad').style.display = 'flex';
   document.getElementById('capTabla').style.display = 'none';
   document.getElementById('capVacio').style.display = 'none';
@@ -1245,10 +1264,10 @@ async function guardar(clave, nombre, unidad, inp, num) {
 }
 
 async function finalizarConteo() {
-  if (!confirm('¿Finalizar el conteo de "'+GRUPO_ACTIVO+'"?\nEl supervisor podrá ver los resultados.')) return;
+  if (!confirm('¿Entregar el conteo de "'+GRUPO_ACTIVO+'" para revisión del supervisor?\n\nPodrás seguir haciendo correcciones hasta que el supervisor lo valide.')) return;
   const d = await dbGet('calendario/'+GRUPO_ACTIVO) || {};
-  await dbSet('calendario/'+GRUPO_ACTIVO, {...d, estado:'completado', fechaComp:hoy()});
-  toast('✓ Conteo finalizado', 'ok');
+  await dbSet('calendario/'+GRUPO_ACTIVO, {...d, estado:'revision', fechaRevision:hoy()});
+  toast('✓ Conteo enviado a revisión', 'ok');
   setTimeout(() => { mostrar('vEnc'); renderEncGrupos(); }, 1500);
 }
 
