@@ -865,12 +865,12 @@ async function confirmarSubida() {
     await dbSet('grupos/'+grupo+'/articulos', artObj);
     await dbSet('grupos/'+grupo+'/info', {total:arts.length, ts:Date.now()});
 
+    // Siempre resetear a 'listo' cuando se sube un Excel nuevo
+    // (preserva fecha si ya tenía asignada)
     const cal = await dbGet('calendario/'+grupo) || {};
-    if (!cal.estado || cal.estado === 'pend') {
-      cal.estado = 'list';
-      await dbSet('calendario/'+grupo, cal);
-      CAL_DATA[grupo] = cal;
-    }
+    cal.estado = 'listo';
+    await dbSet('calendario/'+grupo, cal);
+    CAL_DATA[grupo] = cal;
 
     toast('✓ ' + arts.length + ' artículos guardados', 'ok');
     cancelarSubida();
@@ -906,7 +906,7 @@ function cargarCalendario() {
 function estadoCss(est) {
   if (est === 'completado') return 'comp';
   if (est === 'revision')   return 'rev';
-  if (est === 'listo')      return 'list';
+  if (est === 'listo' || est === 'list') return 'list';
   if (est === 'en_proceso') return 'proc';
   return 'pend';
 }
@@ -1127,6 +1127,8 @@ async function renderEncGrupos() {
   GRUPOS.forEach(g => {
     const d = (calData||{})[g] || {estado:'pendiente'};
     if (d.estado === 'completado') return; // Validado por supervisor → ocultar
+    // Compatibilidad: si alguien guardó 'comp' por error
+    if (d.estado === 'comp') return;
     const tieneArts = !!(gruposData && gruposData[g] && gruposData[g].articulos);
     cnt++;
     const css = estadoCss(d.estado);
@@ -1177,7 +1179,7 @@ async function abrirCaptura(grupo) {
   document.getElementById('capVacio').style.display = 'none';
 
   const cal = await dbGet('calendario/'+grupo) || {};
-  if (!cal.estado || cal.estado === 'pendiente' || cal.estado === 'listo') {
+  if (!cal.estado || cal.estado === 'pendiente' || cal.estado === 'listo' || cal.estado === 'list') {
     cal.estado = 'en_proceso';
     await dbSet('calendario/'+grupo, cal);
   }
