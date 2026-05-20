@@ -493,7 +493,8 @@ body{font-family:'DM Sans',sans-serif;background:#F3F4F6;color:#111827;min-heigh
     <div id="capVacio" style="display:none;text-align:center;padding:44px;color:#9CA3AF">
       <div style="font-size:40px;margin-bottom:9px">📭</div>
       <strong style="display:block;font-size:14px;margin-bottom:5px;color:#4B5563">Sin artículos cargados</strong>
-      <div style="font-size:12px">El supervisor aún no ha subido el Excel de este grupo</div>
+      <div style="font-size:12px;margin-bottom:8px">El supervisor debe subir el Excel de este grupo y hacer clic en <strong>"✓ Guardar en Firebase"</strong></div>
+      <div id="capVacioGrupo" style="font-size:11px;color:#1B4FD8;font-weight:700;margin-top:8px"></div>
     </div>
   </div>
 </div>
@@ -872,7 +873,7 @@ async function confirmarSubida() {
     await dbSet('calendario/'+grupo, cal);
     CAL_DATA[grupo] = cal;
 
-    toast('✓ ' + arts.length + ' artículos guardados', 'ok');
+    toast('✅ ' + arts.length + ' artículos guardados en Firebase. El encargado ya puede ver el grupo.', 'ok');
     cancelarSubida();
     cargarCalendario();
   } catch(e) {
@@ -1193,6 +1194,9 @@ async function abrirCaptura(grupo) {
 
   if (!artsData) {
     document.getElementById('capVacio').style.display = 'block';
+    document.getElementById('capVacioGrupo').textContent =
+      'Grupo buscado en Firebase: inventarios/' + MES + '/grupos/' + grupo + '/articulos';
+    console.warn('artsData null para grupo:', grupo, 'MES:', MES, 'db:', db ? 'OK' : 'NULL');
     return;
   }
 
