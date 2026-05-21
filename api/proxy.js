@@ -131,6 +131,22 @@ export default async function handler(req, res) {
       return res.status(200).json([]);
     }
 
+    // ── TODOS LOS CLIENTES (para generar Excel de links) ─────────
+    if (metodo === 'TODOS_CLIENTES') {
+      const keys = await redis.keys('cliente:*');
+      const clientes = [];
+      for (const key of keys) {
+        const raw = await redis.get(key);
+        if (raw) {
+          const c = JSON.parse(raw);
+          if (c.clave && c.nombre) clientes.push({ clave: c.clave, nombre: c.nombre });
+        }
+      }
+      clientes.sort((a, b) => a.nombre.localeCompare(b.nombre));
+      return res.status(200).json(clientes);
+    }
+    // ──────────────────────────────────────────────────────────────
+
     if (metodo === 'CLIENTES') {
       const clienteId = (req.query.clienteId || '').trim();
       const buscar    = (req.query.buscar || '').trim().toUpperCase();
@@ -345,31 +361,6 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
 
-    // ── ENVIAR PEDIDO PENDIENTE TRAS PAGO CON TARJETA ────────────
-    if (metodo === 'ENVIAR_PEDIDO_PENDIENTE') {
-      const clienteId = (req.query.clienteId || '').trim();
-      if (!clienteId) return res.status(400).json({ error: 'clienteId requerido' });
-      const pedidoStr = await redis.get(`pedido_pendiente:${clienteId}`);
-      if (!pedidoStr) return res.status(404).json({ error: 'No hay pedido pendiente para este cliente' });
-      const pedidoDoc = JSON.parse(pedidoStr);
-      // Actualizar método de pago a Tarjeta
-      if (pedidoDoc.Documento && pedidoDoc.Documento.Encabezado) {
-        pedidoDoc.Documento.Encabezado.MetodoPago = 'Tarjeta';
-        pedidoDoc.Documento.Encabezado.EstatusPago = 'Pagado';
-      }
-      const response = await fetch(
-        `${API_BASE}/exsim/servicios/metodo/PEDIDOS/${TOKEN}`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(pedidoDoc) }
-      );
-      const text = await response.text();
-      let result;
-      try { result = JSON.parse(text); } catch { result = { respuesta: text }; }
-      // Borrar pedido pendiente de Redis
-      await redis.del(`pedido_pendiente:${clienteId}`);
-      return res.status(200).json(result);
-    }
-    // ──────────────────────────────────────────────────────────────
-
     // ── TOKENS DE CLIENTE ──────────────────────────────────────
     if (metodo === 'GENERAR_TOKEN') {
       const clienteId = (req.query.clienteId || '').trim();
@@ -435,11 +426,6 @@ export default async function handler(req, res) {
       }
 
       // Usar token en las URLs de retorno si existe
-      // Guardar pedido pendiente en Redis antes de ir a Stripe
-      if (bodyData.pedidoDoc) {
-        await redis.set(`pedido_pendiente:${clienteId}`, JSON.stringify(bodyData.pedidoDoc), 'EX', 3600);
-      }
-
       const tokenCliente = await redis.get(`token_cliente:${clienteId}`);
       const urlParam = tokenCliente ? `t=${tokenCliente}` : `cliente=${clienteId}`;
 
