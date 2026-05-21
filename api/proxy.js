@@ -345,6 +345,28 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
 
+    // ── TOKENS DE CLIENTE ──────────────────────────────────────
+    if (metodo === 'GENERAR_TOKEN') {
+      const clienteId = (req.query.clienteId || '').trim();
+      if (!clienteId) return res.status(400).json({ error: 'clienteId requerido' });
+      const existente = await redis.get(`token_cliente:${clienteId}`);
+      if (existente) return res.status(200).json({ token: existente, clienteId, nuevo: false });
+      const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+      let token = '';
+      for (let i = 0; i < 12; i++) token += chars[Math.floor(Math.random() * chars.length)];
+      await redis.set(`token:${token}`, clienteId);
+      await redis.set(`token_cliente:${clienteId}`, token);
+      return res.status(200).json({ token, clienteId, nuevo: true });
+    }
+    if (metodo === 'RESOLVER_TOKEN') {
+      const token = (req.query.token || '').trim().toLowerCase();
+      if (!token) return res.status(400).json({ error: 'token requerido' });
+      const clienteId = await redis.get(`token:${token}`);
+      if (!clienteId) return res.status(404).json({ error: 'Token inválido' });
+      return res.status(200).json({ clienteId });
+    }
+    // ──────────────────────────────────────────────────────────
+
     if (metodo === 'GET_IMAGENES') {
       const keys = await redis.keys('imagen:*');
       const result = {};
@@ -387,6 +409,10 @@ export default async function handler(req, res) {
         });
       }
 
+      // Usar token en las URLs de retorno si existe
+      const tokenCliente = await redis.get(`token_cliente:${clienteId}`);
+      const urlParam = tokenCliente ? `t=${tokenCliente}` : `cliente=${clienteId}`;
+
       const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
         method: 'POST',
         headers: {
@@ -396,8 +422,8 @@ export default async function handler(req, res) {
         body: new URLSearchParams({
           'payment_method_types[]': 'card',
           'mode': 'payment',
-          'success_url': `https://pedidos.surtidorahigienicos.com/?cliente=${clienteId}&pago=exitoso`,
-          'cancel_url': `https://pedidos.surtidorahigienicos.com/?cliente=${clienteId}&pago=cancelado`,
+          'success_url': `https://pedidos.surtidorahigienicos.com/?${urlParam}&pago=exitoso`,
+          'cancel_url': `https://pedidos.surtidorahigienicos.com/?${urlParam}&pago=cancelado`,
           'metadata[clienteId]': clienteId,
           'metadata[clienteNombre]': clienteNombre,
           ...Object.fromEntries(lineItems.flatMap((item, i) => [
