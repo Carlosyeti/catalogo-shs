@@ -1007,6 +1007,47 @@ async function pagarConTarjeta() {
   btn.disabled = true;
   btn.textContent = 'Procesando...';
   try {
+    // Construir documento de pedido para guardarlo antes de ir a Stripe
+    var fechaEntrega = document.getElementById('fechaEntrega')?.value || 'No especificada';
+    var direccionEntrega = document.getElementById('direccionEntrega')?.value || '';
+    var notasExtra = document.getElementById('notasExtra')?.value || '';
+    var dirs = clienteData.direcciones || [];
+    var dir = dirs.find(function(d){ return d.ciudad && d.ciudad.toUpperCase().includes('COLIMA'); }) ||
+              dirs.find(function(d){ return d.usarParaEnvios; }) || dirs[0] || {};
+    var pedidoDoc = {
+      Documento: {
+        Cliente: {
+          Nombre: clienteData.nombre, RFC:'', Clave: '',
+          DirClienteID: parseInt(dir.consignatario_id || dir.id || dir.dir_id || 0) || 0,
+          NomDireccion: dir.consignatario || clienteData.nombre,
+          Calle: dir.nombre_calle || 'S/N',
+          Num_interior: parseInt(dir.num_interior) || 0,
+          Num_exterior: parseInt(dir.num_exterior) || 0,
+          Poblacion: dir.poblacion || '', Referencia: dir.referencia || '',
+          Colonia: dir.colonia || 'CENTRO', Ciudad: dir.ciudad || 'COLIMA',
+          Estado: dir.estado || 'COLIMA', Pais: dir.pais || 'MEXICO',
+          Telefono1: parseInt(String(clienteData.telefono || '3120000000').replace(/\D/g,'')) || 3120000000,
+          Telefono2: 0, Fax: 0, Email: clienteData.email || '',
+          CodigoPostal: parseInt(String(dir.codigo_postal || '28000').replace(/\D/g,'')) || 28000,
+          Notas: ('Entrega: ' + fechaEntrega + ' | Dir: ' + (direccionEntrega || 'Dirección registrada') + ' | Notas: ' + notasExtra).substring(0, 200),
+          CP_FechaNacimiento: '', CP_CURP: '', CP_TelefonoSucesor: '', CP_CorreoElectronicoSucesor: ''
+        },
+        Encabezado: {
+          Folio: '', OrdenCompra: 'APP-' + Date.now(),
+          Descripcion: ('Pedido app SHS - ' + clienteData.nombre + '|Entrega: ' + fechaEntrega + ' | Dir: ' + (direccionEntrega || 'Dir. registrada') + ' | Notas: ' + notasExtra).substring(0, 200),
+          MetodoPago: 'Tarjeta', EstatusPago: 'Pagado',
+          Almacen: 'CEDIS COLIMA', CP_inv_inicial: 0, CP_pagos: 0, CP_pagos_letra: '',
+          CP_meses: 0, CP_meses_letra: '', CP_consultor: '',
+          CP_nota: ('Entrega: ' + fechaEntrega + ' | Dir: ' + (direccionEntrega || 'Dir. registrada') + ' | Notas: ' + notasExtra).substring(0, 99),
+          CP_n_solicitud: '', CP_contrato: '', CP_empresa: ''
+        },
+        Detalle: items.map(function(item) { return {
+          NombreArticulo: item.nombre, Unidades: item.cantidad,
+          Precio: item.precio, Descuento: 0,
+          Importe: item.precio * item.cantidad, DescuentoExtra: 0
+        }; })
+      }
+    };
     var res = await fetch(PROXY+'?metodo=CREAR_PAGO', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -1014,7 +1055,8 @@ async function pagarConTarjeta() {
         items: items,
         clienteNombre: clienteData.nombre,
         clienteId: CLIENTE_ID,
-        conComision: true
+        conComision: true,
+        pedidoDoc: pedidoDoc
       })
     });
     var data = await res.json();
@@ -1033,8 +1075,25 @@ async function pagarConTarjeta() {
 
 var pagoStatus = new URLSearchParams(window.location.search).get('pago');
 if (pagoStatus === 'exitoso') {
-  setTimeout(function() {
-    document.getElementById('modalFolio').textContent = 'Pago procesado correctamente';
+  setTimeout(async function() {
+    // Enviar pedido pendiente a Microsip automáticamente
+    try {
+      var clienteIdPago = CLIENTE_ID;
+      if (!clienteIdPago && TOKEN_PARAM) {
+        var tr = await fetch(PROXY + '?metodo=RESOLVER_TOKEN&token=' + TOKEN_PARAM);
+        if (tr.ok) { var td = await tr.json(); clienteIdPago = td.clienteId || ''; }
+      }
+      if (clienteIdPago) {
+        var pr = await fetch(PROXY + '?metodo=ENVIAR_PEDIDO_PENDIENTE&clienteId=' + encodeURIComponent(clienteIdPago));
+        var pd = await pr.json();
+        var folio = pd.Folio || pd.folio || pd.NumeroDocumento || '—';
+        document.getElementById('modalFolio').textContent = 'Folio: ' + folio + ' — Pago con tarjeta procesado';
+      } else {
+        document.getElementById('modalFolio').textContent = 'Pago procesado correctamente';
+      }
+    } catch(e) {
+      document.getElementById('modalFolio').textContent = 'Pago procesado correctamente';
+    }
     document.getElementById('modalExito').classList.add('abierto');
   }, 500);
 } else if (pagoStatus === 'cancelado') {
