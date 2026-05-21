@@ -264,6 +264,10 @@ input[type=file]{display:none}
       <input id="tokenClienteId" type="text" placeholder="Clave del cliente (ej: 0741)" style="flex:1;padding:10px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px">
       <button class="btn" onclick="generarToken()" style="white-space:nowrap">Generar link</button>
     </div>
+    <div style="border-top:1px solid #e2e8f0;padding-top:12px;margin-top:4px">
+      <button class="btn" onclick="generarTodosLosLinks()" id="btnTodosLinks" style="background:#0f766e;width:100%">📥 Generar Excel con links de todos los clientes</button>
+      <div id="todosLinksProgress" style="display:none;margin-top:10px;font-size:13px;color:#64748b;text-align:center">Generando links... <span id="todosLinksCount">0</span> clientes procesados</div>
+    </div>
     <div id="tokenResult" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;font-size:13px">
       <div style="font-weight:700;color:#166534;margin-bottom:6px">✅ Link generado:</div>
       <div id="tokenUrl" style="word-break:break-all;color:#1e4bcc;font-family:monospace;margin-bottom:10px"></div>
@@ -851,6 +855,56 @@ function copiarToken() {
   });
 }
 
+// ── GENERAR EXCEL CON TODOS LOS LINKS ────────────────────────
+async function generarTodosLosLinks() {
+  const btn = document.getElementById('btnTodosLinks');
+  const progress = document.getElementById('todosLinksProgress');
+  const countEl = document.getElementById('todosLinksCount');
+  btn.disabled = true;
+  btn.textContent = '⏳ Procesando...';
+  progress.style.display = 'block';
+  countEl.textContent = '0';
+
+  try {
+    // 1. Obtener todas las claves de clientes desde Redis
+    const res = await fetch(PROXY + '?metodo=TODOS_CLIENTES');
+    const clientes = await res.json();
+    if (!clientes.length) { alert('No se encontraron clientes. Asegúrate de haber sincronizado primero.'); return; }
+
+    // 2. Generar token para cada cliente
+    const filas = [];
+    let count = 0;
+    for (const c of clientes) {
+      const clave = String(c.clave || '').trim();
+      const nombre = c.nombre || '';
+      if (!clave) continue;
+      try {
+        const tr = await fetch(PROXY + '?metodo=GENERAR_TOKEN&clienteId=' + encodeURIComponent(clave));
+        const td = await tr.json();
+        const link = td.token ? 'https://pedidos.surtidorahigienicos.com/?t=' + td.token : '';
+        filas.push({ Clave: clave, Nombre: nombre, Link: link });
+      } catch(e) {
+        filas.push({ Clave: clave, Nombre: nombre, Link: 'Error' });
+      }
+      count++;
+      countEl.textContent = count;
+    }
+
+    // 3. Generar Excel con SheetJS
+    const ws = XLSX.utils.json_to_sheet(filas);
+    ws['!cols'] = [{ wch: 12 }, { wch: 50 }, { wch: 65 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Links Clientes');
+    XLSX.writeFile(wb, 'links_clientes_shs.xlsx');
+
+  } catch(e) {
+    alert('Error: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📥 Generar Excel con links de todos los clientes';
+    progress.style.display = 'none';
+  }
+}
 // ────────────────────────────────────────────────────────────
 </script>
 </body>
