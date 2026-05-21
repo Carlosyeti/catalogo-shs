@@ -134,19 +134,6 @@ input[type=file]{display:none}
   <p class="subtitle">Actualizar historial, catalogo y precios por cliente</p>
 
   <div class="seccion">
-    <h2>🔗 Buscar cliente — Copiar link</h2>
-    <div class="instrucciones"><ul>
-      <li>Escribe el nombre o parte del nombre del cliente</li>
-      <li>Copia el link y enviaselo por WhatsApp o correo</li>
-    </ul></div>
-    <div class="buscar-row">
-      <input type="text" id="buscarInput" placeholder="Ej: COMERCIAL GARCIA..." onkeydown="if(event.key==='Enter') buscarCliente()">
-      <button class="btn-buscar" onclick="buscarCliente()">Buscar</button>
-    </div>
-    <div class="cliente-lista" id="clienteLista"></div>
-  </div>
-
-  <div class="seccion">
     <h2>Historial de compras</h2>
     <div class="instrucciones"><ul>
       <li>Exporta "Ventas por cliente" de Microsip</li>
@@ -361,47 +348,7 @@ function verificarLogin() {
 var PROXY = 'https://catalogo-shs.vercel.app/api/proxy';
 var archivos = {};
 // ── BUSCAR CLIENTE + COPIAR LINK ─────────────────────────────
-async function buscarCliente() {
-  var q = document.getElementById('buscarInput').value.trim();
-  var lista = document.getElementById('clienteLista');
-  if (!q) { lista.innerHTML = ''; return; }
-  lista.innerHTML = '<div class="buscar-empty">Buscando...</div>';
-  try {
-    var res = await fetch(PROXY + '?metodo=CLIENTES&buscar=' + encodeURIComponent(q.toUpperCase()));
-    var data = await res.json();
-    if (!data.length) {
-      lista.innerHTML = '<div class="buscar-empty">No se encontraron clientes con ese nombre</div>';
-      return;
-    }
-    data.sort(function(a,b){ return a.nombre.localeCompare(b.nombre); });
-    lista.innerHTML = data.map(function(c) {
-      var clave = String(c.clave).trim();
-      var link = 'https://pedidos.surtidorahigienicos.com/?cliente=' + clave;
-      return '<div class="cliente-row">' +
-        '<div class="cliente-info">' +
-          '<div class="cliente-nombre">' + c.nombre + '</div>' +
-          '<div class="cliente-clave">Clave: ' + clave + ' &nbsp;|&nbsp; ' + link + '</div>' +
-        '</div>' +
-        '<button class="btn-copiar" onclick="copiarLink(this, \'' + link + '\')">' +
-          '📋 Copiar link' +
-        '</button>' +
-      '</div>';
-    }).join('');
-  } catch(e) {
-    lista.innerHTML = '<div class="buscar-empty">Error al buscar. Intenta de nuevo.</div>';
-  }
-}
 
-function copiarLink(btn, link) {
-  navigator.clipboard.writeText(link).then(function() {
-    btn.textContent = '✅ Copiado';
-    btn.classList.add('copiado');
-    setTimeout(function() {
-      btn.textContent = '📋 Copiar link';
-      btn.classList.remove('copiado');
-    }, 2000);
-  });
-}
 // ─────────────────────────────────────────────────────────────
 
 
