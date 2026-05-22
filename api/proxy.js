@@ -425,9 +425,7 @@ export default async function handler(req, res) {
         });
       }
 
-      // Usar token en las URLs de retorno si existe
-      const tokenCliente = await redis.get(`token_cliente:${clienteId}`);
-      const urlParam = tokenCliente ? `t=${tokenCliente}` : `cliente=${clienteId}`;
+      const urlParam = `cliente=${clienteId}`;
 
       const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
         method: 'POST',
