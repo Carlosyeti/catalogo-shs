@@ -254,11 +254,10 @@ input[type=file]{display:none}
 
   
   <div class="seccion">
-    <h2>🔗 Generador de links seguros por cliente</h2>
+    <h2>🔗 Generador de link por cliente</h2>
     <div class="instrucciones"><ul>
-      <li>Genera un link único por cliente que oculta su código en la URL</li>
-      <li>El cliente siempre usa el mismo link — el token no cambia</li>
-      <li>Si necesitas regenerar un token, borra el actual primero desde Redis</li>
+      <li>Ingresa la clave del cliente (ej: 0741) y obtén su link directo para compartir</li>
+      <li>El link incluye la clave del cliente para que el sistema lo identifique automáticamente</li>
     </ul></div>
     <div style="display:flex;gap:8px;margin-bottom:10px">
       <input id="tokenClienteId" type="text" placeholder="Clave del cliente (ej: 0741)" style="flex:1;padding:10px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px">
@@ -828,22 +827,9 @@ async function generarToken() {
   resultEl.style.display = 'none';
   errorEl.style.display = 'none';
   if (!clienteId) { errorEl.textContent = 'Ingresa la clave del cliente.'; errorEl.style.display = 'block'; return; }
-  try {
-    const res = await fetch(PROXY + '?metodo=GENERAR_TOKEN&clienteId=' + encodeURIComponent(clienteId));
-    const data = await res.json();
-    if (!res.ok || data.error) { errorEl.textContent = data.error || 'Error al generar token.'; errorEl.style.display = 'block'; return; }
-    const url = 'https://pedidos.surtidorahigienicos.com/?t=' + data.token;
-    document.getElementById('tokenUrl').textContent = url;
-    resultEl.style.display = 'block';
-    if (!data.nuevo) {
-      document.querySelector('#tokenResult .tokenNote') && document.querySelector('#tokenResult .tokenNote').remove();
-      const note = document.createElement('div');
-      note.className = 'tokenNote';
-      note.style.cssText = 'margin-top:8px;font-size:12px;color:#92400e';
-      note.textContent = '⚠️ Este cliente ya tenía un token — se reutilizó el existente.';
-      resultEl.appendChild(note);
-    }
-  } catch(e) { errorEl.textContent = 'Error: ' + e.message; errorEl.style.display = 'block'; }
+  const url = 'https://pedidos.surtidorahigienicos.com/?cliente=' + encodeURIComponent(clienteId);
+  document.getElementById('tokenUrl').textContent = url;
+  resultEl.style.display = 'block';
 }
 
 function copiarToken() {
@@ -871,21 +857,15 @@ async function generarTodosLosLinks() {
     const clientes = await res.json();
     if (!clientes.length) { alert('No se encontraron clientes. Asegúrate de haber sincronizado primero.'); return; }
 
-    // 2. Generar token para cada cliente
+    // 2. Generar link directo para cada cliente
     const filas = [];
     let count = 0;
     for (const c of clientes) {
       const clave = String(c.clave || '').trim();
       const nombre = c.nombre || '';
       if (!clave) continue;
-      try {
-        const tr = await fetch(PROXY + '?metodo=GENERAR_TOKEN&clienteId=' + encodeURIComponent(clave));
-        const td = await tr.json();
-        const link = td.token ? 'https://pedidos.surtidorahigienicos.com/?t=' + td.token : '';
-        filas.push({ Clave: clave, Nombre: nombre, Link: link });
-      } catch(e) {
-        filas.push({ Clave: clave, Nombre: nombre, Link: 'Error' });
-      }
+      const link = 'https://pedidos.surtidorahigienicos.com/?cliente=' + encodeURIComponent(clave);
+      filas.push({ Clave: clave, Nombre: nombre, Link: link });
       count++;
       countEl.textContent = count;
     }
