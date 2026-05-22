@@ -313,8 +313,7 @@ html{background:#ffffff}body{font-family:'Nunito',sans-serif;background:#ffffff;
 const PROXY = 'https://catalogo-shs.vercel.app/api/proxy';
 const STRIPE_PK = 'pk_live_51TVOsH5q4DgxeQ5owTWyBwzOUgE76zNXcFku6LFav7ZJHMHZhSYbBxouVOvHVtHmtQo27ccFGUrjqNU5GRIvqyOW00yPV0BSYH';
 const params = new URLSearchParams(window.location.search);
-const TOKEN_PARAM = params.get('t') || '';
-let CLIENTE_ID = params.get('cliente') || ''; // fallback legacy, se sobreescribe si hay token
+let CLIENTE_ID = params.get('cliente') || '';
 
 
 // Mapa clave -> categoría (embebido, sin llamada extra)
@@ -341,17 +340,6 @@ function fixImageUrl(url) {
 let imagenesMap = {};
 
 async function init() {
-  // ── Resolver token si viene en la URL ──────────────────────
-  if (TOKEN_PARAM && !CLIENTE_ID) {
-    try {
-      const tokenRes = await fetch(`${PROXY}?metodo=RESOLVER_TOKEN&token=${TOKEN_PARAM}`);
-      if (tokenRes.ok) {
-        const tokenData = await tokenRes.json();
-        if (tokenData.clienteId) CLIENTE_ID = tokenData.clienteId;
-      }
-    } catch(e) {}
-  }
-  // ──────────────────────────────────────────────────────────
   if (!CLIENTE_ID) {
     document.getElementById('error-global').textContent = 'Link inválido. Contacta a tu vendedor.';
     document.getElementById('error-global').style.display = 'block';
@@ -1079,10 +1067,6 @@ if (pagoStatus === 'exitoso') {
     // Enviar pedido pendiente a Microsip automáticamente
     try {
       var clienteIdPago = CLIENTE_ID;
-      if (!clienteIdPago && TOKEN_PARAM) {
-        var tr = await fetch(PROXY + '?metodo=RESOLVER_TOKEN&token=' + TOKEN_PARAM);
-        if (tr.ok) { var td = await tr.json(); clienteIdPago = td.clienteId || ''; }
-      }
       if (clienteIdPago) {
         var pr = await fetch(PROXY + '?metodo=ENVIAR_PEDIDO_PENDIENTE&clienteId=' + encodeURIComponent(clienteIdPago));
         var pd = await pr.json();
