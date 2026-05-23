@@ -295,24 +295,16 @@ export default async function handler(req, res) {
       return res.status(200).json(result);
     }
 
-   if (metodo === 'PEDIDOS') {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido.' });
-  const body = req.body;
-  if (!body || !body.Documento) return res.status(400).json({ error: 'Body inválido.' });
+    // ── PEDIDOS — pasa el body directo sin modificar ──
+    if (metodo === 'PEDIDOS') {
+      if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido.' });
+      const body = req.body;
+      if (!body || !body.Documento) return res.status(400).json({ error: 'Body inválido.' });
 
-// Si RFC viene vacío, usar XAXX010101000 (público en general) para no borrar ni crashear Microsip
-if (body.Documento?.Cliente && !body.Documento.Cliente.RFC) {
-  // Buscar el RFC real del cliente en Redis
-  const clienteId = body.Documento.Cliente.Clave || req.query.clienteId || '';
-  const clienteRaw = clienteId ? await redis.get(`cliente:${clienteId}`) : null;
-  const clienteRedis = clienteRaw ? JSON.parse(clienteRaw) : null;
-  body.Documento.Cliente.RFC = clienteRedis?.RFC || clienteRedis?.rfc || 'XAXX010101000';
-}
-
-  const response = await fetch(
-    `${API_BASE}/exsim/servicios/metodo/PEDIDOS/${TOKEN}`,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
-  );
+      const response = await fetch(
+        `${API_BASE}/exsim/servicios/metodo/PEDIDOS/${TOKEN}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+      );
       const text = await response.text();
       let result;
       try { result = JSON.parse(text); } catch { result = { respuesta: text }; }
@@ -433,7 +425,9 @@ if (body.Documento?.Cliente && !body.Documento.Cliente.RFC) {
         });
       }
 
-      const urlParam = `cliente=${clienteId}`;
+      // Usar token en las URLs de retorno si existe
+      const tokenCliente = await redis.get(`token_cliente:${clienteId}`);
+      const urlParam = tokenCliente ? `t=${tokenCliente}` : `cliente=${clienteId}`;
 
       const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
         method: 'POST',
