@@ -295,16 +295,20 @@ export default async function handler(req, res) {
       return res.status(200).json(result);
     }
 
-    // ── PEDIDOS — pasa el body directo sin modificar ──
-    if (metodo === 'PEDIDOS') {
-      if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido.' });
-      const body = req.body;
-      if (!body || !body.Documento) return res.status(400).json({ error: 'Body inválido.' });
+   if (metodo === 'PEDIDOS') {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido.' });
+  const body = req.body;
+  if (!body || !body.Documento) return res.status(400).json({ error: 'Body inválido.' });
 
-      const response = await fetch(
-        `${API_BASE}/exsim/servicios/metodo/PEDIDOS/${TOKEN}`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
-      );
+  // No enviar RFC si viene vacío, para no borrar el que ya tiene el cliente en Microsip
+  if (body.Documento?.Cliente && !body.Documento.Cliente.RFC) {
+    delete body.Documento.Cliente.RFC;
+  }
+
+  const response = await fetch(
+    `${API_BASE}/exsim/servicios/metodo/PEDIDOS/${TOKEN}`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+  );
       const text = await response.text();
       let result;
       try { result = JSON.parse(text); } catch { result = { respuesta: text }; }
