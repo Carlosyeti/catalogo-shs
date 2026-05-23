@@ -302,7 +302,11 @@ export default async function handler(req, res) {
 
 // Si RFC viene vacío, usar XAXX010101000 (público en general) para no borrar ni crashear Microsip
 if (body.Documento?.Cliente && !body.Documento.Cliente.RFC) {
-  body.Documento.Cliente.RFC = 'XAXX010101000';
+  // Buscar el RFC real del cliente en Redis
+  const clienteId = body.Documento.Cliente.Clave || req.query.clienteId || '';
+  const clienteRaw = clienteId ? await redis.get(`cliente:${clienteId}`) : null;
+  const clienteRedis = clienteRaw ? JSON.parse(clienteRaw) : null;
+  body.Documento.Cliente.RFC = clienteRedis?.RFC || clienteRedis?.rfc || 'XAXX010101000';
 }
 
   const response = await fetch(
