@@ -680,7 +680,7 @@ const notasExtra = document.getElementById('notasExtra')?.value || '';
       Documento: {
         Cliente: {
           Nombre: clienteData.nombre,
-          
+          RFC: clienteData.RFC || '',
           Clave: '',
           DirClienteID: parseInt(dir.consignatario_id || dir.id || dir.dir_id || 0) || 0,
           NomDireccion: dir.consignatario || clienteData.nombre,
