@@ -300,10 +300,10 @@ export default async function handler(req, res) {
   const body = req.body;
   if (!body || !body.Documento) return res.status(400).json({ error: 'Body inválido.' });
 
-  // No enviar RFC si viene vacío, para no borrar el que ya tiene el cliente en Microsip
-  if (body.Documento?.Cliente && !body.Documento.Cliente.RFC) {
-    delete body.Documento.Cliente.RFC;
-  }
+// Si RFC viene vacío, usar XAXX010101000 (público en general) para no borrar ni crashear Microsip
+if (body.Documento?.Cliente && !body.Documento.Cliente.RFC) {
+  body.Documento.Cliente.RFC = 'XAXX010101000';
+}
 
   const response = await fetch(
     `${API_BASE}/exsim/servicios/metodo/PEDIDOS/${TOKEN}`,
