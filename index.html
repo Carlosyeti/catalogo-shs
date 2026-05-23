@@ -692,8 +692,8 @@ const notasExtra = document.getElementById('notasExtra')?.value || '';
       Documento: {
         Cliente: {
           Nombre: clienteData.nombre,
-          RFC:'',
-          Clave: '',
+          RFC: clienteData.RFC || '',
+          Clave: String(CLIENTE_ID),
           DirClienteID: parseInt(dir.consignatario_id || dir.id || dir.dir_id || 0) || 0,
           NomDireccion: dir.consignatario || clienteData.nombre,
           Calle: dir.nombre_calle || 'S/N',
@@ -1017,7 +1017,7 @@ async function pagarConTarjeta() {
     var pedidoDoc = {
       Documento: {
         Cliente: {
-          Nombre: clienteData.nombre, RFC:'', Clave: '',
+          Nombre: clienteData.nombre, RFC: clienteData.RFC || '', Clave: String(CLIENTE_ID),
           DirClienteID: parseInt(dir.consignatario_id || dir.id || dir.dir_id || 0) || 0,
           NomDireccion: dir.consignatario || clienteData.nombre,
           Calle: dir.nombre_calle || 'S/N',
