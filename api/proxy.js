@@ -463,7 +463,16 @@ export default async function handler(req, res) {
       return res.status(200).json({ url: session.url });
     }
 
-    return res.status(200).json({ ok: true });
+
+    if (metodo === 'RESTORE_CATALOGO') {
+      if (req.method !== 'POST') return res.status(405).json({ error: 'Usar POST' });
+      const { catalogo } = req.body || {};
+      if (!Array.isArray(catalogo)) return res.status(400).json({ error: 'Body inválido: se espera { catalogo: [...] }' });
+      await redis.set('catalogo:completo', JSON.stringify(catalogo));
+      return res.status(200).json({ ok: true, total: catalogo.length });
+    }
+
+        return res.status(200).json({ ok: true });
 
   } catch (err) {
     return res.status(500).json({ error: err.message });
