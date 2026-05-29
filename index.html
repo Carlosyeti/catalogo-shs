@@ -480,9 +480,12 @@ async function cargarCatalogo() {
 }
 
 function renderCatTabs() {
+  const misNombres = new Set(historialArticulos.map(a => a.nombre));
   const cats = ['TODAS', ...Object.keys(CAT_EMOJIS).filter(c => catalogoPorCat[c])];
   document.getElementById('catTabs').innerHTML = cats.map(cat => {
-    const count = cat === 'TODAS' ? catalogoCompleto.length : (catalogoPorCat[cat]?.length || 0);
+    const count = cat === 'TODAS'
+      ? catalogoCompleto.filter(a => !misNombres.has(a.nombre)).length
+      : (catalogoPorCat[cat] || []).filter(a => !misNombres.has(a.nombre)).length;
     return `<button class="cat-tab ${cat === catActiva ? 'activo' : ''}" onclick="selCat('${cat}')">
       ${cat === 'TODAS' ? '🔍 Todas' : (CAT_EMOJIS[cat] || '📦') + ' ' + cat}
       <span class="cat-count">${count}</span>
@@ -501,8 +504,9 @@ function selCat(cat) {
 function renderCatalogo() {
   const lista = document.getElementById('lista-catalogo');
   const q = document.getElementById('busquedaCatalogo').value.trim().toUpperCase();
-  let arts = catalogoPorCat[catActiva] || catalogoCompleto;
-  if (q) arts = catalogoCompleto.filter(a => a.nombre.toUpperCase().includes(q));
+  const misNombres = new Set(historialArticulos.map(a => a.nombre));
+  let arts = (catalogoPorCat[catActiva] || catalogoCompleto).filter(a => !misNombres.has(a.nombre));
+  if (q) arts = catalogoCompleto.filter(a => a.nombre.toUpperCase().includes(q) && !misNombres.has(a.nombre));
   if (arts.length === 0) {
     lista.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><h3>Sin resultados</h3></div>`;
     return;
