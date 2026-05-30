@@ -6,6 +6,9 @@ const CLD_KEY    = '642717449888493';
 const CLD_SECRET = 'loHF1m-IHkYwZHyBzbuWu2YJ_dI';
 const CLD_CLOUD  = 'dkaqcxipf';
 
+const SYNC_MAX_PAGINAS = parseInt(process.env.SYNC_MAX_PAGINAS || '30');
+const CRON_SECRET = process.env.CRON_SECRET || 'SHS_CRON_2026';
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -90,72 +93,134 @@ export default async function handler(req, res) {
       return res.status(200).json(data);
     }
 
-   if (metodo === 'SYNC_ARTICULOS') {
-  const pagina = parseInt(req.query.pagina || '0');
-  res.setHeader('Cache-Control', 'no-store');
+    // ── SYNC_ARTICULOS — merge inteligente ────────────────────────────────────
+    // Acumula páginas en catalogo:sync_sesion.
+    // fin:true cuando Exsim devuelve menos de 100 artículos (última página real)
+    // o cuando devuelve 0. En ambos casos ejecuta el merge y publica en catalogo:completo.
+    if (metodo === 'SYNC_ARTICULOS') {
+      const pagina = parseInt(req.query.pagina || '0');
+      res.setHeader('Cache-Control', 'no-store');
 
-  const url = `${API_BASE}/exsim/servicios/metodo/ARTICULOS/${TOKEN}/100/${pagina}/0`;
-  const data = await fetchMicrosip(url);
+      const url = `${API_BASE}/exsim/servicios/metodo/ARTICULOS/${TOKEN}/100/${pagina}/0`;
+      const data = await fetchMicrosip(url);
 
-  // Página vacía → fin del sync, aplicar merge final
-  if (!Array.isArray(data) || data.length === 0) {
-    const sesionRaw = await redis.get('catalogo:sync_sesion');
-    const nuevos    = sesionRaw ? JSON.parse(sesionRaw) : [];
+      const esUltimaPagina = !Array.isArray(data) || data.length < 100;
 
-    // Leer catálogo anterior (backup de seguridad)
-    const anteriorRaw = await redis.get('catalogo:completo');
-    const anterior    = anteriorRaw ? JSON.parse(anteriorRaw) : [];
+      // Acumular artículos de esta página (si hay)
+      const mapped = Array.isArray(data) ? data.map(a => ({
+        id: a.id, clave: a.clave, nombre: a.nombre,
+        unidadmed: a.unidadmed, imagen: a.imagen, precios: a.precios
+      })) : [];
 
-    // Merge: base = artículos anteriores, actualizar/agregar con los nuevos
-    const mapaFinal = new Map();
-    for (const art of anterior)  mapaFinal.set(art.clave, art);
-    for (const art of nuevos)    mapaFinal.set(art.clave, art); // sobreescribe precio/nombre
+      const sesionRaw    = pagina === 0 ? null : await redis.get('catalogo:sync_sesion');
+      const acumulado    = sesionRaw ? JSON.parse(sesionRaw) : [];
+      const nueva_sesion = acumulado.concat(mapped);
 
-    const merged = Array.from(mapaFinal.values());
+      if (!esUltimaPagina) {
+        // Página intermedia — guardar sesión y seguir
+        await redis.set('catalogo:sync_sesion', JSON.stringify(nueva_sesion));
+        await redis.expire('catalogo:sync_sesion', 3600);
+        return res.status(200).json({
+          ok: true,
+          fin: false,
+          pagina,
+          enEstaPagina:   mapped.length,
+          totalAcumulado: nueva_sesion.length
+        });
+      }
 
-    await redis.set('catalogo:completo', JSON.stringify(merged));
-    await redis.del('catalogo:sync_sesion'); // limpiar sesión temporal
+      // Última página — hacer merge y publicar
+      const anteriorRaw = await redis.get('catalogo:completo');
+      const anterior    = anteriorRaw ? JSON.parse(anteriorRaw) : [];
 
-    return res.status(200).json({
-      ok: true,
-      fin: true,
-      pagina,
-      totalExsim:    nuevos.length,
-      totalAnterior: anterior.length,
-      totalFinal:    merged.length,
-      preservados:   merged.length - nuevos.length  // artículos rescatados del backup
-    });
-  }
+      // Merge: anterior es la base (preserva artículos que Exsim omite),
+      // nueva_sesion sobreescribe precio/nombre para los que sí llegaron
+      const mapaFinal = new Map();
+      for (const art of anterior)    mapaFinal.set(art.clave, art);
+      for (const art of nueva_sesion) mapaFinal.set(art.clave, art);
 
-  // Páginas normales → acumular en clave temporal de sesión
-  const mapped = data.map(a => ({
-    id: a.id, clave: a.clave, nombre: a.nombre,
-    unidadmed: a.unidadmed, imagen: a.imagen, precios: a.precios
-  }));
+      const merged = Array.from(mapaFinal.values());
 
-  const sesionRaw = pagina === 0 ? null : await redis.get('catalogo:sync_sesion');
-  const acumulado = sesionRaw ? JSON.parse(sesionRaw) : [];
-  const nueva_sesion = acumulado.concat(mapped);
+      await redis.set('catalogo:completo', JSON.stringify(merged));
+      await redis.set('catalogo:ultimo_sync', new Date().toISOString());
+      await redis.del('catalogo:sync_sesion');
 
-  await redis.set('catalogo:sync_sesion', JSON.stringify(nueva_sesion));
-  // TTL de 1 hora por si el sync queda a medias
-  await redis.expire('catalogo:sync_sesion', 3600);
+      return res.status(200).json({
+        ok: true,
+        fin: true,
+        pagina,
+        enEstaPagina:   mapped.length,
+        totalExsim:     nueva_sesion.length,
+        totalAnterior:  anterior.length,
+        totalFinal:     merged.length,
+        preservados:    merged.length - nueva_sesion.length
+      });
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
-  return res.status(200).json({
-    ok: true,
-    fin: false,
-    pagina,
-    enEstaPagina:    data.length,
-    totalAcumulado:  nueva_sesion.length
-  });
-}   
+    // ── SYNC_AUTO — sync completo automático (cron de Vercel, cada hora) ─────
+    if (metodo === 'SYNC_AUTO') {
+      if (req.query.secret !== CRON_SECRET) {
+        return res.status(401).json({ error: 'No autorizado' });
+      }
+
+      const maxPaginas = parseInt(req.query.maxPaginas || SYNC_MAX_PAGINAS);
+      const nuevos = [];
+
+      for (let pagina = 0; pagina < maxPaginas; pagina++) {
+        const url = `${API_BASE}/exsim/servicios/metodo/ARTICULOS/${TOKEN}/100/${pagina}/0`;
+        let data;
+        try { data = await fetchMicrosip(url); } catch (e) { break; }
+        if (!Array.isArray(data) || data.length === 0) break;
+        const mapped = data.map(a => ({
+          id: a.id, clave: a.clave, nombre: a.nombre,
+          unidadmed: a.unidadmed, imagen: a.imagen, precios: a.precios
+        }));
+        nuevos.push(...mapped);
+        if (data.length < 100) break;
+      }
+
+      if (nuevos.length === 0) {
+        return res.status(200).json({
+          ok: false,
+          motivo: 'Exsim devolvió 0 artículos — catalogo:completo no fue modificado'
+        });
+      }
+
+      const anteriorRaw = await redis.get('catalogo:completo');
+      const anterior    = anteriorRaw ? JSON.parse(anteriorRaw) : [];
+
+      const mapaFinal = new Map();
+      for (const art of anterior) mapaFinal.set(art.clave, art);
+      for (const art of nuevos)   mapaFinal.set(art.clave, art);
+
+      const merged = Array.from(mapaFinal.values());
+
+      await redis.set('catalogo:completo', JSON.stringify(merged));
+      await redis.set('catalogo:ultimo_sync', new Date().toISOString());
+
+      return res.status(200).json({
+        ok: true,
+        timestamp:     new Date().toISOString(),
+        totalExsim:    nuevos.length,
+        totalAnterior: anterior.length,
+        totalFinal:    merged.length,
+        preservados:   merged.length - nuevos.length
+      });
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     if (metodo === 'CATALOGO_COMPLETO') {
       const cached = await redis.get('catalogo:completo');
       if (cached) return res.status(200).json(JSON.parse(cached));
       return res.status(200).json([]);
     }
 
-    // ── TODOS LOS CLIENTES (para generar Excel de links) ─────────
+    if (metodo === 'ULTIMO_SYNC') {
+      const ts = await redis.get('catalogo:ultimo_sync');
+      return res.status(200).json({ ultimoSync: ts || null });
+    }
+
     if (metodo === 'TODOS_CLIENTES') {
       const keys = await redis.keys('cliente:*');
       const clientes = [];
@@ -169,7 +234,6 @@ export default async function handler(req, res) {
       clientes.sort((a, b) => a.nombre.localeCompare(b.nombre));
       return res.status(200).json(clientes);
     }
-    // ──────────────────────────────────────────────────────────────
 
     if (metodo === 'CLIENTES') {
       const clienteId = (req.query.clienteId || '').trim();
@@ -319,23 +383,22 @@ export default async function handler(req, res) {
       return res.status(200).json(result);
     }
 
-   if (metodo === 'PEDIDOS') {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido.' });
-  const body = req.body;
-  if (!body || !body.Documento) return res.status(400).json({ error: 'Body inválido.' });
+    if (metodo === 'PEDIDOS') {
+      if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido.' });
+      const body = req.body;
+      if (!body || !body.Documento) return res.status(400).json({ error: 'Body inválido.' });
 
-  if (body.Documento?.Cliente && !body.Documento.Cliente.RFC) {
-  // Buscar el RFC real del cliente en Redis
-  const clienteId = body.Documento.Cliente.Clave || req.query.clienteId || '';
-  const clienteRaw = clienteId ? await redis.get(`cliente:${clienteId}`) : null;
-  const clienteRedis = clienteRaw ? JSON.parse(clienteRaw) : null;
-  body.Documento.Cliente.RFC = clienteRedis?.RFC || clienteRedis?.rfc || 'XAXX010101000';
-}
+      if (body.Documento?.Cliente && !body.Documento.Cliente.RFC) {
+        const clienteId = body.Documento.Cliente.Clave || req.query.clienteId || '';
+        const clienteRaw = clienteId ? await redis.get(`cliente:${clienteId}`) : null;
+        const clienteRedis = clienteRaw ? JSON.parse(clienteRaw) : null;
+        body.Documento.Cliente.RFC = clienteRedis?.RFC || clienteRedis?.rfc || 'XAXX010101000';
+      }
 
-  const response = await fetch(
-    `${API_BASE}/exsim/servicios/metodo/PEDIDOS/${TOKEN}`,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
-  );
+      const response = await fetch(
+        `${API_BASE}/exsim/servicios/metodo/PEDIDOS/${TOKEN}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+      );
       const text = await response.text();
       let result;
       try { result = JSON.parse(text); } catch { result = { respuesta: text }; }
@@ -350,7 +413,6 @@ export default async function handler(req, res) {
       return res.status(200).json(data);
     }
 
-    // ── LISTAR IMÁGENES DE CLOUDINARY ─────────────────────────
     if (metodo === 'CLOUDINARY_IMAGENES') {
       const auth = Buffer.from(`${CLD_KEY}:${CLD_SECRET}`).toString('base64');
       let todas = [];
@@ -369,7 +431,7 @@ export default async function handler(req, res) {
       }));
       return res.status(200).json(resultado);
     }
-    // ──────────────────────────────────────────────────────────
+
     if (metodo === 'GET_IMAGEN') {
       const clave = (req.query.clave || '').trim();
       if (!clave) return res.status(400).json({ error: 'clave requerida' });
@@ -392,7 +454,6 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
 
-    // ── TOKENS DE CLIENTE ──────────────────────────────────────
     if (metodo === 'GENERAR_TOKEN') {
       const clienteId = (req.query.clienteId || '').trim();
       if (!clienteId) return res.status(400).json({ error: 'clienteId requerido' });
@@ -405,6 +466,7 @@ export default async function handler(req, res) {
       await redis.set(`token_cliente:${clienteId}`, token);
       return res.status(200).json({ token, clienteId, nuevo: true });
     }
+
     if (metodo === 'RESOLVER_TOKEN') {
       const token = (req.query.token || '').trim().toLowerCase();
       if (!token) return res.status(400).json({ error: 'token requerido' });
@@ -412,7 +474,6 @@ export default async function handler(req, res) {
       if (!clienteId) return res.status(404).json({ error: 'Token inválido' });
       return res.status(200).json({ clienteId });
     }
-    // ──────────────────────────────────────────────────────────
 
     if (metodo === 'GET_IMAGENES') {
       const keys = await redis.keys('imagen:*');
@@ -423,7 +484,6 @@ export default async function handler(req, res) {
       }
       return res.status(200).json(result);
     }
-    // ──────────────────────────────────────────────────────────
 
     if (metodo === 'CREAR_PAGO') {
       if (req.method !== 'POST') return res.status(405).json({ error: 'Usar POST' });
@@ -456,7 +516,6 @@ export default async function handler(req, res) {
         });
       }
 
-      // Usar token en las URLs de retorno si existe
       const tokenCliente = await redis.get(`token_cliente:${clienteId}`);
       const urlParam = tokenCliente ? `t=${tokenCliente}` : `cliente=${clienteId}`;
 
@@ -487,7 +546,6 @@ export default async function handler(req, res) {
       return res.status(200).json({ url: session.url });
     }
 
-
     if (metodo === 'RESTORE_CATALOGO') {
       if (req.method !== 'POST') return res.status(405).json({ error: 'Usar POST' });
       const { catalogo } = req.body || {};
@@ -496,7 +554,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, total: catalogo.length });
     }
 
-        return res.status(200).json({ ok: true });
+    return res.status(200).json({ ok: true });
 
   } catch (err) {
     return res.status(500).json({ error: err.message });
