@@ -90,41 +90,65 @@ export default async function handler(req, res) {
       return res.status(200).json(data);
     }
 
-    if (metodo === 'SYNC_ARTICULOS') {
-      const pagina = parseInt(req.query.pagina || '0');
-      const reset  = req.query.reset === '1';
-      res.setHeader('Cache-Control', 'no-store');
+   if (metodo === 'SYNC_ARTICULOS') {
+  const pagina = parseInt(req.query.pagina || '0');
+  res.setHeader('Cache-Control', 'no-store');
 
-      const url = `${API_BASE}/exsim/servicios/metodo/ARTICULOS/${TOKEN}/100/${pagina}/0`;
-      const data = await fetchMicrosip(url);
+  const url = `${API_BASE}/exsim/servicios/metodo/ARTICULOS/${TOKEN}/100/${pagina}/0`;
+  const data = await fetchMicrosip(url);
 
-      if (!Array.isArray(data) || data.length === 0) {
-        return res.status(200).json({ ok: true, fin: true, pagina, total: 0 });
-      }
+  // Página vacía → fin del sync, aplicar merge final
+  if (!Array.isArray(data) || data.length === 0) {
+    const sesionRaw = await redis.get('catalogo:sync_sesion');
+    const nuevos    = sesionRaw ? JSON.parse(sesionRaw) : [];
 
-      const mapped = data.map(a => ({
-        id: a.id, clave: a.clave, nombre: a.nombre,
-        unidadmed: a.unidadmed, imagen: a.imagen, precios: a.precios
-      }));
+    // Leer catálogo anterior (backup de seguridad)
+    const anteriorRaw = await redis.get('catalogo:completo');
+    const anterior    = anteriorRaw ? JSON.parse(anteriorRaw) : [];
 
-      let existentes = [];
-      if (!reset && pagina > 0) {
-        const cached = await redis.get('catalogo:completo');
-        if (cached) existentes = JSON.parse(cached);
-      }
+    // Merge: base = artículos anteriores, actualizar/agregar con los nuevos
+    const mapaFinal = new Map();
+    for (const art of anterior)  mapaFinal.set(art.clave, art);
+    for (const art of nuevos)    mapaFinal.set(art.clave, art); // sobreescribe precio/nombre
 
-      const todos = existentes.concat(mapped);
-      await redis.set('catalogo:completo', JSON.stringify(todos));
+    const merged = Array.from(mapaFinal.values());
 
-      return res.status(200).json({
-        ok: true,
-        fin: data.length < 100,
-        pagina,
-        enEstaPagina: data.length,
-        totalAcumulado: todos.length
-      });
-    }
+    await redis.set('catalogo:completo', JSON.stringify(merged));
+    await redis.del('catalogo:sync_sesion'); // limpiar sesión temporal
 
+    return res.status(200).json({
+      ok: true,
+      fin: true,
+      pagina,
+      totalExsim:    nuevos.length,
+      totalAnterior: anterior.length,
+      totalFinal:    merged.length,
+      preservados:   merged.length - nuevos.length  // artículos rescatados del backup
+    });
+  }
+
+  // Páginas normales → acumular en clave temporal de sesión
+  const mapped = data.map(a => ({
+    id: a.id, clave: a.clave, nombre: a.nombre,
+    unidadmed: a.unidadmed, imagen: a.imagen, precios: a.precios
+  }));
+
+  const sesionRaw = pagina === 0 ? null : await redis.get('catalogo:sync_sesion');
+  const acumulado = sesionRaw ? JSON.parse(sesionRaw) : [];
+  const nueva_sesion = acumulado.concat(mapped);
+
+  await redis.set('catalogo:sync_sesion', JSON.stringify(nueva_sesion));
+  // TTL de 1 hora por si el sync queda a medias
+  await redis.expire('catalogo:sync_sesion', 3600);
+
+  return res.status(200).json({
+    ok: true,
+    fin: false,
+    pagina,
+    enEstaPagina:    data.length,
+    totalAcumulado:  nueva_sesion.length
+  });
+}   
     if (metodo === 'CATALOGO_COMPLETO') {
       const cached = await redis.get('catalogo:completo');
       if (cached) return res.status(200).json(JSON.parse(cached));
