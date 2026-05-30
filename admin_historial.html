@@ -450,22 +450,30 @@ async function sincronizarCatalogo() {
   document.getElementById('r3').style.display = 'none';
   var pagina = 0;
   var totalAcumulado = 0;
+  var resultado = null;
   try {
     while (true) {
-      var resetParam = pagina === 0 ? '&reset=1' : '';
-      setProg('3', Math.min(90, pagina * 5), 'Pagina '+(pagina+1)+'... ('+totalAcumulado+' articulos)');
-      var res = await fetch(PROXY+'?metodo=SYNC_ARTICULOS&pagina='+pagina+resetParam);
+      setProg('3', Math.min(90, pagina * 6), 'Pagina '+(pagina+1)+'... ('+totalAcumulado+' articulos recibidos)');
+      var res = await fetch(PROXY+'?metodo=SYNC_ARTICULOS&pagina='+pagina);
       var data = await res.json();
       if (!data.ok) throw new Error(JSON.stringify(data));
       totalAcumulado = data.totalAcumulado || totalAcumulado;
-      if (data.fin) break;
+      if (data.fin) { resultado = data; break; }
       pagina++;
     }
     setProg('3', 100, 'Completado');
-    showResult('3', true, 'OK: ' + totalAcumulado + ' articulos en ' + (pagina+1) + ' paginas');
-  } catch(e) { showResult('3', false, 'Error pagina '+pagina+': '+e.message); }
-  finally { document.getElementById('btn3').disabled = false; }
+    var msg = 'OK: ' + resultado.totalFinal + ' articulos en catalogo';
+    if (resultado.preservados > 0) {
+      msg += ' (' + resultado.preservados + ' preservados que Exsim no devolvio)';
+    }
+    showResult('3', true, msg);
+  } catch(e) {
+    showResult('3', false, 'Error pagina '+pagina+': '+e.message);
+  } finally {
+    document.getElementById('btn3').disabled = false;
+  }
 }
+
 
 async function subirPrecios() {
   var file = archivos['2'];
