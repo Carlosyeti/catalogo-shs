@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Captura de Gastos — SHS</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --navy:#1e3a5f;--navy2:#2a4f7f;--green:#16a34a;--green-bg:#f0fdf4;
+  --red:#dc2626;--red-bg:#fef2f2;--amber:#d97706;--amber-bg:#fffbeb;
+  --text:#1e293b;--text2:#475569;--text3:#94a3b8;
+  --border:#e2e8f0;--border2:#cbd5e1;--bg:#f8fafc;--white:#ffffff;
+  --shadow:0 1px 3px rgba(0,0,0,.08);--shadow2:0 4px 12px rgba(0,0,0,.12);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+.header{background:var(--navy);padding:16px 20px;display:flex;justify-content:space-between;align-items:center;}
+.header-title{color:white;font-size:18px;font-weight:700;}
+.header-sub{color:rgba(255,255,255,.6);font-size:12px;margin-top:2px;}
+.header-right{color:rgba(255,255,255,.8);font-size:13px;text-align:right;}
+.sync-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#f87171;margin-right:6px;transition:background .3s;}
+.sync-dot.ok{background:#4ade80;}
+.container{max-width:800px;margin:0 auto;padding:20px 16px;}
+.card{background:var(--white);border-radius:12px;box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden;}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--border);}
+.card-title{font-size:14px;font-weight:700;}
+.card-sub{font-size:12px;color:var(--text3);margin-top:2px;}
+.card-body{padding:18px;}
+.kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.kpi-box{background:var(--white);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow);border-left:3px solid var(--navy);}
+.kpi-box.amber{border-color:var(--amber);}
+.kpi-box.green{border-color:var(--green);}
+.kpi-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;}
+.kpi-value{font-size:18px;font-weight:800;color:var(--text);margin-top:3px;}
+.kpi-box.green .kpi-value{color:var(--green);}
+.kpi-box.amber .kpi-value{color:var(--amber);}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-grid.three{grid-template-columns:1fr 1fr 1fr;}
+@media(max-width:600px){.form-grid,.form-grid.three{grid-template-columns:1fr;}}
+.field{margin-bottom:0;}
+.field label{font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+.field label.req::after{content:' *';color:var(--red);}
+.field input,.field select{width:100%;padding:9px 12px;border:1.5px solid var(--border2);border-radius:8px;font-size:13px;font-family:inherit;outline:none;transition:border .15s;background:var(--white);color:var(--text);}
+.field input:focus,.field select:focus{border-color:var(--navy);}
+.field-hint{font-size:11px;color:var(--text3);margin-top:4px;}
+.cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+@media(max-width:500px){.cat-grid{grid-template-columns:repeat(2,1fr);}}
+.cat-chip{padding:8px 10px;border-radius:8px;border:1.5px solid var(--border2);cursor:pointer;text-align:center;transition:all .15s;background:var(--white);user-select:none;}
+.cat-chip:hover{border-color:var(--navy);background:#f1f5f9;}
+.cat-chip.active{border-color:var(--navy);background:var(--navy);color:white;}
+.cat-chip .ci{font-size:18px;display:block;margin-bottom:3px;}
+.cat-chip .cl{font-size:11px;font-weight:600;}
+.credito-extra{display:none;background:var(--amber-bg);border-radius:8px;padding:12px;margin-top:10px;border:1px solid #fde68a;}
+.btn-primary{background:var(--navy);color:white;width:100%;padding:13px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s;}
+.btn-primary:hover{background:var(--navy2);}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:6px;border:1px solid #fecaca;background:#fef2f2;color:var(--red);cursor:pointer;font-family:inherit;}
+hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
+.gastos-list{display:flex;flex-direction:column;gap:8px;}
+.gasto-item{padding:12px 14px;border:1px solid var(--border);border-radius:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.gasto-item:hover{background:#f8fafc;}
+.gasto-nombre{font-size:13px;font-weight:600;}
+.gasto-meta{font-size:11px;color:var(--text3);margin-top:2px;}
+.cat-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;margin-right:4px;}
+.badge-ok{font-size:11px;color:var(--green);font-weight:700;background:var(--green-bg);padding:4px 10px;border-radius:10px;}
+.empty{text-align:center;padding:32px;color:var(--text3);}
+.empty-icon{font-size:36px;margin-bottom:8px;}
+.toast{position:fixed;bottom:24px;right:20px;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:999;box-shadow:var(--shadow2);opacity:0;transform:translateY(10px);transition:all .25s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+.toast.ok{background:#1e3a5f;color:white;}
+.toast.err{background:var(--red);color:white;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">📋 Captura de Gastos — SHS</div>
+    <div class="header-sub">Surtidora de Higiénicos y Servicios</div>
+  </div>
+  <div class="header-right">
+    <span class="sync-dot" id="sdot"></span><span id="sstatus">Conectando...</span><br>
+    <span id="sfecha" style="font-size:12px;opacity:.7"></span>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="kpi-row">
+    <div class="kpi-box amber"><div class="kpi-label">Registros hoy</div><div class="kpi-value" id="kpi-n">0</div></div>
+    <div class="kpi-box"><div class="kpi-label">Último registro</div><div class="kpi-value" style="font-size:13px" id="kpi-ult">—</div></div>
+    <div class="kpi-box green"><div class="kpi-label">Estado</div><div class="kpi-value" style="font-size:13px" id="kpi-est">Sin registros</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">➕ Registrar gasto</div>
+      <div class="card-sub">Todos los campos marcados con * son obligatorios</div>
+    </div>
+    <div class="card-body">
+
+      <div style="margin-bottom:14px">
+        <label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px;">CATEGORÍA <span style="color:var(--red)">*</span></label>
+        <div class="cat-grid">
+          <div class="cat-chip" data-cat="nomina"       onclick="selCat(this)"><span class="ci">👥</span><span class="cl">Nómina</span></div>
+          <div class="cat-chip" data-cat="renta"        onclick="selCat(this)"><span class="ci">🏢</span><span class="cl">Renta</span></div>
+          <div class="cat-chip" data-cat="servicios"    onclick="selCat(this)"><span class="ci">💡</span><span class="cl">Servicios</span></div>
+          <div class="cat-chip" data-cat="combustible"  onclick="selCat(this)"><span class="ci">⛽</span><span class="cl">Combustible</span></div>
+          <div class="cat-chip" data-cat="publicidad"   onclick="selCat(this)"><span class="ci">📢</span><span class="cl">Publicidad</span></div>
+          <div class="cat-chip" data-cat="mantenimiento" onclick="selCat(this)"><span class="ci">🔧</span><span class="cl">Mantenimiento</span></div>
+          <div class="cat-chip" data-cat="financieros"  onclick="selCat(this)"><span class="ci">🏦</span><span class="cl">Financieros</span></div>
+          <div class="cat-chip" data-cat="impuestos"    onclick="selCat(this)"><span class="ci">🧾</span><span class="cl">Impuestos</span></div>
+          <div class="cat-chip" data-cat="otros"        onclick="selCat(this)"><span class="ci">📦</span><span class="cl">Otros</span></div>
+        </div>
+      </div>
+
+      <div class="form-grid" style="margin-bottom:12px">
+        <div class="field">
+          <label class="req">Descripción / Proveedor</label>
+          <input type="text" id="g-desc" placeholder="Ej. Telmex, CFE, PEMEX..." list="dl-desc" autocomplete="off">
+          <datalist id="dl-desc"></datalist>
+          <div class="field-hint">Se guarda automáticamente para uso futuro</div>
+        </div>
+        <div class="field">
+          <label>Folio / Factura</label>
+          <input type="text" id="g-folio" placeholder="Ej. F-1234 (opcional)">
+        </div>
+      </div>
+
+      <div class="form-grid three" style="margin-bottom:12px">
+        <div class="field">
+          <label class="req">Importe ($)</label>
+          <input type="number" id="g-importe" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="field">
+          <label class="req">Fecha</label>
+          <input type="date" id="g-fecha">
+        </div>
+        <div class="field">
+          <label class="req">Forma de pago</label>
+          <select id="g-pago">
+            <option value="">Seleccionar...</option>
+            <option value="Efectivo">💵 Efectivo</option>
+            <option value="Transferencia">🏦 Transferencia</option>
+            <option value="Tarjeta">💳 Tarjeta</option>
+            <option value="Cheque">📄 Cheque</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-grid" style="margin-bottom:12px">
+        <div class="field">
+          <label>¿Tipo de documento?</label>
+          <select id="g-tipo" onchange="toggleCred()">
+            <option value="contado">Contado / Gasto directo</option>
+            <option value="credito">Factura a crédito (programar pago)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Notas adicionales</label>
+          <input type="text" id="g-notas" placeholder="Opcional...">
+        </div>
+      </div>
+
+      <div class="credito-extra" id="cred-extra">
+        <div style="font-size:12px;font-weight:700;color:var(--amber);margin-bottom:10px">📅 Programar para pago — se enviará a Master Cobranza</div>
+        <div class="form-grid three">
+          <div class="field">
+            <label class="req">Nombre empresa</label>
+            <input type="text" id="g-empresa" placeholder="Razón social" list="dl-emp" autocomplete="off">
+            <datalist id="dl-emp"></datalist>
+          </div>
+          <div class="field">
+            <label class="req">Días de crédito</label>
+            <input type="number" id="g-dias" placeholder="Ej. 30" min="1" max="180">
+          </div>
+          <div class="field">
+            <label>Fecha vencimiento</label>
+            <input type="date" id="g-vcto" readonly style="background:#f1f5f9">
+          </div>
+        </div>
+      </div>
+
+      <hr>
+      <button class="btn-primary" id="btn-save" onclick="guardar()">💾 Registrar gasto</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">📋 Gastos registrados hoy</div>
+      <div class="card-sub" id="label-hoy"></div>
+    </div>
+    <div class="card-body" id="lista"></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════
+var FB_CFG = {
+  apiKey:'AIzaSyDGBgicmvOge196PiSgmIHhseQUGMiko-E',
+  authDomain:'surtidora-de-higienicos.firebaseapp.com',
+  databaseURL:'https://surtidora-de-higienicos-default-rtdb.firebaseio.com',
+  projectId:'surtidora-de-higienicos',
+  storageBucket:'surtidora-de-higienicos.firebasestorage.app',
+  messagingSenderId:'232648877023',
+  appId:'1:232648877023:web:9e8a4a743b68f4e16d9a6a'
+};
+
+var CAT_LABELS = {nomina:'Nómina',renta:'Renta',servicios:'Servicios',combustible:'Combustible',publicidad:'Publicidad',mantenimiento:'Mantenimiento',financieros:'Financieros',impuestos:'Impuestos',otros:'Otros'};
+var CAT_COLORS = {nomina:'#185FA5',renta:'#0f766e',servicios:'#7c3aed',combustible:'#d97706',publicidad:'#16a34a',mantenimiento:'#dc2626',financieros:'#9333ea',impuestos:'#0891b2',otros:'#6b7280'};
+
+// ═══════════════════════════════════════════════
+// ESTADO GLOBAL
+// ═══════════════════════════════════════════════
+var DB = null;
+var CAT = '';
+var HOY = (function(){
+  var d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+})();
+var MES = HOY.substring(0,7);
+var GASTOS = [];
+var DESC_LIST = [];
+var EMP_LIST  = [];
+
+// ═══════════════════════════════════════════════
+// INIT UI
+// ═══════════════════════════════════════════════
+(function(){
+  var d = new Date();
+  var dias=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var label = dias[d.getDay()]+' '+d.getDate()+' de '+meses[d.getMonth()]+' '+d.getFullYear();
+  document.getElementById('sfecha').textContent = label;
+  document.getElementById('label-hoy').textContent = label;
+  document.getElementById('g-fecha').value = HOY;
+  renderLista();
+})();
+
+// ═══════════════════════════════════════════════
+// FIREBASE INIT — mismo patrón que MASTER_COBRANZA y MASTER_FINANCIERO
+// ═══════════════════════════════════════════════
+(function initFB(){
+  try {
+    var app;
+    try { app = firebase.app('aux'); }
+    catch(e) { app = firebase.initializeApp(FB_CFG, 'aux'); }
+    DB = firebase.database(app);
+    // Sin signInAnonymously — reglas Firebase son true/true, no requiere auth
+    // (signInAnonymously crea un iframe que Chrome bloquea desde file://)
+    onFBReady();
+  } catch(e) {
+    console.error('Firebase init error:', e);
+    setSyncStatus(false);
+  }
+})();
+
+function onFBReady(){
+  setSyncStatus(true);
+  cargarCatalogos();
+  cargarGastos();
+}
+
+function setSyncStatus(ok){
+  document.getElementById('sdot').className = 'sync-dot'+(ok?' ok':'');
+  document.getElementById('sstatus').textContent = ok?'Conectado':'Sin conexión';
+}
+
+// ═══════════════════════════════════════════════
+// CATALOGOS
+// ═══════════════════════════════════════════════
+function cargarCatalogos(){
+  DB.ref('gastos/catalogos/descripciones').once('value').then(function(s){
+    DESC_LIST = s.val()||[];
+    var dl = document.getElementById('dl-desc');
+    dl.innerHTML = DESC_LIST.map(function(d){return '<option value="'+esc(d)+'">'; }).join('');
+  });
+  DB.ref('gastos/catalogos/empresas').once('value').then(function(s){
+    EMP_LIST = s.val()||[];
+    var dl = document.getElementById('dl-emp');
+    dl.innerHTML = EMP_LIST.map(function(e){return '<option value="'+esc(e)+'">'; }).join('');
+  });
+}
+
+function guardarCatalogo(tipo, valor){
+  if(!DB || !valor) return;
+  var arr = tipo==='desc' ? DESC_LIST : EMP_LIST;
+  if(arr.indexOf(valor)<0){
+    arr.push(valor);
+    var path = tipo==='desc' ? 'gastos/catalogos/descripciones' : 'gastos/catalogos/empresas';
+    DB.ref(path).set(arr);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// CATEGORIA
+// ═══════════════════════════════════════════════
+function selCat(el){
+  CAT = el.dataset.cat;
+  document.querySelectorAll('.cat-chip').forEach(function(c){ c.classList.remove('active'); });
+  el.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════
+// CRÉDITO TOGGLE
+// ═══════════════════════════════════════════════
+function toggleCred(){
+  var esCred = document.getElementById('g-tipo').value === 'credito';
+  document.getElementById('cred-extra').style.display = esCred ? 'block' : 'none';
+  if(esCred) calcVcto();
+}
+
+function calcVcto(){
+  var fecha = document.getElementById('g-fecha').value;
+  var dias  = parseInt(document.getElementById('g-dias').value)||0;
+  if(fecha && dias>0){
+    var d = new Date(fecha+'T12:00:00');
+    d.setDate(d.getDate()+dias);
+    document.getElementById('g-vcto').value = d.toISOString().split('T')[0];
+  }
+}
+
+document.getElementById('g-dias').addEventListener('input', calcVcto);
+document.getElementById('g-fecha').addEventListener('change', calcVcto);
+
+// ═══════════════════════════════════════════════
+// GUARDAR GASTO
+// ═══════════════════════════════════════════════
+async function guardar(){
+  // Validaciones
+  if(!CAT)                                        { toast('Selecciona una categoría','err'); return; }
+  var desc    = document.getElementById('g-desc').value.trim();
+  if(!desc)                                       { toast('Escribe la descripción','err'); return; }
+  var importe = parseFloat(document.getElementById('g-importe').value)||0;
+  if(importe<=0)                                  { toast('Ingresa el importe','err'); return; }
+  var pago    = document.getElementById('g-pago').value;
+  if(!pago)                                       { toast('Selecciona forma de pago','err'); return; }
+  var fecha   = document.getElementById('g-fecha').value;
+  var tipo    = document.getElementById('g-tipo').value;
+
+  var empresa='', dias=0, vcto='';
+  if(tipo==='credito'){
+    empresa = document.getElementById('g-empresa').value.trim();
+    dias    = parseInt(document.getElementById('g-dias').value)||0;
+    vcto    = document.getElementById('g-vcto').value;
+    if(!empresa||!dias||!vcto){ toast('Completa los datos de crédito','err'); return; }
+  }
+
+  if(!DB){ toast('Sin conexión a Firebase','err'); return; }
+
+  var btn = document.getElementById('btn-save');
+  btn.disabled=true; btn.textContent='Guardando...';
+
+  // Construir objeto gasto
+  var id    = Date.now();
+  var mes   = fecha.substring(0,7);
+  var gasto = {
+    id:          id,
+    fecha:       fecha,
+    mes:         mes,
+    categoria:   CAT,
+    descripcion: desc,
+    folio:       document.getElementById('g-folio').value.trim(),
+    importe:     importe,
+    formaPago:   pago,
+    tipo:        tipo,
+    notas:       document.getElementById('g-notas').value.trim(),
+    empresa:     empresa,
+    diasCredito: dias,
+    fechaVcto:   vcto,
+    ts:          new Date().toISOString()
+  };
+
+  try {
+    // 1 — Guardar gasto
+    await DB.ref('gastos/dia/'+fecha+'/'+id).set(gasto);
+
+    // 2 — Actualizar acumulado en MASTER_FINANCIERO (estados guardado como JSON string)
+    var snap = await DB.ref('financiero/estados').once('value');
+    var raw  = snap.val();
+    var estados = {};
+    try { estados = raw ? JSON.parse(raw) : {}; } catch(e){ estados={}; }
+    if(!estados[mes])           estados[mes]           = {ventas:0,otros_ingresos:0,costo_ventas:0,gastos:{},flujo:{}};
+    if(!estados[mes].gastos)    estados[mes].gastos    = {};
+    if(!estados[mes].flujo)     estados[mes].flujo     = {};
+    estados[mes].gastos[CAT]         = (estados[mes].gastos[CAT]||0) + importe;
+    estados[mes].flujo.pagos_gastos  = (estados[mes].flujo.pagos_gastos||0) + importe;
+    await DB.ref('financiero/estados').set(JSON.stringify(estados));
+
+    // 3 — Si es crédito → proveedor en Master Cobranza
+    if(tipo==='credito' && empresa && vcto){
+      await DB.ref('cobranza/data/proveedores/'+id).set({
+        id:id, nombre:empresa, descripcion:desc, folio:gasto.folio,
+        monto:importe, fechaEmision:fecha, fechaVencimiento:vcto,
+        diasCredito:dias, formaPago:pago, categoria:CAT,
+        estado:'pendiente', origen:'auxiliar', ts:gasto.ts
+      });
+    }
+
+    // 4 — Catálogos
+    guardarCatalogo('desc', desc);
+    if(empresa) guardarCatalogo('emp', empresa);
+
+    toast('✓ Gasto registrado','ok');
+    limpiar();
+    // Recargar lista
+    setTimeout(cargarGastos, 800);
+    setTimeout(cargarGastos, 2500);
+
+  } catch(e) {
+    console.error('[SHS] Error guardando:', e);
+    toast('Error: '+e.message,'err');
+  }
+
+  btn.disabled=false; btn.textContent='💾 Registrar gasto';
+}
+
+// ═══════════════════════════════════════════════
+// CARGAR Y RENDER GASTOS
+// ═══════════════════════════════════════════════
+function cargarGastos(){
+  if(!DB) return;
+  DB.ref('gastos/dia/'+HOY).once('value').then(function(snap){
+    var raw = snap.val();
+    GASTOS = raw ? Object.values(raw) : [];
+    renderLista();
+  }).catch(function(e){ console.warn('Error cargando gastos:', e); });
+}
+
+function renderLista(){
+  var el = document.getElementById('lista');
+  // KPIs
+  document.getElementById('kpi-n').textContent   = GASTOS.length;
+  document.getElementById('kpi-est').textContent = GASTOS.length>0 ? 'Al día ✓' : 'Sin registros';
+  if(GASTOS.length>0){
+    var ult = GASTOS[GASTOS.length-1];
+    document.getElementById('kpi-ult').textContent = ult.descripcion||'—';
+  } else {
+    document.getElementById('kpi-ult').textContent = '—';
+  }
+
+  if(!GASTOS.length){
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div>Sin gastos registrados hoy</div></div>';
+    return;
+  }
+
+  var sorted = GASTOS.slice().sort(function(a,b){ return (b.ts||'').localeCompare(a.ts||''); });
+  el.innerHTML = '<div class="gastos-list">'+sorted.map(function(g){
+    var color = CAT_COLORS[g.categoria]||'#6b7280';
+    var label = CAT_LABELS[g.categoria]||g.categoria;
+    var hora  = g.ts ? new Date(g.ts).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}) : '';
+    return '<div class="gasto-item">'+
+      '<div style="flex:1">'+
+        '<div class="gasto-nombre">'+
+          '<span class="cat-badge" style="background:'+color+'20;color:'+color+'">'+esc(label)+'</span>'+
+          esc(g.descripcion)+(g.folio?' <span style="font-size:11px;color:var(--text3)">· '+esc(g.folio)+'</span>':'')+
+        '</div>'+
+        '<div class="gasto-meta">'+esc(g.formaPago||'')+(g.tipo==='credito'?' · 📅 Vcto: '+fmD(g.fechaVcto):'')+(hora?' · '+hora:'')+'</div>'+
+      '</div>'+
+      '<div style="display:flex;align-items:center;gap:10px">'+
+        '<span class="badge-ok">✓ Registrado</span>'+
+        '<button class="btn-sm" onclick="eliminar(\''+g.id+'\',\''+g.fecha+'\',\''+g.categoria+'\','+g.importe+')">✕</button>'+
+      '</div>'+
+    '</div>';
+  }).join('')+'</div>';
+}
+
+// ═══════════════════════════════════════════════
+// ELIMINAR
+// ═══════════════════════════════════════════════
+async function eliminar(id, fecha, cat, importe){
+  if(!confirm('¿Eliminar este gasto?')) return;
+  try {
+    await DB.ref('gastos/dia/'+fecha+'/'+id).remove();
+    // Restar del financiero
+    var snap = await DB.ref('financiero/estados').once('value');
+    var raw = snap.val();
+    var estados = {};
+    try { estados = raw ? JSON.parse(raw) : {}; } catch(e){ estados={}; }
+    var mes = fecha.substring(0,7);
+    if(estados[mes] && estados[mes].gastos && estados[mes].gastos[cat]){
+      estados[mes].gastos[cat] = Math.max(0,(estados[mes].gastos[cat]||0)-importe);
+      if(estados[mes].flujo) estados[mes].flujo.pagos_gastos = Math.max(0,(estados[mes].flujo.pagos_gastos||0)-importe);
+      await DB.ref('financiero/estados').set(JSON.stringify(estados));
+    }
+    toast('Gasto eliminado','ok');
+    setTimeout(cargarGastos, 500);
+  } catch(e){ toast('Error al eliminar','err'); }
+}
+
+// ═══════════════════════════════════════════════
+// LIMPIAR FORMULARIO
+// ═══════════════════════════════════════════════
+function limpiar(){
+  document.getElementById('g-desc').value    = '';
+  document.getElementById('g-folio').value   = '';
+  document.getElementById('g-importe').value = '';
+  document.getElementById('g-pago').value    = '';
+  document.getElementById('g-notas').value   = '';
+  document.getElementById('g-tipo').value    = 'contado';
+  document.getElementById('g-empresa').value = '';
+  document.getElementById('g-dias').value    = '';
+  document.getElementById('g-vcto').value    = '';
+  document.getElementById('cred-extra').style.display = 'none';
+  document.getElementById('g-fecha').value   = HOY;
+  // Mantener categoría seleccionada para captura rápida
+}
+
+// ═══════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════
+function esc(s){ return (''+s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmD(iso){ if(!iso) return '—'; var p=iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+function toast(msg,tipo){
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast '+(tipo||'ok')+' show';
+  setTimeout(function(){ t.className='toast'; },3000);
+}
+</script>
+</body>
+</html>
