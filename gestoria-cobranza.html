@@ -279,7 +279,7 @@ var SYNC_INTERVAL=30000; // actualizar cada 30 seg automáticamente
 
 var fmx=function(n){return new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n||0);};
 var fd=function(s){if(!s)return'—';var p=s.split('-');return p[2]+'/'+p[1]+'/'+p[0];};
-var td=function(){return new Date().toISOString().split('T')[0];};
+var td=function(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 var esc=function(s){return(''+s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
 var escq=function(s){return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'");};
 function gst(n){var fu=S.followups[sanitizeKey(n)];if(!fu||!fu.p)return's';var t=td();if(fu.p<t)return'v';if(fu.p===t)return'h';return'f';}
