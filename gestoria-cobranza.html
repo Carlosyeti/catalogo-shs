@@ -282,7 +282,7 @@ var fd=function(s){if(!s)return'—';var p=s.split('-');return p[2]+'/'+p[1]+'/'
 var td=function(){return new Date().toISOString().split('T')[0];};
 var esc=function(s){return(''+s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
 var escq=function(s){return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'");};
-function gst(n){var fu=S.followups[n];if(!fu||!fu.p)return's';var t=td();if(fu.p<t)return'v';if(fu.p===t)return'h';return'f';}
+function gst(n){var fu=S.followups[sanitizeKey(n)];if(!fu||!fu.p)return's';var t=td();if(fu.p<t)return'v';if(fu.p===t)return'h';return'f';}
 var SL={s:'Sin seguimiento',v:'Promesa vencida',h:'¡Cobrar hoy!',f:'Programado'};
 var SC={s:'var(--gray)',v:'var(--red)',h:'var(--amber)',f:'var(--green)'};
 var SB={s:'var(--gray-bg)',v:'var(--red-bg)',h:'var(--amber-bg)',f:'var(--green-bg)'};
@@ -810,7 +810,7 @@ function render(){
 function openE(name){
   EN=sanitizeKey(name);
   var c=(S.clients||[]).find(function(x){return x.n===name;});if(!c)return;
-  var fu=S.followups[name]||{};
+  var fu=S.followups[EN]||{};
   document.getElementById('mn').textContent=name;
   document.getElementById('mi').innerHTML=
     '<div><div class="mil">Saldo</div><div class="miv">'+fmx(c.tot)+'</div></div>'
