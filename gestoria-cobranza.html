@@ -308,8 +308,7 @@ function initDB(onOk,onErr){
         var rec=snap.val()||{};
         if(rec.clients) S=rec;
         if(onOk) onOk();
-      }).catch(function(){ if(onOk) onOk(); });
-    }).catch(function(e){ if(onErr) onErr(e.message); });
+      }).catch(function(e){ if(onErr) onErr(e.message); });
   }catch(e){ if(onErr) onErr(e.message); }
 }
 
