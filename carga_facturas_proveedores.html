@@ -172,6 +172,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-seri
     <div class="s-card" id="sec-clasificar" style="display:none;">
       <div class="s-card-hdr">
         <div><div class="title">🗂 Facturas a clasificar</div><div class="sub">Indica si está pagada o es a crédito, y los días de plazo</div></div>
+        <button onclick="resetApp()" style="background:rgba(255,255,255,.15);color:white;border:1px solid rgba(255,255,255,.3);border-radius:7px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">✕ Cambiar Excel</button>
       </div>
       <div class="tbl-wrap">
         <table class="ftbl">
@@ -226,7 +227,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-seri
         <span id="c-dups">0 duplicados</span>
       </div>
       <div class="btns">
-        <button class="btn-sec" onclick="marcarTodasPagado()">✔ Marcar todas como pagadas</button>
         <button class="btn-primary" id="btn-enviar" onclick="enviarFacturas()" disabled>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           Enviar a MASTER COBRANZA
@@ -252,7 +252,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-seri
   <div class="s-card">
     <div class="s-card-hdr">
       <div><div class="title">🕓 Últimas facturas enviadas</div><div class="sub">Cargadas desde esta pantalla a MASTER COBRANZA</div></div>
-      <button onclick="cargarHistorial()" style="background:rgba(255,255,255,.15);color:white;border:none;border-radius:7px;padding:6px 14px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">↺ Actualizar</button>
+      <div style="display:flex;gap:8px;">
+        <button onclick="cargarHistorial()" style="background:rgba(255,255,255,.15);color:white;border:none;border-radius:7px;padding:6px 14px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">↺ Actualizar</button>
+        <button onclick="limpiarDatosPrueba()" style="background:rgba(163,45,45,.4);color:#fca5a5;border:1px solid rgba(163,45,45,.5);border-radius:7px;padding:6px 14px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">🗑 Limpiar datos de prueba</button>
+      </div>
     </div>
     <div class="tbl-wrap">
       <table class="ftbl">
@@ -326,6 +329,19 @@ var FILAS_PEND=[];   // pendientes de asignar (complementos, NC ambiguas)
 var FILAS_DUPS=[];   // duplicados omitidos
 
 // ═══════════════════════════════════════════
+// MEMORIA DE DÍAS DE CRÉDITO POR PROVEEDOR
+// ═══════════════════════════════════════════
+var DIAS_MEMORIA={};
+async function cargarDiasMemoria(){
+  try{var snap=await DB.ref('flujo/dias_credito_config').get();DIAS_MEMORIA=snap.val()?JSON.parse(snap.val()):{};}
+  catch(e){DIAS_MEMORIA={};}
+}
+async function guardarDiasMemoria(){
+  try{await DB.ref('flujo/dias_credito_config').set(JSON.stringify(DIAS_MEMORIA));}catch(e){}
+}
+function getDiasProveedor(nombre){return DIAS_MEMORIA[(nombre||'').toUpperCase().trim()]||30;}
+function setDiasProveedor(nombre,dias){DIAS_MEMORIA[(nombre||'').toUpperCase().trim()]=parseInt(dias)||30;guardarDiasMemoria();}
+
 // PROCESAR EXCEL
 // ═══════════════════════════════════════════
 async function procesarExcel(file){
@@ -334,10 +350,27 @@ async function procesarExcel(file){
   try{
     // Leer folios existentes en Firebase para deduplicar
     var foliosExistentes=new Set();
+    var clavesExistentes=new Set(); // RFC+monto+fecha para sin folio
     if(DB){
+      // Verificar en flujo/proveedores
       var snap=await DB.ref('flujo/proveedores').get();
-      var provs=snap.val()?JSON.parse(snap.val()):[];
-      provs.forEach(function(p){if(p.folio&&p.folio.trim())foliosExistentes.add(p.folio.trim().toUpperCase());});
+      var provsExist=snap.val()?JSON.parse(snap.val()):[];
+      provsExist.forEach(function(p){
+        if(p.folio&&p.folio.trim())foliosExistentes.add(p.folio.trim().toUpperCase());
+        // Clave por RFC+monto+fecha para sin folio
+        if(p.rfc&&p.monto&&p.fechaFactura){
+          clavesExistentes.add((p.rfc+'|'+p.monto+'|'+p.fechaFactura).toUpperCase());
+        }
+      });
+      // Verificar también en flujo/pendientes_asignar
+      var snapPend=await DB.ref('flujo/pendientes_asignar').get();
+      var pendsExist=snapPend.val()?JSON.parse(snapPend.val()):[];
+      pendsExist.filter(function(p){return p.estado==='pendiente';}).forEach(function(p){
+        if(p.folio&&p.folio.trim())foliosExistentes.add(p.folio.trim().toUpperCase());
+        if(p.rfc&&p.monto&&p.fechaFactura){
+          clavesExistentes.add((p.rfc+'|'+p.monto+'|'+p.fechaFactura).toUpperCase());
+        }
+      });
     }
 
     var reader=new FileReader();
@@ -345,7 +378,7 @@ async function procesarExcel(file){
       try{
         var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});
         var sh=wb.Sheets[wb.SheetNames[0]];
-        var rows=XLSX.utils.sheet_to_json(sh,{header:1,defval:null,raw:false});
+        var rows=XLSX.utils.sheet_to_json(sh,{header:1,defval:null,raw:true});
 
         // Detectar cabecera flexible
         var headerRow=-1,COL={};
@@ -368,6 +401,8 @@ async function procesarExcel(file){
         if(headerRow<0){ocultarLoading();showToast('⚠ No se encontraron columnas válidas en el Excel');return;}
 
         FILAS_CLAS=[];FILAS_PEND=[];FILAS_DUPS=[];
+        var foliosSesion=new Set(); // duplicados dentro del mismo Excel
+        var clavesSesion=new Set();
 
         for(var ri=headerRow+1;ri<rows.length;ri++){
           var row=rows[ri];
@@ -384,23 +419,24 @@ async function procesarExcel(file){
           var folio=COL.folio!==undefined&&row[COL.folio]?(''+row[COL.folio]).trim():'';
           var rfc=COL.rfc!==undefined&&row[COL.rfc]?(''+row[COL.rfc]).trim():'';
           var naturaleza=COL.naturaleza!==undefined&&row[COL.naturaleza]?(''+row[COL.naturaleza]).trim():'';
-          var formaPago=COL.formaPago!==undefined&&row[COL.formaPago]?(''+row[COL.formaPago]).trim():'';
+          var formaPagoRaw=COL.formaPago!==undefined?row[COL.formaPago]:null;
+          var formaPago=formaPagoRaw!==null&&formaPagoRaw!==undefined?(''+formaPagoRaw).trim():'';
 
           // Fecha ISO
           var fechaISO='';
           if(COL.fecha!==undefined&&row[COL.fecha]){
             var fv=row[COL.fecha];
-            if(fv instanceof Date){fechaISO=fv.toISOString().split('T')[0];}
-            else{
+            if(fv instanceof Date){
+              fechaISO=fv.toISOString().split('T')[0];
+            } else if(typeof fv==='number'){
+              // Serial de Excel (ej. 46143)
+              var dc=XLSX.SSF.parse_date_code(fv);
+              if(dc)fechaISO=dc.y+'-'+String(dc.m).padStart(2,'0')+'-'+String(dc.d).padStart(2,'0');
+            } else {
               var fs=(''+fv).trim();
-              if(/^\d{5}$/.test(fs)){
-                var dc=XLSX.SSF.parse_date_code(parseInt(fs));
-                if(dc)fechaISO=dc.y+'-'+String(dc.m).padStart(2,'0')+'-'+String(dc.d).padStart(2,'0');
-              } else {
-                var fp=fs.split('/');
-                if(fp.length===3)fechaISO=fp[2]+'-'+fp[1].padStart(2,'0')+'-'+fp[0].padStart(2,'0');
-                else fechaISO=fs;
-              }
+              var fp=fs.split('/');
+              if(fp.length===3)fechaISO=fp[2]+'-'+fp[1].padStart(2,'0')+'-'+fp[0].padStart(2,'0');
+              else fechaISO=fs;
             }
           }
 
@@ -414,42 +450,67 @@ async function procesarExcel(file){
 
           var obj={_ri:ri,nombre:nombre,rfc:rfc,folio:folio,monto:montoRaw,
             fechaFactura:fechaISO,naturaleza:naturaleza,formaPago:formaPago,categoria:cat,
-            tipoLocal:'sin',diasCredito:30};
+            tipoLocal:'sin',diasCredito:getDiasProveedor(nombre)};
 
           // ── REGLAS DE CLASIFICACIÓN AUTOMÁTICA ──
 
-          // 1. Duplicado: folio no vacío y ya existe en Firebase
+          // 1. Duplicado: verificar folio en Firebase y en sesión actual
+          var claveRFCMonto=(rfc&&montoRaw&&fechaISO)?(rfc+'|'+montoRaw+'|'+fechaISO).toUpperCase():'';
           if(folio&&foliosExistentes.has(folio.toUpperCase())){
             FILAS_DUPS.push({...obj,_motivo:'Folio ya registrado en MASTER COBRANZA'});
             continue;
           }
+          if(folio&&foliosSesion.has(folio.toUpperCase())){
+            FILAS_DUPS.push({...obj,_motivo:'Folio duplicado en este Excel'});
+            continue;
+          }
+          if(!folio&&claveRFCMonto&&clavesExistentes.has(claveRFCMonto)){
+            FILAS_DUPS.push({...obj,_motivo:'RFC+monto+fecha ya registrado en MASTER COBRANZA'});
+            continue;
+          }
+          if(!folio&&claveRFCMonto&&clavesSesion.has(claveRFCMonto)){
+            FILAS_DUPS.push({...obj,_motivo:'RFC+monto+fecha duplicado en este Excel'});
+            continue;
+          }
+          // Registrar en sets de sesión para detectar duplicados dentro del mismo Excel
+          if(folio)foliosSesion.add(folio.toUpperCase());
+          if(claveRFCMonto)clavesSesion.add(claveRFCMonto);
 
           // 2. Complemento de pago: forma de pago vacía
           if(!formaPago){
             FILAS_PEND.push({...obj,_motivo:'Complemento de pago (forma de pago vacía)'});
+            if(folio)foliosSesion.add(folio.toUpperCase());
+            if(claveRFCMonto)clavesSesion.add(claveRFCMonto);
             continue;
           }
 
           // 3. Nota de crédito: folio empieza con "NC"
           if(folio&&folio.toUpperCase().startsWith('NC')){
             FILAS_PEND.push({...obj,_motivo:'Nota de crédito — revisa y asigna manualmente'});
+            foliosSesion.add(folio.toUpperCase());
             continue;
           }
 
           // 4. Folio vacío: no se puede cruzar
           if(!folio){
+            if(claveRFCMonto&&clavesSesion.has(claveRFCMonto)){
+              FILAS_DUPS.push({...obj,_motivo:'RFC+monto+fecha duplicado en este Excel'});
+              continue;
+            }
             FILAS_PEND.push({...obj,_motivo:'Sin folio — no se puede verificar duplicado'});
+            if(claveRFCMonto)clavesSesion.add(claveRFCMonto);
             continue;
           }
 
           // 5. Normal → clasificar: pre-seleccionar según forma de pago
           // PPD/99 → crédito pre-seleccionado; PUE/otros → pagado pre-seleccionado
-          if(formaPago==='99'){obj.tipoLocal='credito';}
+          if(formaPago==='99'||formaPagoRaw===99){obj.tipoLocal='credito';}
           else{obj.tipoLocal='pagado';}
           FILAS_CLAS.push(obj);
         }
 
         ocultarLoading();
+        await cargarDiasMemoria();
         renderClasificacion();
         goStep(2);
       }catch(err){ocultarLoading();showToast('⚠ Error al leer Excel: '+err.message);console.error(err);}
@@ -571,7 +632,9 @@ function setTipo(i,tipo){
 }
 
 function setDias(i,val){
-  FILAS_CLAS[i].diasCredito=parseInt(val)||30;
+  var dias=parseInt(val)||30;
+  FILAS_CLAS[i].diasCredito=dias;
+  setDiasProveedor(FILAS_CLAS[i].nombre, dias);
   document.getElementById('vence-'+i).innerHTML=calcVenceHTML(FILAS_CLAS[i]);
 }
 
@@ -734,6 +797,33 @@ function esc(s){return(''+s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(
 function showToast(msg,dur){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},dur||3200);}
 function mostrarLoading(msg){document.getElementById('loading-msg').textContent=msg||'Guardando…';document.getElementById('loading').style.display='flex';}
 function ocultarLoading(){document.getElementById('loading').style.display='none';}
+
+// ═══════════════════════════════════════
+// LIMPIAR DATOS DE PRUEBA
+// ═══════════════════════════════════════
+async function limpiarDatosPrueba(){
+  if(!confirm('¿Borrar TODOS los registros subidos desde esta pantalla?\n\nEsto eliminará:\n• Facturas cargadas en flujo/proveedores\n• Pendientes de asignar\n\nLas facturas agregadas manualmente en MASTER COBRANZA NO se tocan.'))return;
+  if(!DB){showToast('⚠ Sin conexión a Firebase');return;}
+  mostrarLoading('Borrando datos de prueba…');
+  try{
+    // Borrar facturas auxiliar de flujo/proveedores
+    var snapProv=await DB.ref('flujo/proveedores').get();
+    var provs=snapProv.val()?JSON.parse(snapProv.val()):[];
+    var antes=provs.length;
+    provs=provs.filter(function(p){return p.origenCarga!=='auxiliar_facturas';});
+    await DB.ref('flujo/proveedores').set(JSON.stringify(provs));
+
+    // Borrar todos los pendientes de asignar
+    await DB.ref('flujo/pendientes_asignar').set(JSON.stringify([]));
+
+    ocultarLoading();
+    showToast('✓ Eliminados '+(antes-provs.length)+' registros de prueba');
+    cargarHistorial();
+  }catch(err){
+    ocultarLoading();
+    showToast('⚠ Error: '+err.message);
+  }
+}
 </script>
 </body>
 </html>
