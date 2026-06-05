@@ -3289,6 +3289,61 @@ async function guardarEdicionProveedor(){
   showToast('✓ Actualizado — '+nombre);
 }
 
+async function abonarProveedor(id){
+  var provs=await cargarProveedores();
+  var p=provs.find(function(x){return x.id===id;});
+  if(!p)return;
+
+  var saldoActual=p.saldo!==undefined?p.saldo:p.monto;
+  var montoStr=prompt('Monto del abono para '+p.proveedor+'\n\nSaldo actual: '+fmx(saldoActual),'');
+  if(!montoStr)return;
+  var abono=parseFloat(montoStr.replace(/[$,]/g,''));
+  if(!abono||abono<=0){showToast('⚠ Monto inválido');return;}
+  if(abono>saldoActual){showToast('⚠ El abono ('+fmx(abono)+') supera el saldo ('+fmx(saldoActual)+')');return;}
+
+  var fecha=prompt('Fecha del abono (YYYY-MM-DD):',new Date().toISOString().split('T')[0]);
+  if(!fecha)return;
+
+  // Inicializar historial de abonos
+  if(!p.abonos)p.abonos=[];
+  p.abonos.push({monto:abono,fecha:fecha,id:'ab_'+Date.now()});
+
+  // Calcular nuevo saldo
+  var totalAbonado=p.abonos.reduce(function(a,b){return a+b.monto;},0);
+  var nuevoSaldo=Math.max(0,p.monto-totalAbonado);
+  p.saldo=nuevoSaldo;
+
+  // Si saldo llega a 0 → liquidar
+  if(nuevoSaldo===0){
+    p.estado='pagado';
+    p.fechaPagoReal=fecha;
+    showToast('✅ Factura liquidada completamente — '+p.proveedor);
+  } else {
+    showToast('✓ Abono registrado — Saldo restante: '+fmx(nuevoSaldo));
+  }
+
+  await guardarProveedores(provs);
+
+  // Registrar complemento de pago pendiente automáticamente
+  var comps=await cargarComplementos();
+  comps.push({
+    id:'cp_ab_'+Date.now(),
+    proveedor:p.proveedor,
+    rfc:p.rfc||'',
+    folio:p.folio||'',
+    monto:abono,
+    fechaPago:fecha,
+    fechaRegistro:new Date().toISOString().split('T')[0],
+    estado:'pendiente',
+    notas:'Abono '+fmx(abono)+' — saldo restante: '+fmx(nuevoSaldo)
+  });
+  await guardarComplementos(comps);
+  actualizarBadgeComplementos();
+
+  renderProveedores();
+  actualizarListaProveedores();
+}
+
 async function pagarProveedor(id){
   var provs=await cargarProveedores();
   var p=provs.find(function(x){return x.id===id;});if(!p)return;
@@ -3359,80 +3414,138 @@ async function renderComplementos(){
   var comps=await cargarComplementos();
   var pendientes=comps.filter(function(c){return c.estado==='pendiente';});
   var recibidos=comps.filter(function(c){return c.estado==='recibido';});
-  var hoy=new Date().toISOString().split('T')[0];
-
-  // Badge
   actualizarBadgeComplementos();
 
-  var html='';
-
-  // KPIs
-  var totalPend=pendientes.reduce(function(a,c){return a+c.monto;},0);
-  html+='<div class="kpi-grid" style="margin-bottom:16px">'+
-    '<div class="kpi-card" data-c="amber"><div class="kpi-label">Complementos pendientes</div><div class="kpi-value">'+pendientes.length+'</div><div class="kpi-sub">'+fmxS(totalPend)+' a solicitar</div></div>'+
-    (recibidos.length?'<div class="kpi-card" data-c="green"><div class="kpi-label">Recibidos</div><div class="kpi-value">'+recibidos.length+'</div><div class="kpi-sub">complementos confirmados</div></div>':'')+
-  '</div>';
-
-  if(!pendientes.length && !recibidos.length){
+  if(!pendientes.length&&!recibidos.length){
     el.innerHTML='<div class="empty-state"><div style="font-size:36px;margin-bottom:10px">📨</div><p>Sin complementos de pago pendientes.<br>Aparecerán aquí cuando marques un pago como pagado y confirmes que necesitas complemento.</p></div>';
     return;
   }
 
-  // Pendientes
+  var totalPend=pendientes.reduce(function(a,c){return a+c.monto;},0);
+  var hoy=new Date().toISOString().split('T')[0];
+
+  // Build with innerHTML safe approach
+  var wrapper=document.createElement('div');
+
+  // KPIs
+  var kpiDiv=document.createElement('div');
+  kpiDiv.className='kpi-grid';
+  kpiDiv.style.marginBottom='16px';
+  kpiDiv.innerHTML=
+    '<div class="kpi-card" data-c="amber"><div class="kpi-label">Complementos pendientes</div><div class="kpi-value">'+pendientes.length+'</div><div class="kpi-sub">'+fmxS(totalPend)+' a solicitar</div></div>'+
+    (recibidos.length?'<div class="kpi-card" data-c="green"><div class="kpi-label">Recibidos</div><div class="kpi-value">'+recibidos.length+'</div><div class="kpi-sub">complementos confirmados</div></div>':'');
+  wrapper.appendChild(kpiDiv);
+
+  // Pendientes table
   if(pendientes.length){
-    html+='<div class="table-card" style="margin-bottom:16px">'+
-      '<div class="table-header">'+
-        '<div><div class="table-title">⏳ Pendientes de recibir</div>'+
-        '<div class="table-sub">Solicita estos complementos a tus proveedores</div></div>'+
-        '<div style="font-weight:700;color:var(--amber)">'+fmx(totalPend)+'</div>'+
-      '</div>'+
-      '<table><thead><tr>'+
-        '<th>Proveedor</th><th>Folio factura</th><th style="text-align:right">Monto</th>'+
-        '<th>Fecha pago</th><th>Registrado</th><th>Notas</th><th style="text-align:center">Acción</th>'+
-      '</tr></thead><tbody>';
+    var card=document.createElement('div');
+    card.className='table-card';
+    card.style.marginBottom='16px';
+    var hdr='<div class="table-header"><div><div class="table-title">⏳ Pendientes de recibir</div><div class="table-sub">Solicita estos complementos a tus proveedores</div></div><div style="font-weight:700;color:var(--amber)">'+fmx(totalPend)+'</div></div>';
+    var tbl='<table><thead><tr><th>Proveedor</th><th>Folio factura</th><th style="text-align:right">Monto</th><th>Fecha pago</th><th>Días espera</th><th>Notas</th><th style="text-align:center">Acción</th></tr></thead><tbody id="comp-pend-tbody"></tbody></table>';
+    card.innerHTML=hdr+tbl;
+    wrapper.appendChild(card);
 
+    var tbody=card.querySelector('#comp-pend-tbody');
     pendientes.forEach(function(c){
-      var safeId=c.id.replace(/'/g,"\'");
       var diasEspera=c.fechaPago?Math.round((new Date(hoy+'T00:00:00')-new Date(c.fechaPago+'T00:00:00'))/86400000):null;
-      html+='<tr>'+
-        '<td><div style="font-weight:600">'+esc(c.proveedor)+'</div>'+(c.rfc?'<div style="font-size:10px;color:var(--text2)">'+esc(c.rfc)+'</div>':'')+' </td>'+
-        '<td style="font-family:monospace;font-size:12px">'+(c.folio?esc(c.folio):'<span style="color:var(--text3)">—</span>')+'</td>'+
-        '<td style="text-align:right;font-weight:700">'+fmx(c.monto)+'</td>'+
-        '<td style="font-size:12px">'+(c.fechaPago?fmtD(c.fechaPago):'—')+'</td>'+
-        '<td style="font-size:12px;color:var(--text2)">'+(diasEspera!==null?diasEspera+'d esperando':'—')+'</td>'+
-        '<td><input type="text" placeholder="Nota…" data-cid="'+c.id+'" onchange="actualizarNotaCompEv(this)" style="width:130px;padding:4px 8px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit;outline:none" value="'+esc(c.notas||'')+'"></td>'+'
-        '<td style="text-align:center">'+
-          '<button onclick="marcarCompRecibido(\''+safeId+'\')" style="background:var(--green-bg);color:var(--green);border:1px solid #a7d9a7;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">✓ Recibido</button> '+
-          '<button onclick="eliminarComp(\''+safeId+'\')" style="background:var(--red-bg);color:var(--red);border:1px solid #f5c0c0;border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;font-family:inherit">×</button>'+
-        '</td>'+
-      '</tr>';
+      var tr=document.createElement('tr');
+
+      // Proveedor
+      var tdProv=document.createElement('td');
+      tdProv.innerHTML='<div style="font-weight:600">'+esc(c.proveedor)+'</div>'+(c.rfc?'<div style="font-size:10px;color:var(--text2)">'+esc(c.rfc)+'</div>':'');
+      tr.appendChild(tdProv);
+
+      // Folio
+      var tdFolio=document.createElement('td');
+      tdFolio.style.fontFamily='monospace'; tdFolio.style.fontSize='12px';
+      tdFolio.textContent=c.folio||'—';
+      tr.appendChild(tdFolio);
+
+      // Monto
+      var tdMonto=document.createElement('td');
+      tdMonto.style.textAlign='right'; tdMonto.style.fontWeight='700';
+      tdMonto.textContent=fmx(c.monto);
+      tr.appendChild(tdMonto);
+
+      // Fecha pago
+      var tdFecha=document.createElement('td');
+      tdFecha.style.fontSize='12px';
+      tdFecha.textContent=c.fechaPago?fmtD(c.fechaPago):'—';
+      tr.appendChild(tdFecha);
+
+      // Días espera
+      var tdDias=document.createElement('td');
+      tdDias.style.fontSize='12px'; tdDias.style.color='var(--text2)';
+      tdDias.textContent=diasEspera!==null?diasEspera+'d':'—';
+      tr.appendChild(tdDias);
+
+      // Notas input
+      var tdNotas=document.createElement('td');
+      var inp=document.createElement('input');
+      inp.type='text'; inp.placeholder='Agregar nota…';
+      inp.value=c.notas||'';
+      inp.style.cssText='width:130px;padding:4px 8px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit;outline:none';
+      inp.setAttribute('data-cid', c.id);
+      inp.addEventListener('change', function(){actualizarNotaComp(this.getAttribute('data-cid'),this.value);});
+      tdNotas.appendChild(inp);
+      tr.appendChild(tdNotas);
+
+      // Acciones
+      var tdAcc=document.createElement('td');
+      tdAcc.style.textAlign='center';
+      var btnRec=document.createElement('button');
+      btnRec.textContent='✓ Recibido';
+      btnRec.style.cssText='background:var(--green-bg);color:var(--green);border:1px solid #a7d9a7;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;margin-right:4px';
+      btnRec.addEventListener('click',(function(cid){return function(){marcarCompRecibido(cid);};})(c.id));
+      var btnDel=document.createElement('button');
+      btnDel.textContent='×';
+      btnDel.style.cssText='background:var(--red-bg);color:var(--red);border:1px solid #f5c0c0;border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;font-family:inherit';
+      btnDel.addEventListener('click',(function(cid){return function(){eliminarComp(cid);};})(c.id));
+      tdAcc.appendChild(btnRec); tdAcc.appendChild(btnDel);
+      tr.appendChild(tdAcc);
+      tbody.appendChild(tr);
     });
-    html+='</tbody></table></div>';
   }
 
-  // Recibidos recientes
+  // Recibidos table
   if(recibidos.length){
-    var recMes=recibidos.slice(-20).reverse();
-    html+='<div class="table-card">'+
-      '<div class="table-header"><div class="table-title">✅ Complementos recibidos</div></div>'+
-      '<table><thead><tr>'+
-        '<th>Proveedor</th><th>Folio</th><th style="text-align:right">Monto</th><th>Fecha recibido</th><th>×</th>'+
-      '</tr></thead><tbody>'+
-      recMes.map(function(c){
-        var safeId=c.id.replace(/'/g,"\'");
-        return '<tr>'+
-          '<td style="font-size:13px">'+esc(c.proveedor)+'</td>'+
-          '<td style="font-family:monospace;font-size:12px">'+(c.folio||'—')+'</td>'+
-          '<td style="text-align:right">'+fmx(c.monto)+'</td>'+
-          '<td style="font-size:12px;color:var(--text2)">'+(c.fechaRecibido?fmtD(c.fechaRecibido):'—')+'</td>'+
-          '<td><button onclick="eliminarComp(\'+safeId+\')" style="background:var(--red-bg);color:var(--red);border:1px solid #f5c0c0;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;font-family:inherit">×</button></td>'+
-        '</tr>';
-      }).join('')+
-      '</tbody></table></div>';
+    var card2=document.createElement('div');
+    card2.className='table-card';
+    card2.innerHTML='<div class="table-header"><div class="table-title">✅ Complementos recibidos</div></div>'+
+      '<table><thead><tr><th>Proveedor</th><th>Folio</th><th style="text-align:right">Monto</th><th>Fecha recibido</th><th>×</th></tr></thead><tbody id="comp-rec-tbody"></tbody></table>';
+    wrapper.appendChild(card2);
+
+    var tbody2=card2.querySelector('#comp-rec-tbody');
+    recibidos.slice(-20).reverse().forEach(function(c){
+      var tr=document.createElement('tr');
+      var cells=[
+        '<div style="font-size:13px">'+esc(c.proveedor)+'</div>',
+        '<span style="font-family:monospace;font-size:12px">'+(c.folio||'—')+'</span>',
+        fmx(c.monto),
+        c.fechaRecibido?fmtD(c.fechaRecibido):'—'
+      ];
+      cells.forEach(function(html,i){
+        var td=document.createElement('td');
+        td.innerHTML=html;
+        if(i===2)td.style.textAlign='right';
+        tr.appendChild(td);
+      });
+      var tdDel=document.createElement('td');
+      var btnDel2=document.createElement('button');
+      btnDel2.textContent='×';
+      btnDel2.style.cssText='background:var(--red-bg);color:var(--red);border:1px solid #f5c0c0;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;font-family:inherit';
+      btnDel2.addEventListener('click',(function(cid){return function(){eliminarComp(cid);};})(c.id));
+      tdDel.appendChild(btnDel2);
+      tr.appendChild(tdDel);
+      tbody2.appendChild(tr);
+    });
   }
 
-  el.innerHTML=html;
+  el.innerHTML='';
+  el.appendChild(wrapper);
 }
+
 
 async function marcarCompRecibido(id){
   var comps=await cargarComplementos();
@@ -3445,11 +3558,6 @@ async function marcarCompRecibido(id){
   showToast('✓ Complemento marcado como recibido — '+c.proveedor);
 }
 
-function actualizarNotaCompEv(el){
-  var id=el.getAttribute('data-cid');
-  var nota=el.value;
-  actualizarNotaComp(id,nota);
-}
 async function actualizarNotaComp(id,nota){
   var comps=await cargarComplementos();
   var c=comps.find(function(x){return x.id===id;});
@@ -3905,10 +4013,9 @@ async function renderProveedores(){
   var bodyEl=document.getElementById('fl-prov-body');
   if(!kpisEl||!bodyEl)return;
 
-  // ── PENDIENTES DE ASIGNAR ─────────────────────────────────────
+  // ── PENDIENTES DE ASIGNAR (conteo para KPI) ──────────────────
   var _pendData=await cargarPendientes();
   window._PEND_COUNT=_pendData.filter(function(p){return p.estado==='pendiente';}).length;
-  await renderPendientesAsignar();
 
   var hoy=new Date();hoy.setHours(0,0,0,0);
   var hoyISO=hoy.toISOString().split('T')[0];
@@ -3923,7 +4030,7 @@ async function renderProveedores(){
   var pagados=provs.filter(function(p){return p.estado==='pagado';});
   var vencidos=pendientes.filter(function(p){return p._dpv!==null&&p._dpv<0;});
   var esta_semana=pendientes.filter(function(p){return p._dpv!==null&&p._dpv>=0&&p._dpv<=7;});
-  var totalPend=pendientes.reduce(function(a,p){return a+p.monto;},0);
+  var totalPend=pendientes.reduce(function(a,p){return a+(p.saldo!==undefined?p.saldo:p.monto);},0);
   var totalPagMes=pagados.filter(function(p){
     return p.fechaPagoReal&&p.fechaPagoReal.substring(0,7)===hoyISO.substring(0,7);
   }).reduce(function(a,p){return a+p.monto;},0);
@@ -4012,15 +4119,16 @@ async function renderProveedores(){
       agendaHTML+='<div class="agenda-item" data-search="'+esc(searchData)+'" style="background:white;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:0 1px 3px rgba(0,0,0,.06)">';
       agendaHTML+='<span style="font-size:16px">'+(catIcon[p.categoria]||'📋')+'</span>';
       agendaHTML+='<div style="flex:1;min-width:140px"><div style="font-weight:600;font-size:13px">'+esc(p.proveedor)+(p.folio?'<span style="font-size:11px;color:var(--text3);margin-left:8px;font-family:monospace;font-weight:400">'+esc(p.folio)+'</span>':'')+'</div>';
-      agendaHTML+='<div style="font-size:11px;color:var(--text2)">'+(p.fechaFactura?'Factura: '+fmtD(p.fechaFactura):'')+(p.diasCredito?' · '+p.diasCredito+'d crédito':'')+'</div>';
+      agendaHTML+='<div style="font-size:11px;color:var(--text2)">'+(p.fechaFactura?'Factura: '+fmtD(p.fechaFactura):'')+(p.diasCredito?' · '+p.diasCredito+'d crédito':'')+(p.abonos&&p.abonos.length?' · <span style="color:var(--purple);font-weight:600">'+p.abonos.length+' abono'+(p.abonos.length>1?'s':'')+' ('+fmx(p.abonos.reduce(function(a,b){return a+b.monto;},0))+')</span>':'')+'</div>';
       var ncKey=p.proveedor.toUpperCase();
       if(ncPorProv[ncKey]){
         agendaHTML+='<div style="margin-top:4px"><span style="display:inline-block;background:#f0fdfa;border:1px solid #5eead4;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600;color:#0f766e;cursor:pointer" onclick="switchFLNav(\'nc\')">🏷 '+ncPorProv[ncKey].count+' NC pendiente'+(ncPorProv[ncKey].count>1?'s':'')+' — descontar '+fmx(ncPorProv[ncKey].total)+'</span></div>';
       }
       agendaHTML+='</div>';
-      agendaHTML+='<div style="font-weight:700;font-size:14px">'+fmx(p.monto)+'</div>';
+      agendaHTML+='<div style="font-weight:700;font-size:14px">'+fmx(p.saldo!==undefined?p.saldo:p.monto)+(p.saldo!==undefined&&p.saldo<p.monto?'<div style="font-size:10px;color:var(--text2);font-weight:400">de '+fmx(p.monto)+'</div>':'')+'</div>';
       agendaHTML+='<button onclick="editarProveedor(\''+safeId+'\')" style="background:var(--blue-bg);color:var(--blue);border:1px solid #b3d0f0;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">✏ Editar</button>';
-      agendaHTML+='<button onclick="pagarProveedor(\''+safeId+'\')" style="background:var(--green-bg);color:var(--green);border:1px solid #a7d9a7;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">✓ Pagado</button>';
+      agendaHTML+='<button onclick="abonarProveedor(\\\''+safeId+'\\\')" style="background:var(--purple-bg);color:var(--purple);border:1px solid #a5a0d8;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💰 Abonar</button>';
+      agendaHTML+='<button onclick="pagarProveedor(\\\''+safeId+'\\\')" style="background:var(--green-bg);color:var(--green);border:1px solid #a7d9a7;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">✓ Liquidar</button>';
       agendaHTML+='<button onclick="eliminarProveedor(\''+safeId+'\')" style="background:var(--red-bg);color:var(--red);border:1px solid #f5c0c0;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;font-family:inherit">×</button>';
       agendaHTML+='</div>';
     });
@@ -4067,7 +4175,7 @@ async function renderProveedores(){
       var k=p.proveedor;
       if(!byProvR[k])byProvR[k]={facturas:0,bruto:0,ncTotal:0,proxVence:'',items:[]};
       byProvR[k].facturas++;
-      byProvR[k].bruto+=p.monto;
+      byProvR[k].bruto+=(p.saldo!==undefined?p.saldo:p.monto);
       byProvR[k].items.push(p);
       var ncKey=p.proveedor.toUpperCase();
       if(ncPorProv[ncKey]) byProvR[k].ncTotal=ncPorProv[ncKey].total;
@@ -4191,6 +4299,7 @@ async function renderProveedores(){
   }
 
   bodyEl.innerHTML=semHTML+resumenHTML+agendaHTML+pagsHTML;
+  await renderPendientesAsignar();
 }
 
 // ── PENDIENTES DE ASIGNAR ────────────────────────────────────
@@ -4217,43 +4326,233 @@ function togglePendientes(){
   if(btn){btn.textContent=PEND_ABIERTO?'▲ Ocultar':'▼ Ver todo';}
 }
 
-async function renderPendientesAsignar(){
-  var pendientes=await cargarPendientes();
+async function renderPendientesAsignar(cachedPendientes){
+  var pendientes=cachedPendientes||await cargarPendientes();
   var activos=pendientes.filter(function(p){return p.estado==='pendiente';});
   var wrap=document.getElementById('fl-pend-wrap');
   var badge=document.getElementById('pend-count-badge');
   var tbody=document.getElementById('pend-tbody');
   if(!wrap||!badge||!tbody)return;
 
-  if(!activos.length){wrap.style.display='none';return;}
+  if(!activos.length){wrap.style.display='none';tbody.innerHTML='';return;}
   wrap.style.display='block';
   badge.textContent=activos.length;
 
-  var html='';
   activos.sort(function(a,b){return(b.fechaRegistro||'').localeCompare(a.fechaRegistro||'');});
+
+  tbody.innerHTML='';
   activos.forEach(function(p){
-    var safeId=(p.id||'').replace(/'/g,"\\'");
-    var motivoColor=p.motivo&&p.motivo.indexOf('Complemento')>=0?'#a78bfa':
-                    p.motivo&&p.motivo.indexOf('Nota')>=0?'#86efac':'#fbbf24';
-    html+='<tr style="border-bottom:1px solid var(--border)">'+
-      '<td style="padding:10px 14px">'+
-        '<div style="font-weight:600;color:var(--text);font-size:13px">'+esc(p.proveedor)+'</div>'+
-        (p.rfc?'<div style="font-size:10px;color:var(--text2)">'+esc(p.rfc)+'</div>':'')+
-      '</td>'+
-      '<td style="padding:10px 14px;font-size:12px;font-family:monospace;color:var(--text)">'+(p.folio?esc(p.folio):'<span style="color:var(--text3)">sin folio</span>')+'</td>'+
-      '<td style="padding:10px 14px;text-align:right;font-weight:700;color:var(--text);font-family:monospace">'+fmxS(p.monto)+'</td>'+
-      '<td style="padding:10px 14px;font-size:12px;color:var(--text2)">'+(p.fechaFactura?fmtD(p.fechaFactura):'—')+'</td>'+
-      '<td style="padding:10px 14px"><span style="background:rgba(255,255,255,.12);color:'+motivoColor+';border-radius:6px;padding:3px 8px;font-size:11px;font-weight:600">'+esc(p.motivo||'—')+'</span></td>'+
-      '<td style="padding:10px 14px;text-align:center">'+
-        '<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">'+
-          '<button onclick="resolverPendiente(\''+safeId+'\',\'credito\')" style="background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber);border-radius:6px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">🕐 Registrar crédito</button>'+
-          '<button onclick="resolverPendiente(\''+safeId+'\',\'pagado\')" style="background:var(--green-bg);color:var(--green);border:1px solid var(--green);border-radius:6px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">✔ Ya pagado</button>'+
-          '<button onclick="descartarPendiente(\''+safeId+'\')" style="background:var(--red-bg);color:var(--red);border:1px solid var(--red);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;font-family:inherit">✕</button>'+
-        '</div>'+
-      '</td>'+
-      '</tr>';
+    var tr=document.createElement('tr');
+    tr.setAttribute('data-pid', p.id);
+    tr.style.borderBottom='1px solid var(--border)';
+
+    var tdProv=document.createElement('td');
+    tdProv.style.padding='10px 14px';
+    tdProv.innerHTML='<div style="font-weight:600;color:var(--text);font-size:13px">'+esc(p.proveedor)+'</div>'+(p.rfc?'<div style="font-size:10px;color:var(--text2)">'+esc(p.rfc)+'</div>':'');
+    tr.appendChild(tdProv);
+
+    var tdFolio=document.createElement('td');
+    tdFolio.style.cssText='padding:10px 14px;font-size:12px;font-family:monospace;color:var(--text)';
+    tdFolio.innerHTML=p.folio?esc(p.folio):'<span style="color:var(--text3)">sin folio</span>';
+    tr.appendChild(tdFolio);
+
+    var tdMonto=document.createElement('td');
+    tdMonto.style.cssText='padding:10px 14px;text-align:right;font-weight:700;color:var(--text);font-family:monospace';
+    tdMonto.textContent=fmxS(p.monto);
+    tr.appendChild(tdMonto);
+
+    var tdFecha=document.createElement('td');
+    tdFecha.style.cssText='padding:10px 14px;font-size:12px;color:var(--text2)';
+    tdFecha.textContent=p.fechaFactura?fmtD(p.fechaFactura):'—';
+    tr.appendChild(tdFecha);
+
+    var tdMotivo=document.createElement('td');
+    tdMotivo.style.padding='10px 14px';
+    var spanM=document.createElement('span');
+    spanM.style.cssText='background:var(--bg2);color:var(--text2);border-radius:6px;padding:3px 8px;font-size:11px;font-weight:600;border:1px solid var(--border2)';
+    spanM.textContent=p.motivo||'—';
+    tdMotivo.appendChild(spanM);
+    tr.appendChild(tdMotivo);
+
+    var tdAcc=document.createElement('td');
+    tdAcc.style.cssText='padding:10px 14px;text-align:center';
+    var div=document.createElement('div');
+    div.style.cssText='display:flex;gap:6px;justify-content:center;flex-wrap:wrap';
+
+    function quitarFila(pid){
+      var row=document.querySelector('[data-pid="'+pid+'"]');
+      if(row)row.remove();
+      var tb=document.getElementById('pend-tbody');
+      var bdg=document.getElementById('pend-count-badge');
+      var wr=document.getElementById('fl-pend-wrap');
+      if(tb&&bdg){
+        var remaining=tb.querySelectorAll('tr').length;
+        bdg.textContent=remaining;
+        if(remaining===0&&wr)wr.style.display='none';
+      }
+    }
+
+    var btnNC=document.createElement('button');
+    btnNC.textContent='📝 Nota de crédito';
+    btnNC.style.cssText='background:var(--teal-bg);color:var(--teal);border:1px solid var(--teal);border-radius:6px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap';
+    btnNC.addEventListener('click',(function(pid){return function(){
+      quitarFila(pid);
+      enviarPendienteANotaCredito(pid);
+    };})(p.id));
+    div.appendChild(btnNC);
+
+    var btnComp=document.createElement('button');
+    btnComp.textContent='📨 Complemento';
+    btnComp.style.cssText='background:#e0e7ff;color:#4338ca;border:1px solid #6366f1;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap';
+    btnComp.addEventListener('click',(function(pid){return function(){
+      quitarFila(pid);
+      enviarPendienteAComplemento(pid);
+    };})(p.id));
+    div.appendChild(btnComp);
+
+    var btnCred=document.createElement('button');
+    btnCred.textContent='🕐 Registrar crédito';
+    btnCred.style.cssText='background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber);border-radius:6px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap';
+    btnCred.addEventListener('click',(function(pid){return function(){
+      resolverPendienteConQuitar(pid,'credito');
+    };})(p.id));
+    div.appendChild(btnCred);
+
+    var btnPag=document.createElement('button');
+    btnPag.textContent='✔ Ya pagado';
+    btnPag.style.cssText='background:var(--green-bg);color:var(--green);border:1px solid var(--green);border-radius:6px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap';
+    btnPag.addEventListener('click',(function(pid){return function(){
+      quitarFila(pid);
+      resolverPendiente(pid,'pagado');
+    };})(p.id));
+    div.appendChild(btnPag);
+
+    var btnDel=document.createElement('button');
+    btnDel.textContent='✕';
+    btnDel.style.cssText='background:var(--red-bg);color:var(--red);border:1px solid var(--red);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;font-family:inherit';
+    btnDel.addEventListener('click',(function(pid){return function(){
+      quitarFila(pid);
+      descartarPendiente(pid);
+    };})(p.id));
+    div.appendChild(btnDel);
+
+    tdAcc.appendChild(div);
+    tr.appendChild(tdAcc);
+    tbody.appendChild(tr);
   });
-  tbody.innerHTML=html;
+}
+
+
+async function enviarPendienteAComplemento(id){
+  var pendientes=await cargarPendientes();
+  var p=pendientes.find(function(x){return x.id===id;});
+  if(!p)return;
+  // Agregar a complementos pendientes
+  var comps=await cargarComplementos();
+  comps.push({
+    id:'cp_pend_'+Date.now(),
+    proveedor:p.proveedor,
+    rfc:p.rfc||'',
+    folio:p.folio||'',
+    monto:p.monto,
+    fechaPago:p.fechaFactura||new Date().toISOString().split('T')[0],
+    fechaRegistro:new Date().toISOString().split('T')[0],
+    estado:'pendiente',
+    notas:'Enviado desde Pendientes de asignar — '+(p.motivo||'')
+  });
+  await guardarComplementos(comps);
+  // Marcar pendiente como resuelto
+  p.estado='resuelto';
+  p.fechaResolucion=new Date().toISOString().split('T')[0];
+  p.tipoResolucion='complemento';
+  await guardarPendientes(pendientes);
+  actualizarBadgeComplementos();
+  showToast('✓ Enviado a Complementos pendientes — '+p.proveedor);
+  await renderProveedores();
+  switchFLNav('comp');
+}
+
+
+async function enviarPendienteANotaCredito(id){
+  var pendientes=await cargarPendientes();
+  var p=pendientes.find(function(x){return x.id===id;});
+  if(!p)return;
+
+  // Registrar directo en Notas de Crédito con los datos del pendiente
+  var ncs=await cargarNC();
+  ncs.push({
+    id:'nc_'+Date.now(),
+    proveedor:p.proveedor,
+    folio:p.folio||'',
+    monto:p.monto,
+    fecha:p.fechaFactura||new Date().toISOString().split('T')[0],
+    motivo:'Registrado desde Pendientes de asignar — '+(p.motivo||''),
+    estado:'pendiente',
+    fechaAplicacion:null,
+    fechaRegistro:new Date().toISOString().split('T')[0]
+  });
+  await guardarNC(ncs);
+
+  // Marcar pendiente como resuelto
+  p.estado='resuelto';
+  p.fechaResolucion=new Date().toISOString().split('T')[0];
+  p.tipoResolucion='nota_credito';
+  await guardarPendientes(pendientes);
+
+  showToast('✓ Nota de crédito registrada — '+p.proveedor+' '+fmx(p.monto));
+  actualizarBadgeComplementos();
+  switchFLNav('nc');
+}
+
+async function resolverPendienteConQuitar(id,tipo){
+  // For credito: show prompt first, only remove row if user confirms
+  if(tipo==='credito'){
+    var dias=prompt('¿Cuántos días de crédito para esta factura?','30');
+    if(dias===null)return; // cancelled - don't remove row
+    // Remove row immediately after confirm
+    var row=document.querySelector('[data-pid="'+id+'"]');
+    if(row)row.remove();
+    var tb=document.getElementById('pend-tbody');
+    var bdg=document.getElementById('pend-count-badge');
+    var wr=document.getElementById('fl-pend-wrap');
+    if(tb&&bdg){
+      var remaining=tb.querySelectorAll('tr').length;
+      bdg.textContent=remaining;
+      if(remaining===0&&wr)wr.style.display='none';
+    }
+    // Now resolve with the captured dias
+    await resolverPendienteConDias(id, parseInt(dias)||30);
+  }
+}
+
+async function resolverPendienteConDias(id, dias){
+  var pendientes=await cargarPendientes();
+  var p=pendientes.find(function(x){return x.id===id;});
+  if(!p)return;
+  var fechaVenc='';
+  if(p.fechaFactura){
+    var d=new Date(p.fechaFactura+'T00:00:00');
+    d.setDate(d.getDate()+dias);
+    fechaVenc=d.toISOString().split('T')[0];
+  }
+  var provs=await cargarProveedores();
+  provs.push({
+    id:'pa_res_'+Date.now(),
+    proveedor:p.proveedor,rfc:p.rfc||'',folio:p.folio||'',
+    concepto:'Asignado desde pendientes — '+(p.motivo||''),
+    monto:p.monto,categoria:'mercancia',
+    fechaVencimiento:fechaVenc,diasCredito:dias,
+    fechaFactura:p.fechaFactura,
+    estado:'pendiente',fechaPagoReal:null,
+    fechaRegistro:new Date().toISOString().split('T')[0],
+    origenCarga:'pendiente_asignado',
+    notas:p.motivo||''
+  });
+  await guardarProveedores(provs);
+  p.estado='resuelto';p.fechaResolucion=new Date().toISOString().split('T')[0];p.tipoResolucion='credito';
+  await guardarPendientes(pendientes);
+  showToast('✓ Registrado como crédito a '+dias+' días — '+p.proveedor);
+  actualizarListaProveedores();
 }
 
 async function resolverPendiente(id,tipo){
@@ -4310,7 +4609,7 @@ async function resolverPendiente(id,tipo){
   // Marcar pendiente como resuelto
   p.estado='resuelto';p.fechaResolucion=new Date().toISOString().split('T')[0];p.tipoResolucion=tipo;
   await guardarPendientes(pendientes);
-  renderProveedores();
+  await renderProveedores();
   actualizarListaProveedores();
 }
 
@@ -4321,7 +4620,7 @@ async function descartarPendiente(id){
   if(p){p.estado='descartado';p.fechaResolucion=new Date().toISOString().split('T')[0];}
   await guardarPendientes(pendientes);
   showToast('Registro descartado');
-  renderProveedores();
+  await renderProveedores();
 }
 
 // ── Excel Proveedores ────────────────────────────────────────
