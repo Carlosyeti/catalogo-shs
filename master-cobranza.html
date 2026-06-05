@@ -44,7 +44,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-seri
 /* TABS */
 .tab-bar{background:#0a1f38;border-bottom:1px solid rgba(255,255,255,.1);padding:0 24px;display:flex;gap:4px}
 .tab-btn{background:none;border:none;color:rgba(255,255,255,.5);font-size:13px;font-weight:500;font-family:inherit;padding:10px 18px;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
-.tab-btn:hover{color:rgba(255,255,255,.8)}
+.tab-btn:hover{color:var(--text)}
 .tab-btn.active{color:white;border-bottom-color:white}
 .tab-content{display:none}
 .tab-content.active{display:block}
@@ -149,7 +149,7 @@ tbody tr:hover td{background:var(--bg2)}
         <option value="0">Todo el historial</option>
       </select>
       <button class="sync-btn" onclick="loadData(true)">↻ Actualizar</button>
-      <span id="sync-status" style="font-size:10px;color:rgba(255,255,255,.4)"></span>
+      <span id="sync-status" style="font-size:10px;color:var(--text2)"></span>
     </div>
   </div>
 
@@ -321,7 +321,7 @@ tbody tr:hover td{background:var(--bg2)}
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--navy);border-radius:10px">
               <span style="font-size:13px;font-weight:600;color:white">💰 Bono a pagar</span>
-              <span style="font-weight:700;font-size:18px;color:rgba(255,255,255,.4);font-style:italic">Metas pendientes</span>
+              <span style="font-weight:700;font-size:18px;color:var(--text2);font-style:italic">Metas pendientes</span>
             </div>
           </div>
         </div>
@@ -548,6 +548,7 @@ tbody tr:hover td{background:var(--bg2)}
         <button class="fln-btn" id="fln-gf" onclick="switchFLNav('gf')" style="background:none;color:var(--text2);border:none;border-radius:7px;padding:8px 16px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit">⚙️ Gastos Fijos</button>
         <button class="fln-btn" id="fln-proj" onclick="switchFLNav('proj')" style="background:none;color:var(--text2);border:none;border-radius:7px;padding:8px 16px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit">📊 Proyección de flujo</button>
         <button class="fln-btn" id="fln-real" onclick="switchFLNav('real')" style="background:none;color:var(--text2);border:none;border-radius:7px;padding:8px 16px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit">✅ Real vs Proyectado</button>
+        <button class="fln-btn" id="fln-comp" onclick="switchFLNav('comp')" style="background:none;color:var(--text2);border:none;border-radius:7px;padding:8px 16px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit">📨 Complementos pendientes <span id="comp-badge" style="display:none;background:var(--red);color:white;border-radius:99px;font-size:10px;padding:1px 6px;margin-left:4px;font-weight:700">0</span></button>
       </div>
 
       <!-- Proveedores -->
@@ -620,8 +621,8 @@ tbody tr:hover td{background:var(--bg2)}
 
         <!-- ⏳ PENDIENTES DE ASIGNAR -->
         <div id="fl-pend-wrap" style="display:none;margin-bottom:16px">
-          <div style="background:#534AB7;border-radius:12px;overflow:hidden;box-shadow:var(--shadow)">
-            <div style="padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <div style="background:var(--bg);border:1.5px solid var(--border2);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)">
+            <div style="padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--navy);border-radius:10px 10px 0 0">
               <div>
                 <div style="color:white;font-weight:700;font-size:14px">⏳ Pendientes de asignar</div>
                 <div style="color:rgba(255,255,255,.5);font-size:11px;margin-top:2px">Complementos de pago y NC cargados por la auxiliar — resuélvelos manualmente</div>
@@ -634,15 +635,15 @@ tbody tr:hover td{background:var(--bg2)}
             <div id="pend-tabla-wrap" style="display:none">
               <div style="overflow-x:auto">
                 <table style="width:100%;border-collapse:collapse;font-size:13px">
-                  <thead><tr style="background:rgba(0,0,0,.2)">
-                    <th style="padding:9px 14px;text-align:left;font-size:11px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap">Proveedor / RFC</th>
-                    <th style="padding:9px 14px;text-align:left;font-size:11px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.4px">Folio</th>
-                    <th style="padding:9px 14px;text-align:right;font-size:11px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.4px">Importe</th>
-                    <th style="padding:9px 14px;text-align:left;font-size:11px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.4px">Fecha</th>
-                    <th style="padding:9px 14px;text-align:left;font-size:11px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.4px">Motivo</th>
-                    <th style="padding:9px 14px;text-align:center;font-size:11px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.4px">Acción</th>
+                  <thead><tr style="background:var(--bg2)">
+                    <th style="padding:9px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap">Proveedor / RFC</th>
+                    <th style="padding:9px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px">Folio</th>
+                    <th style="padding:9px 14px;text-align:right;font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px">Importe</th>
+                    <th style="padding:9px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px">Fecha</th>
+                    <th style="padding:9px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px">Motivo</th>
+                    <th style="padding:9px 14px;text-align:center;font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px">Acción</th>
                   </tr></thead>
-                  <tbody id="pend-tbody" style="background:rgba(255,255,255,.06)"></tbody>
+                  <tbody id="pend-tbody"></tbody>
                 </table>
               </div>
             </div>
@@ -663,6 +664,10 @@ tbody tr:hover td{background:var(--bg2)}
 
       <div id="fl-sec-real" style="display:none">
         <div id="fl-real-body"></div>
+      </div>
+
+      <div id="fl-sec-comp" style="display:none">
+        <div id="fl-comp-body"></div>
       </div>
 
     </div>
@@ -1689,7 +1694,7 @@ document.addEventListener('DOMContentLoaded',function(){
     if(DB_MC){cb();return;}
     var t=0;var iv=setInterval(function(){t+=150;if(DB_MC||t>6000){clearInterval(iv);cb();}},150);
   }
-  esperarDB(function(){renderPanelFP();renderKF();renderFlujo();actualizarListaProveedores();});
+  esperarDB(function(){renderPanelFP();renderKF();renderFlujo();actualizarListaProveedores();actualizarBadgeComplementos();});
 
   var fiProv=document.getElementById('fi-prov');
   var dzProv=document.getElementById('dz-prov');
@@ -1870,8 +1875,8 @@ Si un campo no aparece en el documento, usa null. Los números deben ser numéri
       <div style="color:rgba(255,255,255,.5);font-size:11px;margin-top:2px">Op. ${esc(d.operacionId||'—')} · Deudor: ${esc(d.deudor||'—')}</div>
     </div>
     <div style="text-align:right">
-      <div style="font-size:11px;color:rgba(255,255,255,.4)">Folio fiscal</div>
-      <div style="font-size:11px;color:rgba(255,255,255,.6);font-family:monospace">${esc((d.folioFiscal||'').substring(0,24)+'…')}</div>
+      <div style="font-size:11px;color:var(--text2)">Folio fiscal</div>
+      <div style="font-size:11px;color:var(--text2);font-family:monospace">${esc((d.folioFiscal||'').substring(0,24)+'…')}</div>
     </div>
   </div>
 
@@ -2172,7 +2177,7 @@ function renderActivosKF(contratos){
       html+='<div><div style="color:white;font-weight:700;font-size:14px">📅 Agenda de pagos a KredFeed</div>';
       html+='<div style="color:rgba(255,255,255,.5);font-size:11px;margin-top:2px">Desglose por fecha — cuánto debes tener listo cada día</div></div>';
       var totalActivo=activos.reduce(function(a,c){return a+c.valorNominal;},0);
-      html+='<div style="text-align:right"><div style="color:rgba(255,255,255,.4);font-size:11px">Total pendiente</div><div style="color:white;font-weight:700;font-size:16px">'+fmx(totalActivo)+'</div></div>';
+      html+='<div style="text-align:right"><div style="color:var(--text2);font-size:11px">Total pendiente</div><div style="color:white;font-weight:700;font-size:16px">'+fmx(totalActivo)+'</div></div>';
       html+='</div>';
       grupos.forEach(function(g){
         var totalGrupo=g.contratos.reduce(function(a,c){return a+c.valorNominal;},0);
@@ -3138,7 +3143,7 @@ async function guardarProveedores(arr){
 // ── Sub-nav ──────────────────────────────────────────────────
 function switchFLNav(sec){
   FL_SEC=sec;
-  ['prov','nc','gf','proj','real'].forEach(function(s){
+  ['prov','nc','gf','proj','real','comp'].forEach(function(s){
     var btn=document.getElementById('fln-'+s);
     var div=document.getElementById('fl-sec-'+s);
     if(btn){btn.style.background=s===sec?'var(--navy)':'none';btn.style.color=s===sec?'white':'var(--text2)';btn.style.fontWeight=s===sec?'600':'500';}
@@ -3149,6 +3154,7 @@ function switchFLNav(sec){
   if(sec==='gf')renderGastosFijos();
   if(sec==='proj')renderProyeccion();
   if(sec==='real')renderReal();
+  if(sec==='comp')renderComplementos();
 }
 
 async function renderFlujo(){
@@ -3156,6 +3162,7 @@ async function renderFlujo(){
   else if(FL_SEC==='nc')renderNotasCredito();
   else if(FL_SEC==='gf')renderGastosFijos();
   else if(FL_SEC==='real')renderReal();
+  else if(FL_SEC==='comp')renderComplementos();
   else renderProyeccion();
 }
 
@@ -3289,8 +3296,170 @@ async function pagarProveedor(id){
   if(!fecha)return;
   p.estado='pagado';p.fechaPagoReal=fecha;
   await guardarProveedores(provs);
-  renderProveedores();
-  showToast('✓ Pago registrado — '+fmx(p.monto));
+
+  // Preguntar si se necesita complemento de pago
+  var necesitaComp=confirm(
+    '¿Deseas registrar un complemento de pago pendiente para esta factura?\n\n'+
+    'Proveedor: '+p.proveedor+'\n'+
+    'Folio: '+(p.folio||'—')+'\n'+
+    'Monto: '+fmx(p.monto)+'\n\n'+
+    'SI = Te lo recuerdo en "Complementos pendientes"\n'+
+    'NO = Solo marcar como pagado'
+  );
+  if(necesitaComp){
+    await agregarComplementoPendiente(p);
+    showToast('✓ Pago registrado — complemento pendiente agregado');
+    switchFLNav('comp');
+  } else {
+    showToast('✓ Pago registrado — '+fmx(p.monto));
+    renderProveedores();
+  }
+}
+
+async function agregarComplementoPendiente(p){
+  var comps=await cargarComplementos();
+  comps.push({
+    id:'cp_'+Date.now(),
+    proveedor:p.proveedor,
+    rfc:p.rfc||'',
+    folio:p.folio||'',
+    monto:p.monto,
+    fechaPago:p.fechaPagoReal,
+    fechaRegistro:new Date().toISOString().split('T')[0],
+    estado:'pendiente',
+    notas:''
+  });
+  await guardarComplementos(comps);
+  actualizarBadgeComplementos();
+}
+
+// ── MÓDULO COMPLEMENTOS DE PAGO PENDIENTES ──────────────────
+async function cargarComplementos(){
+  if(DB_MC){var s=await DB_MC.ref('flujo/complementos_pendientes').get();return s.val()?JSON.parse(s.val()):[];}
+  return JSON.parse(localStorage.getItem('flujo:complementos_pendientes')||'[]');
+}
+async function guardarComplementos(arr){
+  if(DB_MC){await DB_MC.ref('flujo/complementos_pendientes').set(JSON.stringify(arr));return;}
+  localStorage.setItem('flujo:complementos_pendientes',JSON.stringify(arr));
+}
+
+async function actualizarBadgeComplementos(){
+  var comps=await cargarComplementos();
+  var pend=comps.filter(function(c){return c.estado==='pendiente';}).length;
+  var badge=document.getElementById('comp-badge');
+  if(badge){
+    badge.textContent=pend;
+    badge.style.display=pend>0?'inline':'none';
+  }
+}
+
+async function renderComplementos(){
+  var el=document.getElementById('fl-comp-body');
+  if(!el)return;
+  var comps=await cargarComplementos();
+  var pendientes=comps.filter(function(c){return c.estado==='pendiente';});
+  var recibidos=comps.filter(function(c){return c.estado==='recibido';});
+  var hoy=new Date().toISOString().split('T')[0];
+
+  // Badge
+  actualizarBadgeComplementos();
+
+  var html='';
+
+  // KPIs
+  var totalPend=pendientes.reduce(function(a,c){return a+c.monto;},0);
+  html+='<div class="kpi-grid" style="margin-bottom:16px">'+
+    '<div class="kpi-card" data-c="amber"><div class="kpi-label">Complementos pendientes</div><div class="kpi-value">'+pendientes.length+'</div><div class="kpi-sub">'+fmxS(totalPend)+' a solicitar</div></div>'+
+    (recibidos.length?'<div class="kpi-card" data-c="green"><div class="kpi-label">Recibidos</div><div class="kpi-value">'+recibidos.length+'</div><div class="kpi-sub">complementos confirmados</div></div>':'')+
+  '</div>';
+
+  if(!pendientes.length && !recibidos.length){
+    el.innerHTML='<div class="empty-state"><div style="font-size:36px;margin-bottom:10px">📨</div><p>Sin complementos de pago pendientes.<br>Aparecerán aquí cuando marques un pago como pagado y confirmes que necesitas complemento.</p></div>';
+    return;
+  }
+
+  // Pendientes
+  if(pendientes.length){
+    html+='<div class="table-card" style="margin-bottom:16px">'+
+      '<div class="table-header">'+
+        '<div><div class="table-title">⏳ Pendientes de recibir</div>'+
+        '<div class="table-sub">Solicita estos complementos a tus proveedores</div></div>'+
+        '<div style="font-weight:700;color:var(--amber)">'+fmx(totalPend)+'</div>'+
+      '</div>'+
+      '<table><thead><tr>'+
+        '<th>Proveedor</th><th>Folio factura</th><th style="text-align:right">Monto</th>'+
+        '<th>Fecha pago</th><th>Registrado</th><th>Notas</th><th style="text-align:center">Acción</th>'+
+      '</tr></thead><tbody>';
+
+    pendientes.forEach(function(c){
+      var safeId=c.id.replace(/'/g,"\'");
+      var diasEspera=c.fechaPago?Math.round((new Date(hoy+'T00:00:00')-new Date(c.fechaPago+'T00:00:00'))/86400000):null;
+      html+='<tr>'+
+        '<td><div style="font-weight:600">'+esc(c.proveedor)+'</div>'+(c.rfc?'<div style="font-size:10px;color:var(--text2)">'+esc(c.rfc)+'</div>':'')+' </td>'+
+        '<td style="font-family:monospace;font-size:12px">'+(c.folio?esc(c.folio):'<span style="color:var(--text3)">—</span>')+'</td>'+
+        '<td style="text-align:right;font-weight:700">'+fmx(c.monto)+'</td>'+
+        '<td style="font-size:12px">'+(c.fechaPago?fmtD(c.fechaPago):'—')+'</td>'+
+        '<td style="font-size:12px;color:var(--text2)">'+(diasEspera!==null?diasEspera+'d esperando':'—')+'</td>'+
+        '<td><input type="text" value="'+esc(c.notas||'')+'" placeholder="Agregar nota…" onchange="actualizarNotaComp(''+safeId+'',this.value)" style="width:140px;padding:4px 8px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit;outline:none"></td>'+
+        '<td style="text-align:center">'+
+          '<button onclick="marcarCompRecibido(''+safeId+'')" style="background:var(--green-bg);color:var(--green);border:1px solid #a7d9a7;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">✓ Recibido</button> '+
+          '<button onclick="eliminarComp(''+safeId+'')" style="background:var(--red-bg);color:var(--red);border:1px solid #f5c0c0;border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;font-family:inherit">×</button>'+
+        '</td>'+
+      '</tr>';
+    });
+    html+='</tbody></table></div>';
+  }
+
+  // Recibidos recientes
+  if(recibidos.length){
+    var recMes=recibidos.slice(-20).reverse();
+    html+='<div class="table-card">'+
+      '<div class="table-header"><div class="table-title">✅ Complementos recibidos</div></div>'+
+      '<table><thead><tr>'+
+        '<th>Proveedor</th><th>Folio</th><th style="text-align:right">Monto</th><th>Fecha recibido</th><th>×</th>'+
+      '</tr></thead><tbody>'+
+      recMes.map(function(c){
+        var safeId=c.id.replace(/'/g,"\'");
+        return '<tr>'+
+          '<td style="font-size:13px">'+esc(c.proveedor)+'</td>'+
+          '<td style="font-family:monospace;font-size:12px">'+(c.folio||'—')+'</td>'+
+          '<td style="text-align:right">'+fmx(c.monto)+'</td>'+
+          '<td style="font-size:12px;color:var(--text2)">'+(c.fechaRecibido?fmtD(c.fechaRecibido):'—')+'</td>'+
+          '<td><button onclick="eliminarComp(''+safeId+'')" style="background:var(--red-bg);color:var(--red);border:1px solid #f5c0c0;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;font-family:inherit">×</button></td>'+
+        '</tr>';
+      }).join('')+
+      '</tbody></table></div>';
+  }
+
+  el.innerHTML=html;
+}
+
+async function marcarCompRecibido(id){
+  var comps=await cargarComplementos();
+  var c=comps.find(function(x){return x.id===id;});
+  if(!c)return;
+  c.estado='recibido';
+  c.fechaRecibido=new Date().toISOString().split('T')[0];
+  await guardarComplementos(comps);
+  renderComplementos();
+  showToast('✓ Complemento marcado como recibido — '+c.proveedor);
+}
+
+async function actualizarNotaComp(id,nota){
+  var comps=await cargarComplementos();
+  var c=comps.find(function(x){return x.id===id;});
+  if(!c)return;
+  c.notas=nota;
+  await guardarComplementos(comps);
+}
+
+async function eliminarComp(id){
+  if(!confirm('¿Eliminar este registro?'))return;
+  var comps=await cargarComplementos();
+  comps=comps.filter(function(x){return x.id!==id;});
+  await guardarComplementos(comps);
+  renderComplementos();
+  showToast('Registro eliminado');
 }
 
 async function eliminarProveedor(id){
@@ -3812,7 +3981,7 @@ async function renderProveedores(){
   agendaHTML+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
   agendaHTML+='<div><div style="color:white;font-weight:700;font-size:14px">📅 Agenda de pagos a proveedores</div>';
   agendaHTML+='<div style="color:rgba(255,255,255,.5);font-size:11px;margin-top:2px">Pendientes ordenados por fecha — <span id="agenda-count-label">'+pendientes.length+' pagos</span></div></div>';
-  agendaHTML+='<div style="text-align:right"><div style="color:rgba(255,255,255,.4);font-size:11px">Total pendiente</div><div style="color:white;font-weight:700;font-size:16px">'+fmx(totalPend)+'</div></div>';
+  agendaHTML+='<div style="text-align:right"><div style="color:var(--text2);font-size:11px">Total pendiente</div><div style="color:white;font-weight:700;font-size:16px">'+fmx(totalPend)+'</div></div>';
   agendaHTML+='</div>';
   // Buscador
   agendaHTML+='<div style="position:relative">';
@@ -3919,12 +4088,12 @@ async function renderProveedores(){
             '<div style="font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.4px">Ingreso proyectado Sem.1</div>'+
             '<div style="font-size:18px;font-weight:700;color:#86efac" id="plan-ingreso">'+fmx(_ingresoPlan)+'</div>'+
           '</div>'+
-          '<div style="font-size:20px;color:rgba(255,255,255,.3)">−</div>'+
+          '<div style="font-size:20px;color:var(--text3)">−</div>'+
           '<div style="flex:0 0 auto">'+
             '<div style="font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.4px">Comprometido seleccionado</div>'+
             '<div style="font-size:18px;font-weight:700;color:#fca5a5" id="plan-comprometido">$0</div>'+
           '</div>'+
-          '<div style="font-size:20px;color:rgba(255,255,255,.3)">=</div>'+
+          '<div style="font-size:20px;color:var(--text3)">=</div>'+
           '<div style="flex:1 1 auto">'+
             '<div style="font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.4px">Saldo disponible</div>'+
             '<div style="font-size:22px;font-weight:800" id="plan-saldo" style="color:#86efac">'+fmx(_ingresoPlan)+'</div>'+
@@ -3932,7 +4101,7 @@ async function renderProveedores(){
           '<div style="display:flex;gap:8px;flex:0 0 auto">'+
             '<div id="plan-count" style="background:rgba(255,255,255,.15);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;color:white;min-width:80px;text-align:center">0 facturas</div>'+
             '<button onclick="exportarCompromisos()" style="background:#3b82f6;color:white;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📋 Exportar lista</button>'+
-            '<button onclick="limpiarSeleccion()" style="background:rgba(255,255,255,.12);color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:7px 12px;font-size:12px;cursor:pointer;font-family:inherit">✕ Limpiar</button>'+
+            '<button onclick="limpiarSeleccion()" style="background:rgba(255,255,255,.12);color:var(--text);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:7px 12px;font-size:12px;cursor:pointer;font-family:inherit">✕ Limpiar</button>'+
           '</div>'+
         '</div>'+
       '</div>'+
@@ -4061,20 +4230,20 @@ async function renderPendientesAsignar(){
     var safeId=(p.id||'').replace(/'/g,"\\'");
     var motivoColor=p.motivo&&p.motivo.indexOf('Complemento')>=0?'#a78bfa':
                     p.motivo&&p.motivo.indexOf('Nota')>=0?'#86efac':'#fbbf24';
-    html+='<tr style="border-bottom:1px solid rgba(255,255,255,.08)">'+
+    html+='<tr style="border-bottom:1px solid var(--border)">'+
       '<td style="padding:10px 14px">'+
-        '<div style="font-weight:600;color:white;font-size:13px">'+esc(p.proveedor)+'</div>'+
-        (p.rfc?'<div style="font-size:10px;color:rgba(255,255,255,.4)">'+esc(p.rfc)+'</div>':'')+
+        '<div style="font-weight:600;color:var(--text);font-size:13px">'+esc(p.proveedor)+'</div>'+
+        (p.rfc?'<div style="font-size:10px;color:var(--text2)">'+esc(p.rfc)+'</div>':'')+
       '</td>'+
-      '<td style="padding:10px 14px;font-size:12px;font-family:monospace;color:rgba(255,255,255,.8)">'+(p.folio?esc(p.folio):'<span style="color:rgba(255,255,255,.3)">sin folio</span>')+'</td>'+
-      '<td style="padding:10px 14px;text-align:right;font-weight:700;color:white;font-family:monospace">'+fmxS(p.monto)+'</td>'+
-      '<td style="padding:10px 14px;font-size:12px;color:rgba(255,255,255,.6)">'+(p.fechaFactura?fmtD(p.fechaFactura):'—')+'</td>'+
+      '<td style="padding:10px 14px;font-size:12px;font-family:monospace;color:var(--text)">'+(p.folio?esc(p.folio):'<span style="color:var(--text3)">sin folio</span>')+'</td>'+
+      '<td style="padding:10px 14px;text-align:right;font-weight:700;color:var(--text);font-family:monospace">'+fmxS(p.monto)+'</td>'+
+      '<td style="padding:10px 14px;font-size:12px;color:var(--text2)">'+(p.fechaFactura?fmtD(p.fechaFactura):'—')+'</td>'+
       '<td style="padding:10px 14px"><span style="background:rgba(255,255,255,.12);color:'+motivoColor+';border-radius:6px;padding:3px 8px;font-size:11px;font-weight:600">'+esc(p.motivo||'—')+'</span></td>'+
       '<td style="padding:10px 14px;text-align:center">'+
         '<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">'+
-          '<button onclick="resolverPendiente(''+safeId+'','credito')" style="background:rgba(186,117,23,.3);color:#fde68a;border:1px solid rgba(186,117,23,.5);border-radius:6px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">🕐 Registrar crédito</button>'+
-          '<button onclick="resolverPendiente(''+safeId+'','pagado')" style="background:rgba(59,109,17,.3);color:#86efac;border:1px solid rgba(59,109,17,.5);border-radius:6px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">✔ Ya pagado</button>'+
-          '<button onclick="descartarPendiente(''+safeId+'')" style="background:rgba(163,45,45,.25);color:#fca5a5;border:1px solid rgba(163,45,45,.4);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;font-family:inherit">✕</button>'+
+          '<button onclick="resolverPendiente(\''+safeId+'\',\'credito\')" style="background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber);border-radius:6px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">🕐 Registrar crédito</button>'+
+          '<button onclick="resolverPendiente(\''+safeId+'\',\'pagado\')" style="background:var(--green-bg);color:var(--green);border:1px solid var(--green);border-radius:6px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">✔ Ya pagado</button>'+
+          '<button onclick="descartarPendiente(\''+safeId+'\')" style="background:var(--red-bg);color:var(--red);border:1px solid var(--red);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;font-family:inherit">✕</button>'+
         '</div>'+
       '</td>'+
       '</tr>';
@@ -4442,16 +4611,16 @@ async function renderProyeccion(){
     html+='<div style="background:var(--navy);border-radius:12px;padding:16px 20px;margin-bottom:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px">'+
       '<div><div style="color:rgba(255,255,255,.5);font-size:11px;text-transform:uppercase;margin-bottom:4px">Meses en modelo</div>'+
       '<div style="color:white;font-size:20px;font-weight:700">'+nMeses+'</div>'+
-      '<div style="font-size:11px;color:rgba(255,255,255,.4)">'+mesesComp.map(mesLabel).join(', ')+'</div></div>'+
+      '<div style="font-size:11px;color:var(--text2)">'+mesesComp.map(mesLabel).join(', ')+'</div></div>'+
       '<div><div style="color:rgba(255,255,255,.5);font-size:11px;text-transform:uppercase;margin-bottom:4px">Tendencia</div>'+
       '<div style="color:'+tendColor+';font-size:18px;font-weight:700">'+tendIcon+' '+tendencia.charAt(0).toUpperCase()+tendencia.slice(1)+'</div>'+
-      '<div style="font-size:11px;color:rgba(255,255,255,.4)">'+(nMeses>=3?(tendenciaPct>0?'+':'')+tendenciaPct.toFixed(1)+'%/mes':'agrega más meses')+'</div></div>'+
+      '<div style="font-size:11px;color:var(--text2)">'+(nMeses>=3?(tendenciaPct>0?'+':'')+tendenciaPct.toFixed(1)+'%/mes':'agrega más meses')+'</div></div>'+
       '<div><div style="color:rgba(255,255,255,.5);font-size:11px;text-transform:uppercase;margin-bottom:4px">Confianza</div>'+
       '<div style="color:'+confianzaColor+';font-size:18px;font-weight:700">'+confianza+'</div>'+
-      '<div style="font-size:11px;color:rgba(255,255,255,.4)">'+(nMeses<6?'Con '+(6-nMeses)+' mes'+(6-nMeses===1?'':'es')+' más → Alta':'Modelo robusto')+'</div></div>'+
+      '<div style="font-size:11px;color:var(--text2)">'+(nMeses<6?'Con '+(6-nMeses)+' mes'+(6-nMeses===1?'':'es')+' más → Alta':'Modelo robusto')+'</div></div>'+
       '<div><div style="color:rgba(255,255,255,.5);font-size:11px;text-transform:uppercase;margin-bottom:4px">Próx. mes proyectado</div>'+
       '<div style="color:white;font-size:18px;font-weight:700">'+fmxS(proyectarMes(1))+'</div>'+
-      '<div style="font-size:11px;color:rgba(255,255,255,.4)">base: '+fmx(promedioSimple)+'/mes</div></div>'+
+      '<div style="font-size:11px;color:var(--text2)">base: '+fmx(promedioSimple)+'/mes</div></div>'+
       '</div>';
   }
 
