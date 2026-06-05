@@ -618,6 +618,37 @@ tbody tr:hover td{background:var(--bg2)}
         </div>
         <input type="file" id="fi-prov" accept=".xlsx,.xls" style="display:none">
 
+        <!-- ⏳ PENDIENTES DE ASIGNAR -->
+        <div id="fl-pend-wrap" style="display:none;margin-bottom:16px">
+          <div style="background:#534AB7;border-radius:12px;overflow:hidden;box-shadow:var(--shadow)">
+            <div style="padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+              <div>
+                <div style="color:white;font-weight:700;font-size:14px">⏳ Pendientes de asignar</div>
+                <div style="color:rgba(255,255,255,.5);font-size:11px;margin-top:2px">Complementos de pago y NC cargados por la auxiliar — resuélvelos manualmente</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span id="pend-count-badge" style="background:rgba(255,255,255,.2);color:white;border-radius:8px;padding:4px 14px;font-size:13px;font-weight:700">0</span>
+                <button onclick="togglePendientes()" id="btn-toggle-pend" style="background:rgba(255,255,255,.15);color:white;border:1px solid rgba(255,255,255,.25);border-radius:7px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">▼ Ver todo</button>
+              </div>
+            </div>
+            <div id="pend-tabla-wrap" style="display:none">
+              <div style="overflow-x:auto">
+                <table style="width:100%;border-collapse:collapse;font-size:13px">
+                  <thead><tr style="background:rgba(0,0,0,.2)">
+                    <th style="padding:9px 14px;text-align:left;font-size:11px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap">Proveedor / RFC</th>
+                    <th style="padding:9px 14px;text-align:left;font-size:11px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.4px">Folio</th>
+                    <th style="padding:9px 14px;text-align:right;font-size:11px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.4px">Importe</th>
+                    <th style="padding:9px 14px;text-align:left;font-size:11px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.4px">Fecha</th>
+                    <th style="padding:9px 14px;text-align:left;font-size:11px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.4px">Motivo</th>
+                    <th style="padding:9px 14px;text-align:center;font-size:11px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.4px">Acción</th>
+                  </tr></thead>
+                  <tbody id="pend-tbody" style="background:rgba(255,255,255,.06)"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Semáforo + Tabla -->
         <div id="fl-prov-body"></div>
       </div>
@@ -3700,6 +3731,11 @@ async function renderProveedores(){
   var bodyEl=document.getElementById('fl-prov-body');
   if(!kpisEl||!bodyEl)return;
 
+  // ── PENDIENTES DE ASIGNAR ─────────────────────────────────────
+  var _pendData=await cargarPendientes();
+  window._PEND_COUNT=_pendData.filter(function(p){return p.estado==='pendiente';}).length;
+  await renderPendientesAsignar();
+
   var hoy=new Date();hoy.setHours(0,0,0,0);
   var hoyISO=hoy.toISOString().split('T')[0];
 
@@ -3723,7 +3759,8 @@ async function renderProveedores(){
     '<div class="kpi-card" data-c="navy"><div class="kpi-label">Total pendiente</div><div class="kpi-value">'+fmxS(totalPend)+'</div><div class="kpi-sub">'+pendientes.length+' pago'+(pendientes.length===1?'':'s')+' por vencer</div></div>'+
     (vencidos.length?'<div class="kpi-card" data-c="red"><div class="kpi-label">🔴 Vencidos</div><div class="kpi-value">'+vencidos.length+'</div><div class="kpi-sub">'+fmx(vencidos.reduce(function(a,p){return a+p.monto;},0))+'</div></div>':'')+
     '<div class="kpi-card" data-c="amber"><div class="kpi-label">Esta semana (≤7 días)</div><div class="kpi-value">'+esta_semana.length+'</div><div class="kpi-sub">'+fmx(esta_semana.reduce(function(a,p){return a+p.monto;},0))+'</div></div>'+
-    (totalPagMes?'<div class="kpi-card" data-c="green"><div class="kpi-label">Pagado este mes</div><div class="kpi-value">'+fmxS(totalPagMes)+'</div><div class="kpi-sub">'+pagados.filter(function(p){return p.fechaPagoReal&&p.fechaPagoReal.substring(0,7)===hoyISO.substring(0,7);}).length+' pagos</div></div>':'');
+    (totalPagMes?'<div class="kpi-card" data-c="green"><div class="kpi-label">Pagado este mes</div><div class="kpi-value">'+fmxS(totalPagMes)+'</div><div class="kpi-sub">'+pagados.filter(function(p){return p.fechaPagoReal&&p.fechaPagoReal.substring(0,7)===hoyISO.substring(0,7);}).length+' pagos</div></div>':'')+
+    (function(){var pendActivos=window._PEND_COUNT||0;return pendActivos?'<div class="kpi-card" data-c="purple" style="cursor:pointer" onclick="irAPendientes()"><div class="kpi-label">⏳ Pendientes asignar</div><div class="kpi-value">'+pendActivos+'</div><div class="kpi-sub">complementos / NC — clic para ver</div></div>':''})()
 
   if(!provs.length){
     bodyEl.innerHTML='<div class="empty-state"><div style="font-size:36px;margin-bottom:10px">🏭</div><p>Sin pagos a proveedores registrados.<br>Agrega manualmente arriba o carga el Excel cuando esté listo.</p></div>';
@@ -3980,6 +4017,137 @@ async function renderProveedores(){
   }
 
   bodyEl.innerHTML=semHTML+resumenHTML+agendaHTML+pagsHTML;
+}
+
+// ── PENDIENTES DE ASIGNAR ────────────────────────────────────
+async function cargarPendientes(){
+  if(DB_MC){var s=await DB_MC.ref('flujo/pendientes_asignar').get();return s.val()?JSON.parse(s.val()):[];}
+  return JSON.parse(localStorage.getItem('flujo:pendientes_asignar')||'[]');
+}
+async function guardarPendientes(arr){
+  if(DB_MC){await DB_MC.ref('flujo/pendientes_asignar').set(JSON.stringify(arr));return;}
+  localStorage.setItem('flujo:pendientes_asignar',JSON.stringify(arr));
+}
+
+var PEND_ABIERTO=false;
+function irAPendientes(){
+  var el=document.getElementById('fl-pend-wrap');
+  if(el){el.scrollIntoView({behavior:'smooth'});}
+  if(!PEND_ABIERTO)togglePendientes();
+}
+function togglePendientes(){
+  PEND_ABIERTO=!PEND_ABIERTO;
+  var wrap=document.getElementById('pend-tabla-wrap');
+  var btn=document.getElementById('btn-toggle-pend');
+  if(wrap){wrap.style.display=PEND_ABIERTO?'block':'none';}
+  if(btn){btn.textContent=PEND_ABIERTO?'▲ Ocultar':'▼ Ver todo';}
+}
+
+async function renderPendientesAsignar(){
+  var pendientes=await cargarPendientes();
+  var activos=pendientes.filter(function(p){return p.estado==='pendiente';});
+  var wrap=document.getElementById('fl-pend-wrap');
+  var badge=document.getElementById('pend-count-badge');
+  var tbody=document.getElementById('pend-tbody');
+  if(!wrap||!badge||!tbody)return;
+
+  if(!activos.length){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  badge.textContent=activos.length;
+
+  var html='';
+  activos.sort(function(a,b){return(b.fechaRegistro||'').localeCompare(a.fechaRegistro||'');});
+  activos.forEach(function(p){
+    var safeId=(p.id||'').replace(/'/g,"\\'");
+    var motivoColor=p.motivo&&p.motivo.indexOf('Complemento')>=0?'#a78bfa':
+                    p.motivo&&p.motivo.indexOf('Nota')>=0?'#86efac':'#fbbf24';
+    html+='<tr style="border-bottom:1px solid rgba(255,255,255,.08)">'+
+      '<td style="padding:10px 14px">'+
+        '<div style="font-weight:600;color:white;font-size:13px">'+esc(p.proveedor)+'</div>'+
+        (p.rfc?'<div style="font-size:10px;color:rgba(255,255,255,.4)">'+esc(p.rfc)+'</div>':'')+
+      '</td>'+
+      '<td style="padding:10px 14px;font-size:12px;font-family:monospace;color:rgba(255,255,255,.8)">'+(p.folio?esc(p.folio):'<span style="color:rgba(255,255,255,.3)">sin folio</span>')+'</td>'+
+      '<td style="padding:10px 14px;text-align:right;font-weight:700;color:white;font-family:monospace">'+fmxS(p.monto)+'</td>'+
+      '<td style="padding:10px 14px;font-size:12px;color:rgba(255,255,255,.6)">'+(p.fechaFactura?fmtD(p.fechaFactura):'—')+'</td>'+
+      '<td style="padding:10px 14px"><span style="background:rgba(255,255,255,.12);color:'+motivoColor+';border-radius:6px;padding:3px 8px;font-size:11px;font-weight:600">'+esc(p.motivo||'—')+'</span></td>'+
+      '<td style="padding:10px 14px;text-align:center">'+
+        '<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">'+
+          '<button onclick="resolverPendiente(''+safeId+'','credito')" style="background:rgba(186,117,23,.3);color:#fde68a;border:1px solid rgba(186,117,23,.5);border-radius:6px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">🕐 Registrar crédito</button>'+
+          '<button onclick="resolverPendiente(''+safeId+'','pagado')" style="background:rgba(59,109,17,.3);color:#86efac;border:1px solid rgba(59,109,17,.5);border-radius:6px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">✔ Ya pagado</button>'+
+          '<button onclick="descartarPendiente(''+safeId+'')" style="background:rgba(163,45,45,.25);color:#fca5a5;border:1px solid rgba(163,45,45,.4);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;font-family:inherit">✕</button>'+
+        '</div>'+
+      '</td>'+
+      '</tr>';
+  });
+  tbody.innerHTML=html;
+}
+
+async function resolverPendiente(id,tipo){
+  var pendientes=await cargarPendientes();
+  var p=pendientes.find(function(x){return x.id===id;});
+  if(!p){showToast('⚠ Registro no encontrado');return;}
+
+  if(tipo==='credito'){
+    // Abrir mini-modal para capturar días de crédito
+    var dias=prompt('¿Cuántos días de crédito para esta factura de '+p.proveedor+'?','30');
+    if(dias===null)return;
+    dias=parseInt(dias)||30;
+    var fechaVenc='';
+    if(p.fechaFactura){
+      var d=new Date(p.fechaFactura+'T00:00:00');
+      d.setDate(d.getDate()+dias);
+      fechaVenc=d.toISOString().split('T')[0];
+    }
+    // Agregar a proveedores
+    var provs=await cargarProveedores();
+    provs.push({
+      id:'pa_res_'+Date.now(),
+      proveedor:p.proveedor,rfc:p.rfc||'',folio:p.folio||'',
+      concepto:'Asignado desde pendientes — '+( p.motivo||''),
+      monto:p.monto,categoria:'mercancia',
+      fechaVencimiento:fechaVenc,diasCredito:dias,
+      fechaFactura:p.fechaFactura,
+      estado:'pendiente',fechaPagoReal:null,
+      fechaRegistro:new Date().toISOString().split('T')[0],
+      origenCarga:'pendiente_asignado',
+      notas:p.motivo||''
+    });
+    await guardarProveedores(provs);
+    showToast('✓ Registrado como crédito a '+dias+' días — '+p.proveedor);
+  } else {
+    // Marcar como pagado — registrar en proveedores con estado pagado
+    var provs2=await cargarProveedores();
+    provs2.push({
+      id:'pa_res_'+Date.now(),
+      proveedor:p.proveedor,rfc:p.rfc||'',folio:p.folio||'',
+      concepto:'Asignado desde pendientes — '+(p.motivo||''),
+      monto:p.monto,categoria:'mercancia',
+      fechaVencimiento:'',diasCredito:0,
+      fechaFactura:p.fechaFactura,
+      estado:'pagado',fechaPagoReal:new Date().toISOString().split('T')[0],
+      fechaRegistro:new Date().toISOString().split('T')[0],
+      origenCarga:'pendiente_asignado',
+      notas:p.motivo||''
+    });
+    await guardarProveedores(provs2);
+    showToast('✓ Marcado como pagado — '+p.proveedor);
+  }
+
+  // Marcar pendiente como resuelto
+  p.estado='resuelto';p.fechaResolucion=new Date().toISOString().split('T')[0];p.tipoResolucion=tipo;
+  await guardarPendientes(pendientes);
+  renderProveedores();
+  actualizarListaProveedores();
+}
+
+async function descartarPendiente(id){
+  if(!confirm('¿Descartar este registro? No se puede deshacer.'))return;
+  var pendientes=await cargarPendientes();
+  var p=pendientes.find(function(x){return x.id===id;});
+  if(p){p.estado='descartado';p.fechaResolucion=new Date().toISOString().split('T')[0];}
+  await guardarPendientes(pendientes);
+  showToast('Registro descartado');
+  renderProveedores();
 }
 
 // ── Excel Proveedores ────────────────────────────────────────

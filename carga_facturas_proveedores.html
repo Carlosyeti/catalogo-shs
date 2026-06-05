@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SHS — Carga de Facturas</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --navy:#0f2744;--navy2:#1a3a5c;
+  --teal:#0F6E56;--teal-bg:#E1F5EE;
+  --green:#3B6D11;--green-bg:#EAF3DE;
+  --amber:#BA7517;--amber-bg:#FAEEDA;
+  --red:#A32D2D;--red-bg:#FCEBEB;
+  --blue:#185FA5;--blue-bg:#e6f1fb;
+  --purple:#534AB7;--purple-bg:#EEEDFE;
+  --bg:#f4f6f9;--bg2:#eef1f5;--card:#ffffff;
+  --border:#e0dfd8;--border2:#c8c7c0;
+  --text:#1a1a18;--text2:#6b6b66;--text3:#adadaa;
+  --shadow:0 1px 4px rgba(0,0,0,.07),0 4px 16px rgba(0,0,0,.05);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;font-size:14px;background:var(--bg);color:var(--text);min-height:100vh;}
+.hdr{background:var(--navy);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.25);}
+.hdr-title{color:white;font-weight:700;font-size:15px;}
+.hdr-sub{color:rgba(255,255,255,.4);font-size:11px;margin-top:1px;}
+.hdr-dot{width:7px;height:7px;border-radius:50%;background:#ef4444;transition:background .4s;display:inline-block;margin-right:5px;}
+.hdr-dot.on{background:#22c55e;}
+.hdr-status{font-size:12px;color:rgba(255,255,255,.5);display:flex;align-items:center;}
+.main{max-width:1100px;margin:0 auto;padding:22px 16px 60px;}
+/* Login */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 54px);}
+.login-card{background:var(--card);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.12);padding:36px 40px;max-width:400px;width:100%;text-align:center;}
+.login-card h2{font-size:17px;font-weight:700;margin-bottom:6px;}
+.login-card p{font-size:13px;color:var(--text2);margin-bottom:24px;line-height:1.6;}
+.btn-login{width:100%;background:var(--navy);color:white;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;}
+.btn-login:hover{background:var(--navy2);}
+/* Steps */
+.steps{display:flex;margin-bottom:22px;border-radius:10px;overflow:hidden;box-shadow:var(--shadow);}
+.step{flex:1;text-align:center;font-size:12px;font-weight:600;padding:11px 8px;background:var(--card);color:var(--text3);border-bottom:3px solid var(--border);transition:all .2s;}
+.step.active{border-color:var(--blue);color:var(--blue);background:#f0f6ff;}
+.step.done{border-color:var(--green);color:var(--green);background:var(--green-bg);}
+/* Upload */
+.upload-zone{background:var(--card);border-radius:14px;border:2px dashed var(--border2);padding:40px 24px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;margin-bottom:20px;box-shadow:var(--shadow);}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--blue);background:var(--blue-bg);}
+.upload-zone .uz-icon{font-size:40px;margin-bottom:12px;}
+.upload-zone .uz-title{font-weight:700;font-size:15px;margin-bottom:5px;}
+.upload-zone .uz-sub{font-size:12px;color:var(--text2);}
+/* Cards */
+.s-card{background:var(--card);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:18px;}
+.s-card-hdr{background:var(--navy);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.s-card-hdr .title{color:white;font-weight:700;font-size:14px;}
+.s-card-hdr .sub{color:rgba(255,255,255,.45);font-size:11px;margin-top:2px;}
+/* KPIs */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;}
+.kpi-card{background:var(--card);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow);border-left:4px solid transparent;}
+.kpi-card[data-c="navy"]{border-left-color:var(--navy);} .kpi-card[data-c="navy"] .kv{color:var(--navy);}
+.kpi-card[data-c="green"]{border-left-color:var(--green);} .kpi-card[data-c="green"] .kv{color:var(--green);}
+.kpi-card[data-c="amber"]{border-left-color:var(--amber);} .kpi-card[data-c="amber"] .kv{color:var(--amber);}
+.kpi-card[data-c="red"]{border-left-color:var(--red);} .kpi-card[data-c="red"] .kv{color:var(--red);}
+.kpi-card[data-c="purple"]{border-left-color:var(--purple);} .kpi-card[data-c="purple"] .kv{color:var(--purple);}
+.kl{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
+.kv{font-size:19px;font-weight:700;}
+.ks{font-size:11px;color:var(--text2);margin-top:2px;}
+/* Tabla facturas */
+.tbl-wrap{overflow-x:auto;}
+.ftbl{width:100%;border-collapse:collapse;font-size:13px;}
+.ftbl th{background:var(--bg2);padding:9px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;}
+.ftbl td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.ftbl tr:last-child td{border-bottom:none;}
+.ftbl tr:hover td{background:var(--bg2);}
+.ftbl .monto{text-align:right;font-weight:700;font-family:monospace;}
+/* Botones estado */
+.e-btns{display:flex;gap:5px;}
+.e-btn{border:1.5px solid var(--border2);background:white;border-radius:7px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;white-space:nowrap;transition:all .15s;}
+.e-btn.sel-pagado{background:var(--green-bg);border-color:var(--green);color:var(--green);}
+.e-btn.sel-credito{background:var(--amber-bg);border-color:var(--amber);color:var(--amber);}
+.dias-wrap{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);}
+.dias-inp{width:60px;padding:5px 8px;border:1.5px solid var(--border2);border-radius:7px;font-size:12px;text-align:center;outline:none;font-family:inherit;}
+.dias-inp:focus{border-color:var(--blue);}
+/* Badges */
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:5px;white-space:nowrap;}
+.badge-green{background:var(--green-bg);color:var(--green);}
+.badge-amber{background:var(--amber-bg);color:var(--amber);}
+.badge-red{background:var(--red-bg);color:var(--red);}
+.badge-purple{background:var(--purple-bg);color:var(--purple);}
+.badge-blue{background:var(--blue-bg);color:var(--blue);}
+.badge-gray{background:var(--bg2);color:var(--text2);}
+/* Confirm bar */
+.confirm-bar{background:var(--navy);border-radius:12px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px;}
+.confirm-bar .info{color:rgba(255,255,255,.75);font-size:13px;}
+.confirm-bar .info strong{color:white;}
+.confirm-bar .btns{display:flex;gap:10px;flex-wrap:wrap;}
+/* Botones */
+.btn-primary{background:var(--navy);color:white;border:none;border-radius:9px;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .2s;display:inline-flex;align-items:center;gap:6px;}
+.btn-primary:hover{background:var(--navy2);}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;}
+.btn-sec{background:white;color:var(--navy);border:1.5px solid rgba(255,255,255,.3);border-radius:9px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;}
+.btn-sec:hover{background:rgba(255,255,255,.1);color:white;}
+/* Secciones de clasificación pre-sort */
+.sec-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;}
+/* Historial */
+.hist-empty{text-align:center;padding:30px;color:var(--text3);font-size:13px;}
+/* Toast */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1a1a18;color:white;padding:10px 20px;border-radius:9px;font-size:13px;font-weight:600;opacity:0;transition:all .3s;z-index:9999;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.3);pointer-events:none;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+/* Loading */
+#loading{position:fixed;inset:0;background:rgba(255,255,255,.85);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:14px;font-size:14px;font-weight:600;color:var(--navy);}
+.spinner{width:34px;height:34px;border:3px solid var(--border2);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+/* Éxito */
+.exito-card{text-align:center;padding:44px 20px;}
+.exito-card .ico{font-size:56px;margin-bottom:14px;}
+.exito-card h2{font-size:18px;font-weight:800;color:var(--navy);margin-bottom:8px;}
+.exito-card p{font-size:13px;color:var(--text2);margin-bottom:24px;line-height:1.6;}
+@media(max-width:640px){.main{padding:12px 8px 60px;} .ftbl th:nth-child(3),.ftbl td:nth-child(3){display:none;}}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div>
+    <div class="hdr-title">📥 SHS — Carga de Facturas de Proveedores</div>
+    <div class="hdr-sub">Comprobantes fiscales recibidos del SAT</div>
+  </div>
+  <div class="hdr-status"><span class="hdr-dot" id="dot"></span><span id="conn-lbl">Conectando…</span></div>
+</div>
+
+<div id="toast"></div>
+<div id="loading"><div class="spinner"></div><span id="loading-msg">Guardando…</span></div>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div style="font-size:44px;margin-bottom:14px">📥</div>
+    <h2>Carga de Facturas</h2>
+    <p>Sube el reporte de comprobantes fiscales del SAT para clasificar y registrar facturas de proveedores en MASTER COBRANZA.</p>
+    <button class="btn-login" onclick="doLogin()">🔑 Entrar</button>
+    <div id="login-err" style="margin-top:10px;font-size:12px;color:var(--red);display:none;"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none;">
+<div class="main">
+
+  <div class="steps">
+    <div class="step active" id="step-1">1 · Subir Excel</div>
+    <div class="step" id="step-2">2 · Clasificar</div>
+    <div class="step" id="step-3">3 · Listo</div>
+  </div>
+
+  <!-- PASO 1 -->
+  <div id="panel-upload">
+    <div class="upload-zone" id="dz" onclick="document.getElementById('fi').click()">
+      <div class="uz-icon">📊</div>
+      <div class="uz-title">Arrastra el Excel del SAT aquí o da clic para seleccionar</div>
+      <div class="uz-sub">Formato Microsip: Fecha · Folio · Naturaleza · RFC · Nombre del tercero · Importe total · Cancelado · Forma de pago</div>
+    </div>
+    <input type="file" id="fi" accept=".xlsx,.xls" style="display:none">
+  </div>
+
+  <!-- PASO 2 -->
+  <div id="panel-clasificar" style="display:none;">
+
+    <div class="kpi-grid" id="res-kpis"></div>
+
+    <!-- Facturas a clasificar manualmente -->
+    <div class="s-card" id="sec-clasificar" style="display:none;">
+      <div class="s-card-hdr">
+        <div><div class="title">🗂 Facturas a clasificar</div><div class="sub">Indica si está pagada o es a crédito, y los días de plazo</div></div>
+      </div>
+      <div class="tbl-wrap">
+        <table class="ftbl">
+          <thead><tr>
+            <th>#</th><th>Proveedor / RFC</th><th>Folio</th>
+            <th style="text-align:right">Importe</th><th>Fecha</th>
+            <th>Estado</th><th>Días crédito</th><th>Vence el</th>
+          </tr></thead>
+          <tbody id="tbody-clasificar"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pendientes de asignar (complementos, NC ambiguas, sin folio) -->
+    <div class="s-card" id="sec-pendientes" style="display:none;">
+      <div class="s-card-hdr" style="background:#534AB7;">
+        <div><div class="title">⏳ Pendientes de asignar en MASTER COBRANZA</div><div class="sub">Complementos de pago, notas de crédito o folios sin cruce — los resuelves tú manualmente</div></div>
+        <span class="badge badge-purple" id="badge-pend" style="font-size:13px;padding:4px 12px;">0</span>
+      </div>
+      <div class="tbl-wrap">
+        <table class="ftbl">
+          <thead><tr>
+            <th>Proveedor</th><th>Folio</th><th style="text-align:right">Importe</th>
+            <th>Fecha</th><th>Motivo</th>
+          </tr></thead>
+          <tbody id="tbody-pendientes"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Duplicados omitidos -->
+    <div class="s-card" id="sec-dups" style="display:none;">
+      <div class="s-card-hdr" style="background:#4b5563;">
+        <div><div class="title">⛔ Duplicados — ya registrados en MASTER COBRANZA</div><div class="sub">Estos folios ya existen en Firebase y serán omitidos</div></div>
+        <span class="badge badge-gray" id="badge-dups" style="font-size:13px;padding:4px 12px;">0</span>
+      </div>
+      <div class="tbl-wrap">
+        <table class="ftbl">
+          <thead><tr>
+            <th>Proveedor</th><th>Folio</th><th style="text-align:right">Importe</th><th>Razón</th>
+          </tr></thead>
+          <tbody id="tbody-dups"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Barra confirmar -->
+    <div class="confirm-bar" id="confirm-bar">
+      <div class="info">
+        <strong id="c-clas">0 por clasificar</strong> &nbsp;·&nbsp;
+        <span id="c-pend">0 pendientes</span> &nbsp;·&nbsp;
+        <span id="c-dups">0 duplicados</span>
+      </div>
+      <div class="btns">
+        <button class="btn-sec" onclick="marcarTodasPagado()">✔ Marcar todas como pagadas</button>
+        <button class="btn-primary" id="btn-enviar" onclick="enviarFacturas()" disabled>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          Enviar a MASTER COBRANZA
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PASO 3 -->
+  <div id="panel-exito" style="display:none;">
+    <div class="s-card">
+      <div class="exito-card">
+        <div class="ico">✅</div>
+        <h2>¡Facturas enviadas correctamente!</h2>
+        <p id="exito-msg">Las facturas a crédito ya aparecen en Proveedores y Proyección de flujo.<br>Los pendientes de asignar están listos para que los revises en MASTER COBRANZA.</p>
+        <button class="btn-primary" style="margin:0 auto;" onclick="resetApp()">📊 Cargar otro Excel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORIAL -->
+  <div class="s-card">
+    <div class="s-card-hdr">
+      <div><div class="title">🕓 Últimas facturas enviadas</div><div class="sub">Cargadas desde esta pantalla a MASTER COBRANZA</div></div>
+      <button onclick="cargarHistorial()" style="background:rgba(255,255,255,.15);color:white;border:none;border-radius:7px;padding:6px 14px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">↺ Actualizar</button>
+    </div>
+    <div class="tbl-wrap">
+      <table class="ftbl">
+        <thead><tr>
+          <th>Fecha carga</th><th>Proveedor</th><th>Folio</th>
+          <th style="text-align:right">Importe</th><th>Tipo</th><th>Vence el</th><th>Estado</th>
+        </tr></thead>
+        <tbody id="hist-body"><tr><td colspan="7" class="hist-empty">Cargando historial…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// FIREBASE
+// ═══════════════════════════════════════════
+var DB=null;
+(function(){
+  var app;
+  try{app=firebase.app('cf');}
+  catch(e){app=firebase.initializeApp({
+    apiKey:'AIzaSyDGBgicmvOge196PiSgmIHhseQUGMiko-E',
+    authDomain:'surtidora-de-higienicos.firebaseapp.com',
+    databaseURL:'https://surtidora-de-higienicos-default-rtdb.firebaseio.com',
+    projectId:'surtidora-de-higienicos',
+    storageBucket:'surtidora-de-higienicos.firebasestorage.app',
+    messagingSenderId:'232648877023',
+    appId:'1:232648877023:web:9e8a4a743b68f4e16d9a6a'
+  },'cf');}
+  DB=firebase.database(app);
+  firebase.auth(app).onAuthStateChanged(function(user){
+    if(user){
+      document.getElementById('dot').classList.add('on');
+      document.getElementById('conn-lbl').textContent='Conectado';
+      document.getElementById('login-screen').style.display='none';
+      document.getElementById('app').style.display='block';
+      cargarHistorial();
+    }
+  });
+})();
+
+function doLogin(){
+  var btn=document.querySelector('.btn-login');
+  btn.textContent='Entrando…';btn.disabled=true;
+  firebase.auth(firebase.app('cf')).signInAnonymously().catch(function(err){
+    document.getElementById('login-err').textContent='Error: '+err.message;
+    document.getElementById('login-err').style.display='block';
+    btn.textContent='🔑 Entrar';btn.disabled=false;
+  });
+}
+
+// ═══════════════════════════════════════════
+// DRAG & DROP
+// ═══════════════════════════════════════════
+(function(){
+  var dz=document.getElementById('dz'),fi=document.getElementById('fi');
+  dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('drag');});
+  dz.addEventListener('dragleave',function(){dz.classList.remove('drag');});
+  dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('drag');var f=e.dataTransfer.files[0];if(f)procesarExcel(f);});
+  fi.addEventListener('change',function(){if(this.files[0])procesarExcel(this.files[0]);this.value='';});
+})();
+
+// ═══════════════════════════════════════════
+// ESTADO
+// ═══════════════════════════════════════════
+var FILAS_CLAS=[];   // facturas para que auxiliar clasifique
+var FILAS_PEND=[];   // pendientes de asignar (complementos, NC ambiguas)
+var FILAS_DUPS=[];   // duplicados omitidos
+
+// ═══════════════════════════════════════════
+// PROCESAR EXCEL
+// ═══════════════════════════════════════════
+async function procesarExcel(file){
+  if(!window.XLSX){showToast('⚠ Librería XLSX no disponible');return;}
+  mostrarLoading('Leyendo Excel…');
+  try{
+    // Leer folios existentes en Firebase para deduplicar
+    var foliosExistentes=new Set();
+    if(DB){
+      var snap=await DB.ref('flujo/proveedores').get();
+      var provs=snap.val()?JSON.parse(snap.val()):[];
+      provs.forEach(function(p){if(p.folio&&p.folio.trim())foliosExistentes.add(p.folio.trim().toUpperCase());});
+    }
+
+    var reader=new FileReader();
+    reader.onload=function(e){
+      try{
+        var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});
+        var sh=wb.Sheets[wb.SheetNames[0]];
+        var rows=XLSX.utils.sheet_to_json(sh,{header:1,defval:null,raw:false});
+
+        // Detectar cabecera flexible
+        var headerRow=-1,COL={};
+        for(var i=0;i<Math.min(5,rows.length);i++){
+          var r=rows[i];
+          if(!r||!r.some(function(v){return v&&(''+v).trim().length>0;}))continue;
+          for(var j=0;j<r.length;j++){
+            var h=r[j]?(''+r[j]).toLowerCase().trim():'';
+            if(h.indexOf('nombre')>=0||h.indexOf('tercero')>=0||h.indexOf('proveedor')>=0)COL.nombre=j;
+            if(h==='rfc'||h.indexOf('rfc')>=0)COL.rfc=j;
+            if((h.indexOf('folio')>=0)&&h.indexOf('fiscal')<0&&h.indexOf('uuid')<0)COL.folio=j;
+            if(h.indexOf('importe')>=0||h.indexOf('total')>=0||h.indexOf('monto')>=0)COL.monto=j;
+            if(h==='fecha')COL.fecha=j;
+            if(h.indexOf('naturaleza')>=0)COL.naturaleza=j;
+            if(h.indexOf('cancelad')>=0)COL.cancelado=j;
+            if(h.indexOf('forma')>=0&&h.indexOf('pago')>=0)COL.formaPago=j;
+          }
+          if(COL.nombre!==undefined&&COL.monto!==undefined){headerRow=i;break;}
+        }
+        if(headerRow<0){ocultarLoading();showToast('⚠ No se encontraron columnas válidas en el Excel');return;}
+
+        FILAS_CLAS=[];FILAS_PEND=[];FILAS_DUPS=[];
+
+        for(var ri=headerRow+1;ri<rows.length;ri++){
+          var row=rows[ri];
+          if(!row)continue;
+
+          // Omitir canceladas
+          var cancelado=COL.cancelado!==undefined&&row[COL.cancelado]?(''+row[COL.cancelado]).trim():'';
+          if(cancelado&&cancelado.toUpperCase().indexOf('CANCELA')>=0)continue;
+
+          var nombre=COL.nombre!==undefined&&row[COL.nombre]?(''+row[COL.nombre]).trim():'';
+          var montoRaw=COL.monto!==undefined&&row[COL.monto]?parseFloat((''+row[COL.monto]).replace(/[$,\s]/g,'')):0;
+          if(!nombre||!montoRaw||montoRaw<=0)continue;
+
+          var folio=COL.folio!==undefined&&row[COL.folio]?(''+row[COL.folio]).trim():'';
+          var rfc=COL.rfc!==undefined&&row[COL.rfc]?(''+row[COL.rfc]).trim():'';
+          var naturaleza=COL.naturaleza!==undefined&&row[COL.naturaleza]?(''+row[COL.naturaleza]).trim():'';
+          var formaPago=COL.formaPago!==undefined&&row[COL.formaPago]?(''+row[COL.formaPago]).trim():'';
+
+          // Fecha ISO
+          var fechaISO='';
+          if(COL.fecha!==undefined&&row[COL.fecha]){
+            var fv=row[COL.fecha];
+            if(fv instanceof Date){fechaISO=fv.toISOString().split('T')[0];}
+            else{
+              var fs=(''+fv).trim();
+              if(/^\d{5}$/.test(fs)){
+                var dc=XLSX.SSF.parse_date_code(parseInt(fs));
+                if(dc)fechaISO=dc.y+'-'+String(dc.m).padStart(2,'0')+'-'+String(dc.d).padStart(2,'0');
+              } else {
+                var fp=fs.split('/');
+                if(fp.length===3)fechaISO=fp[2]+'-'+fp[1].padStart(2,'0')+'-'+fp[0].padStart(2,'0');
+                else fechaISO=fs;
+              }
+            }
+          }
+
+          // Inferir categoría por nombre
+          var cat='mercancia';
+          var nl=nombre.toLowerCase();
+          if(nl.indexOf('servic')>=0||nl.indexOf('telef')>=0||nl.indexOf('dipsa')>=0||nl.indexOf('telmex')>=0||nl.indexOf('inbursa')>=0||nl.indexOf('financial')>=0)cat='servicios';
+          else if(nl.indexOf('rent')>=0||nl.indexOf('inmob')>=0||nl.indexOf('hotel')>=0)cat='renta';
+          else if(nl.indexOf('afirme')>=0||nl.indexOf('banco')>=0||nl.indexOf('bbva')>=0||nl.indexOf('santander')>=0||nl.indexOf('banca')>=0)cat='servicios';
+          else if(nl.indexOf('impuest')>=0||nl.indexOf('sat ')>=0)cat='impuestos';
+
+          var obj={_ri:ri,nombre:nombre,rfc:rfc,folio:folio,monto:montoRaw,
+            fechaFactura:fechaISO,naturaleza:naturaleza,formaPago:formaPago,categoria:cat,
+            tipoLocal:'sin',diasCredito:30};
+
+          // ── REGLAS DE CLASIFICACIÓN AUTOMÁTICA ──
+
+          // 1. Duplicado: folio no vacío y ya existe en Firebase
+          if(folio&&foliosExistentes.has(folio.toUpperCase())){
+            FILAS_DUPS.push({...obj,_motivo:'Folio ya registrado en MASTER COBRANZA'});
+            continue;
+          }
+
+          // 2. Complemento de pago: forma de pago vacía
+          if(!formaPago){
+            FILAS_PEND.push({...obj,_motivo:'Complemento de pago (forma de pago vacía)'});
+            continue;
+          }
+
+          // 3. Nota de crédito: folio empieza con "NC"
+          if(folio&&folio.toUpperCase().startsWith('NC')){
+            FILAS_PEND.push({...obj,_motivo:'Nota de crédito — revisa y asigna manualmente'});
+            continue;
+          }
+
+          // 4. Folio vacío: no se puede cruzar
+          if(!folio){
+            FILAS_PEND.push({...obj,_motivo:'Sin folio — no se puede verificar duplicado'});
+            continue;
+          }
+
+          // 5. Normal → clasificar: pre-seleccionar según forma de pago
+          // PPD/99 → crédito pre-seleccionado; PUE/otros → pagado pre-seleccionado
+          if(formaPago==='99'){obj.tipoLocal='credito';}
+          else{obj.tipoLocal='pagado';}
+          FILAS_CLAS.push(obj);
+        }
+
+        ocultarLoading();
+        renderClasificacion();
+        goStep(2);
+      }catch(err){ocultarLoading();showToast('⚠ Error al leer Excel: '+err.message);console.error(err);}
+    };
+    reader.readAsArrayBuffer(file);
+  }catch(err){ocultarLoading();showToast('⚠ Error: '+err.message);}
+}
+
+// ═══════════════════════════════════════════
+// RENDER CLASIFICACIÓN
+// ═══════════════════════════════════════════
+function renderClasificacion(){
+  // KPIs resumen
+  var totalMonto=0;
+  FILAS_CLAS.forEach(function(f){totalMonto+=f.monto;});
+  FILAS_PEND.forEach(function(f){totalMonto+=f.monto;});
+  var totalCred=FILAS_CLAS.filter(function(f){return f.tipoLocal==='credito';}).reduce(function(a,f){return a+f.monto;},0);
+  var totalPag=FILAS_CLAS.filter(function(f){return f.tipoLocal==='pagado';}).reduce(function(a,f){return a+f.monto;},0);
+
+  document.getElementById('res-kpis').innerHTML=
+    '<div class="kpi-card" data-c="navy"><div class="kl">Facturas válidas</div><div class="kv">'+(FILAS_CLAS.length+FILAS_PEND.length)+'</div><div class="ks">'+fmxS(totalMonto)+' total</div></div>'+
+    (FILAS_CLAS.length?'<div class="kpi-card" data-c="amber"><div class="kl">A clasificar</div><div class="kv">'+FILAS_CLAS.length+'</div><div class="ks">revisa cada una abajo</div></div>':'')+
+    (FILAS_PEND.length?'<div class="kpi-card" data-c="purple"><div class="kl">Pendientes asignar</div><div class="kv">'+FILAS_PEND.length+'</div><div class="ks">complementos / NC</div></div>':'')+
+    (FILAS_DUPS.length?'<div class="kpi-card" data-c="red"><div class="kl">Duplicados</div><div class="kv">'+FILAS_DUPS.length+'</div><div class="ks">serán omitidos</div></div>':'');
+
+  // Tabla clasificar
+  if(FILAS_CLAS.length){
+    document.getElementById('sec-clasificar').style.display='block';
+    var html='';
+    FILAS_CLAS.forEach(function(f,i){
+      html+='<tr id="tr-'+i+'">'+
+        '<td style="color:var(--text3);font-size:11px">'+(i+1)+'</td>'+
+        '<td><div style="font-weight:600;font-size:13px">'+esc(f.nombre)+'</div>'+(f.rfc?'<div style="font-size:10px;color:var(--text2)">'+esc(f.rfc)+'</div>':'')+'</td>'+
+        '<td style="font-size:12px;font-family:monospace">'+(f.folio?esc(f.folio):'—')+'</td>'+
+        '<td class="monto">'+fmx(f.monto)+'</td>'+
+        '<td style="font-size:12px">'+(f.fechaFactura?fmtD(f.fechaFactura):'—')+'</td>'+
+        '<td><div class="e-btns">'+
+          '<button class="e-btn'+(f.tipoLocal==='pagado'?' sel-pagado':'')+'" onclick="setTipo('+i+',\'pagado\')">✔ Pagado</button>'+
+          '<button class="e-btn'+(f.tipoLocal==='credito'?' sel-credito':'')+'" onclick="setTipo('+i+',\'credito\')">🕐 Crédito</button>'+
+        '</div></td>'+
+        '<td><div class="dias-wrap" id="dw-'+i+'" style="'+(f.tipoLocal!=='credito'?'opacity:.25;pointer-events:none':'')+'">'+
+          '<input class="dias-inp" type="number" min="1" max="365" value="'+f.diasCredito+'" oninput="setDias('+i+',this.value)" list="dc-list">'+
+          '<span>días</span>'+
+          '<datalist id="dc-list"><option value="7"><option value="14"><option value="15"><option value="21"><option value="30"><option value="45"><option value="60"><option value="90"></datalist>'+
+        '</div></td>'+
+        '<td id="vence-'+i+'" style="white-space:nowrap">'+calcVenceHTML(f)+'</td>'+
+        '</tr>';
+    });
+    document.getElementById('tbody-clasificar').innerHTML=html;
+  } else {
+    document.getElementById('sec-clasificar').style.display='none';
+  }
+
+  // Tabla pendientes
+  if(FILAS_PEND.length){
+    document.getElementById('sec-pendientes').style.display='block';
+    document.getElementById('badge-pend').textContent=FILAS_PEND.length;
+    var hp='';
+    FILAS_PEND.forEach(function(f){
+      hp+='<tr>'+
+        '<td><div style="font-weight:600;font-size:13px">'+esc(f.nombre)+'</div>'+(f.rfc?'<div style="font-size:10px;color:var(--text2)">'+esc(f.rfc)+'</div>':'')+'</td>'+
+        '<td style="font-size:12px;font-family:monospace">'+(f.folio?esc(f.folio):'<span style="color:var(--text3)">sin folio</span>')+'</td>'+
+        '<td class="monto">'+fmx(f.monto)+'</td>'+
+        '<td style="font-size:12px">'+(f.fechaFactura?fmtD(f.fechaFactura):'—')+'</td>'+
+        '<td><span class="badge badge-purple" style="font-size:10px">'+esc(f._motivo)+'</span></td>'+
+        '</tr>';
+    });
+    document.getElementById('tbody-pendientes').innerHTML=hp;
+  } else {
+    document.getElementById('sec-pendientes').style.display='none';
+  }
+
+  // Tabla duplicados
+  if(FILAS_DUPS.length){
+    document.getElementById('sec-dups').style.display='block';
+    document.getElementById('badge-dups').textContent=FILAS_DUPS.length;
+    var hd='';
+    FILAS_DUPS.forEach(function(f){
+      hd+='<tr style="opacity:.7">'+
+        '<td><div style="font-size:13px">'+esc(f.nombre)+'</div></td>'+
+        '<td style="font-size:12px;font-family:monospace">'+esc(f.folio)+'</td>'+
+        '<td class="monto" style="text-decoration:line-through;color:var(--text3)">'+fmx(f.monto)+'</td>'+
+        '<td><span class="badge badge-gray" style="font-size:10px">'+esc(f._motivo)+'</span></td>'+
+        '</tr>';
+    });
+    document.getElementById('tbody-dups').innerHTML=hd;
+  } else {
+    document.getElementById('sec-dups').style.display='none';
+  }
+
+  actualizarContadores();
+}
+
+function calcVenceHTML(f){
+  if(f.tipoLocal==='pagado')return'<span class="badge badge-green">Pagado</span>';
+  if(f.tipoLocal==='sin')return'<span class="badge badge-gray">Sin clasificar</span>';
+  if(!f.fechaFactura)return'<span style="font-size:11px;color:var(--text3)">Sin fecha</span>';
+  var d=new Date(f.fechaFactura+'T00:00:00');
+  d.setDate(d.getDate()+parseInt(f.diasCredito||30));
+  var iso=d.toISOString().split('T')[0];
+  var hoy=new Date();hoy.setHours(0,0,0,0);
+  var diff=Math.round((d-hoy)/86400000);
+  var cls=diff<0?'badge-red':diff<=7?'badge-amber':'badge-green';
+  var lbl=diff<0?'Vencida hace '+Math.abs(diff)+'d':diff===0?'Vence hoy':'Vence '+fmtD(iso);
+  return'<span class="badge '+cls+'">'+lbl+'</span>';
+}
+
+function setTipo(i,tipo){
+  FILAS_CLAS[i].tipoLocal=tipo;
+  var tr=document.getElementById('tr-'+i);
+  tr.querySelectorAll('.e-btn').forEach(function(b){b.className='e-btn';});
+  if(tipo==='pagado')tr.querySelectorAll('.e-btn')[0].classList.add('sel-pagado');
+  if(tipo==='credito')tr.querySelectorAll('.e-btn')[1].classList.add('sel-credito');
+  var dw=document.getElementById('dw-'+i);
+  dw.style.opacity=tipo==='credito'?'1':'0.25';
+  dw.style.pointerEvents=tipo==='credito'?'auto':'none';
+  document.getElementById('vence-'+i).innerHTML=calcVenceHTML(FILAS_CLAS[i]);
+  actualizarContadores();
+}
+
+function setDias(i,val){
+  FILAS_CLAS[i].diasCredito=parseInt(val)||30;
+  document.getElementById('vence-'+i).innerHTML=calcVenceHTML(FILAS_CLAS[i]);
+}
+
+function marcarTodasPagado(){
+  FILAS_CLAS.forEach(function(f,i){if(f.tipoLocal==='sin')setTipo(i,'pagado');});
+}
+
+function actualizarContadores(){
+  var sin=FILAS_CLAS.filter(function(f){return f.tipoLocal==='sin';}).length;
+  var cred=FILAS_CLAS.filter(function(f){return f.tipoLocal==='credito';}).length;
+  var pag=FILAS_CLAS.filter(function(f){return f.tipoLocal==='pagado';}).length;
+  document.getElementById('c-clas').textContent=FILAS_CLAS.length+' a clasificar ('+cred+' crédito · '+pag+' pagadas)';
+  document.getElementById('c-pend').textContent=FILAS_PEND.length+' pendientes';
+  document.getElementById('c-dups').textContent=FILAS_DUPS.length+' duplicados';
+  var btn=document.getElementById('btn-enviar');
+  btn.disabled=sin>0;
+  btn.title=sin>0?'Clasifica las '+sin+' facturas pendientes primero':'';
+}
+
+// ═══════════════════════════════════════════
+// ENVIAR A FIREBASE
+// ═══════════════════════════════════════════
+async function enviarFacturas(){
+  var sin=FILAS_CLAS.filter(function(f){return f.tipoLocal==='sin';}).length;
+  if(sin){showToast('⚠ Clasifica las '+sin+' facturas pendientes primero');return;}
+  if(!DB){showToast('⚠ Sin conexión a Firebase');return;}
+
+  mostrarLoading('Guardando en Firebase…');
+  try{
+    var hoy=new Date().toISOString().split('T')[0];
+
+    // ── 1. Guardar facturas clasificadas en flujo/proveedores ──
+    var snapProv=await DB.ref('flujo/proveedores').get();
+    var provs=snapProv.val()?JSON.parse(snapProv.val()):[];
+    var nuevosCred=0,nuevosPag=0,totalCred=0,totalPag=0;
+
+    FILAS_CLAS.forEach(function(f){
+      var fechaVenc='';
+      if(f.tipoLocal==='credito'&&f.fechaFactura){
+        var d=new Date(f.fechaFactura+'T00:00:00');
+        d.setDate(d.getDate()+parseInt(f.diasCredito||30));
+        fechaVenc=d.toISOString().split('T')[0];
+      }
+      provs.push({
+        id:'cf_'+Date.now()+'_'+f._ri,
+        proveedor:f.nombre,rfc:f.rfc,folio:f.folio,
+        concepto:f.naturaleza||'Comprobante fiscal',
+        monto:f.monto,categoria:f.categoria,
+        fechaVencimiento:f.tipoLocal==='credito'?fechaVenc:'',
+        diasCredito:f.tipoLocal==='credito'?parseInt(f.diasCredito||30):0,
+        fechaFactura:f.fechaFactura,
+        estado:f.tipoLocal==='pagado'?'pagado':'pendiente',
+        fechaPagoReal:f.tipoLocal==='pagado'?f.fechaFactura:null,
+        fechaRegistro:hoy,
+        origenCarga:'auxiliar_facturas',
+        notas:f.tipoLocal==='credito'?(f.diasCredito+'d crédito — cargado desde Excel SAT'):'Pagada — cargada desde Excel SAT'
+      });
+      if(f.tipoLocal==='credito'){nuevosCred++;totalCred+=f.monto;}
+      else{nuevosPag++;totalPag+=f.monto;}
+    });
+    await DB.ref('flujo/proveedores').set(JSON.stringify(provs));
+
+    // ── 2. Guardar pendientes de asignar en flujo/pendientes_asignar ──
+    if(FILAS_PEND.length){
+      var snapPend=await DB.ref('flujo/pendientes_asignar').get();
+      var pendientes=snapPend.val()?JSON.parse(snapPend.val()):[];
+      FILAS_PEND.forEach(function(f){
+        pendientes.push({
+          id:'pa_'+Date.now()+'_'+f._ri,
+          proveedor:f.nombre,rfc:f.rfc,folio:f.folio,
+          monto:f.monto,fechaFactura:f.fechaFactura,
+          motivo:f._motivo,formaPago:f.formaPago,naturaleza:f.naturaleza,
+          estado:'pendiente',fechaRegistro:hoy,
+          origenCarga:'auxiliar_facturas'
+        });
+      });
+      await DB.ref('flujo/pendientes_asignar').set(JSON.stringify(pendientes));
+    }
+
+    ocultarLoading();
+
+    // Mensaje de éxito
+    var partes=[];
+    if(nuevosCred)partes.push(nuevosCred+' factura'+(nuevosCred===1?'':'s')+' a crédito ('+fmx(totalCred)+') en Proveedores y Proyección');
+    if(nuevosPag)partes.push(nuevosPag+' pagada'+(nuevosPag===1?'':'s')+' ('+fmx(totalPag)+') en historial');
+    if(FILAS_PEND.length)partes.push(FILAS_PEND.length+' pendiente'+(FILAS_PEND.length===1?'':'s')+' de asignar listos en MASTER COBRANZA');
+    document.getElementById('exito-msg').textContent=partes.join('. ')+(partes.length?'.':'');
+
+    goStep(3);
+    document.getElementById('panel-clasificar').style.display='none';
+    document.getElementById('panel-exito').style.display='block';
+    showToast('✓ '+(FILAS_CLAS.length+FILAS_PEND.length)+' registros enviados');
+    cargarHistorial();
+  }catch(err){
+    ocultarLoading();showToast('⚠ Error al guardar: '+err.message);console.error(err);
+  }
+}
+
+// ═══════════════════════════════════════════
+// HISTORIAL
+// ═══════════════════════════════════════════
+async function cargarHistorial(){
+  if(!DB)return;
+  var tbody=document.getElementById('hist-body');
+  tbody.innerHTML='<tr><td colspan="7" class="hist-empty">Cargando…</td></tr>';
+  try{
+    var snap=await DB.ref('flujo/proveedores').get();
+    var provs=snap.val()?JSON.parse(snap.val()):[];
+    var recent=provs.filter(function(p){return p.origenCarga==='auxiliar_facturas';})
+      .sort(function(a,b){return(b.fechaRegistro||'').localeCompare(a.fechaRegistro||'');})
+      .slice(0,60);
+    if(!recent.length){tbody.innerHTML='<tr><td colspan="7" class="hist-empty">Aún no hay facturas cargadas desde esta pantalla.</td></tr>';return;}
+    var html='';
+    recent.forEach(function(p){
+      var tipoBadge=p.estado==='pagado'?'<span class="badge badge-green">Pagado</span>':'<span class="badge badge-amber">Crédito</span>';
+      var vence=p.fechaVencimiento?fmtD(p.fechaVencimiento):'—';
+      var estado=p.estado==='pagado'?'<span style="font-size:12px;color:var(--green)">✔ Pagado</span>':'<span style="font-size:12px;color:var(--amber)">⏳ Pendiente</span>';
+      html+='<tr>'+
+        '<td style="font-size:12px">'+fmtD(p.fechaRegistro||'')+'</td>'+
+        '<td><div style="font-weight:600;font-size:12px">'+esc(p.proveedor)+'</div>'+(p.rfc?'<div style="font-size:10px;color:var(--text3)">'+esc(p.rfc)+'</div>':'')+'</td>'+
+        '<td style="font-size:12px;font-family:monospace">'+(p.folio?esc(p.folio):'—')+'</td>'+
+        '<td class="monto" style="font-size:12px">'+fmx(p.monto)+'</td>'+
+        '<td>'+tipoBadge+'</td>'+
+        '<td style="font-size:12px">'+vence+'</td>'+
+        '<td>'+estado+'</td>'+
+        '</tr>';
+    });
+    tbody.innerHTML=html;
+  }catch(err){tbody.innerHTML='<tr><td colspan="7" class="hist-empty">Error: '+esc(err.message)+'</td></tr>';}
+}
+
+// ═══════════════════════════════════════════
+// RESET / PASOS
+// ═══════════════════════════════════════════
+function resetApp(){
+  FILAS_CLAS=[];FILAS_PEND=[];FILAS_DUPS=[];
+  document.getElementById('panel-upload').style.display='block';
+  document.getElementById('panel-clasificar').style.display='none';
+  document.getElementById('panel-exito').style.display='none';
+  document.getElementById('fi').value='';
+  goStep(1);
+}
+function goStep(n){
+  for(var i=1;i<=3;i++){
+    var s=document.getElementById('step-'+i);
+    s.className='step'+(i<n?' done':i===n?' active':'');
+  }
+  if(n===1){document.getElementById('panel-upload').style.display='block';document.getElementById('panel-clasificar').style.display='none';}
+  if(n===2){document.getElementById('panel-upload').style.display='none';document.getElementById('panel-clasificar').style.display='block';document.getElementById('panel-exito').style.display='none';}
+  if(n===3){document.getElementById('panel-clasificar').style.display='none';document.getElementById('panel-exito').style.display='block';}
+}
+
+// ═══════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════
+function fmx(n){return'$'+Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmxS(n){if(n>=1000000)return'$'+(n/1000000).toFixed(2)+'M';if(n>=1000)return'$'+(n/1000).toFixed(1)+'K';return fmx(n);}
+function fmtD(iso){if(!iso)return'—';var p=iso.split('-');if(p.length<3)return iso;var m=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];return parseInt(p[2])+' '+m[parseInt(p[1])-1]+' '+p[0];}
+function esc(s){return(''+s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function showToast(msg,dur){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},dur||3200);}
+function mostrarLoading(msg){document.getElementById('loading-msg').textContent=msg||'Guardando…';document.getElementById('loading').style.display='flex';}
+function ocultarLoading(){document.getElementById('loading').style.display='none';}
+</script>
+</body>
+</html>
