@@ -3400,10 +3400,10 @@ async function renderComplementos(){
         '<td style="text-align:right;font-weight:700">'+fmx(c.monto)+'</td>'+
         '<td style="font-size:12px">'+(c.fechaPago?fmtD(c.fechaPago):'—')+'</td>'+
         '<td style="font-size:12px;color:var(--text2)">'+(diasEspera!==null?diasEspera+'d esperando':'—')+'</td>'+
-        '<td><input type="text" value="'+esc(c.notas||'')+'" placeholder="Agregar nota…" onchange="actualizarNotaComp(''+safeId+'',this.value)" style="width:140px;padding:4px 8px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit;outline:none"></td>'+
+        '<td><input type="text" placeholder="Nota…" data-cid="'+c.id+'" onchange="actualizarNotaCompEv(this)" style="width:130px;padding:4px 8px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit;outline:none" value="'+esc(c.notas||'')+'"></td>'+'
         '<td style="text-align:center">'+
-          '<button onclick="marcarCompRecibido(''+safeId+'')" style="background:var(--green-bg);color:var(--green);border:1px solid #a7d9a7;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">✓ Recibido</button> '+
-          '<button onclick="eliminarComp(''+safeId+'')" style="background:var(--red-bg);color:var(--red);border:1px solid #f5c0c0;border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;font-family:inherit">×</button>'+
+          '<button onclick="marcarCompRecibido(\''+safeId+'\')" style="background:var(--green-bg);color:var(--green);border:1px solid #a7d9a7;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">✓ Recibido</button> '+
+          '<button onclick="eliminarComp(\''+safeId+'\')" style="background:var(--red-bg);color:var(--red);border:1px solid #f5c0c0;border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;font-family:inherit">×</button>'+
         '</td>'+
       '</tr>';
     });
@@ -3425,7 +3425,7 @@ async function renderComplementos(){
           '<td style="font-family:monospace;font-size:12px">'+(c.folio||'—')+'</td>'+
           '<td style="text-align:right">'+fmx(c.monto)+'</td>'+
           '<td style="font-size:12px;color:var(--text2)">'+(c.fechaRecibido?fmtD(c.fechaRecibido):'—')+'</td>'+
-          '<td><button onclick="eliminarComp(''+safeId+'')" style="background:var(--red-bg);color:var(--red);border:1px solid #f5c0c0;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;font-family:inherit">×</button></td>'+
+          '<td><button onclick="eliminarComp(\'+safeId+\')" style="background:var(--red-bg);color:var(--red);border:1px solid #f5c0c0;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;font-family:inherit">×</button></td>'+
         '</tr>';
       }).join('')+
       '</tbody></table></div>';
@@ -3445,6 +3445,11 @@ async function marcarCompRecibido(id){
   showToast('✓ Complemento marcado como recibido — '+c.proveedor);
 }
 
+function actualizarNotaCompEv(el){
+  var id=el.getAttribute('data-cid');
+  var nota=el.value;
+  actualizarNotaComp(id,nota);
+}
 async function actualizarNotaComp(id,nota){
   var comps=await cargarComplementos();
   var c=comps.find(function(x){return x.id===id;});
