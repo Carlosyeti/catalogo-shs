@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendario de Compras SHS</title>
+<style>
+  :root {
+    --bg: #F7F8FA;
+    --surface: #FFFFFF;
+    --border: #E2E6EA;
+    --border-strong: #C8CDD4;
+    --text: #1A1E27;
+    --text-muted: #6B7280;
+    --accent: #1E6B3C;
+    --accent-light: #E8F5EE;
+    --accent-mid: #2D9B58;
+    --danger: #C0392B;
+    --danger-light: #FDECEA;
+    --warn: #D97706;
+    --warn-light: #FEF3C7;
+    --info: #1D4ED8;
+    --info-light: #EFF6FF;
+    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,.10);
+    --radius: 8px;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 13px; }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--accent);
+    color: #fff;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  header h1 { font-size: 16px; font-weight: 700; letter-spacing: .3px; }
+  header span { font-size: 11px; opacity: .75; }
+  #statusDot { width: 8px; height: 8px; border-radius: 50%; background: #F59E0B; display: inline-block; margin-right: 5px; }
+  #statusDot.ok { background: #34D399; }
+
+  /* ── TABS ── */
+  nav.tabs { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; }
+  nav.tabs button {
+    padding: 11px 20px; border: none; background: none; cursor: pointer;
+    font-size: 13px; color: var(--text-muted); font-weight: 500; border-bottom: 2px solid transparent;
+    transition: all .15s;
+  }
+  nav.tabs button.active { color: var(--accent); border-bottom-color: var(--accent); }
+  nav.tabs button:hover { color: var(--text); }
+
+  /* ── PANELS ── */
+  .panel { display: none; padding: 16px 20px; }
+  .panel.active { display: block; }
+
+  /* ── TOOLBAR ── */
+  .toolbar {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap;
+  }
+  .toolbar select, .toolbar input[type=text], .toolbar input[type=number] {
+    border: 1px solid var(--border-strong); border-radius: var(--radius);
+    padding: 7px 10px; font-size: 12px; background: var(--surface); color: var(--text);
+  }
+  .btn {
+    padding: 7px 14px; border-radius: var(--radius); border: none;
+    font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-mid); }
+  .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border-strong); }
+  .btn-secondary:hover { background: var(--bg); }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-danger:hover { opacity: .85; }
+  .btn-sm { padding: 4px 9px; font-size: 11px; }
+
+  /* ── TABLES ── */
+  .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    background: #F1F5F9; color: var(--text-muted); font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .5px; padding: 8px 10px; text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #F8FAFC; }
+  td input, td select {
+    border: 1px solid transparent; border-radius: 4px; padding: 3px 6px;
+    font-size: 12px; background: transparent; width: 100%;
+    transition: border .15s;
+  }
+  td input:focus, td select:focus { border-color: var(--accent); background: var(--surface); outline: none; }
+  td select { cursor: pointer; }
+
+  /* ── BADGE ── */
+  .badge {
+    display: inline-block; padding: 2px 7px; border-radius: 20px;
+    font-size: 10px; font-weight: 700; letter-spacing: .3px;
+  }
+  .badge-green { background: var(--accent-light); color: var(--accent); }
+  .badge-amber { background: var(--warn-light); color: var(--warn); }
+  .badge-red { background: var(--danger-light); color: var(--danger); }
+  .badge-gray { background: #F1F5F9; color: var(--text-muted); }
+  .badge-blue { background: var(--info-light); color: var(--info); }
+
+  /* ── CALENDAR ── */
+  .cal-header {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .cal-nav { display: flex; align-items: center; gap: 8px; }
+  .cal-nav button {
+    width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--border-strong);
+    background: var(--surface); cursor: pointer; font-size: 16px; display: flex;
+    align-items: center; justify-content: center;
+  }
+  .cal-nav button:hover { background: var(--bg); }
+  #calMonthLabel { font-size: 16px; font-weight: 700; min-width: 160px; }
+
+  .cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 0; border: 1px solid var(--border); border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .cal-day-header {
+    background: #F1F5F9; padding: 8px 6px; text-align: center;
+    font-size: 11px; font-weight: 700; color: var(--text-muted);
+    text-transform: uppercase; border-bottom: 1px solid var(--border);
+  }
+  .cal-cell {
+    min-height: 110px; padding: 5px; border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border); background: var(--surface);
+    vertical-align: top; position: relative;
+  }
+  .cal-cell:nth-child(7n) { border-right: none; }
+  .cal-cell.empty { background: #FAFBFC; }
+  .cal-cell.today { background: #F0FDF4; }
+  .cal-date {
+    font-size: 11px; font-weight: 700; color: var(--text-muted);
+    margin-bottom: 4px; display: block;
+  }
+  .cal-cell.today .cal-date { color: var(--accent); }
+  .cal-pill {
+    display: block; margin-bottom: 2px; padding: 2px 5px;
+    border-radius: 4px; font-size: 10px; font-weight: 600;
+    cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transition: opacity .15s;
+  }
+  .cal-pill:hover { opacity: .8; }
+  .cal-pill.auto { background: var(--accent-light); color: var(--accent); }
+  .cal-pill.manual { background: var(--info-light); color: var(--info); }
+  .cal-pill.done { background: #F1F5F9; color: var(--text-muted); text-decoration: line-through; }
+
+  /* ── OC MODAL ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45);
+    z-index: 100; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border-radius: 12px; box-shadow: var(--shadow-md);
+    padding: 24px; width: 460px; max-width: 95vw; max-height: 90vh; overflow-y: auto;
+  }
+  .modal h2 { font-size: 15px; font-weight: 700; margin-bottom: 16px; }
+  .modal .field { margin-bottom: 12px; }
+  .modal label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
+  .modal input, .modal select {
+    width: 100%; border: 1px solid var(--border-strong); border-radius: var(--radius);
+    padding: 8px 10px; font-size: 13px; color: var(--text);
+  }
+  .modal input:focus, .modal select:focus { outline: none; border-color: var(--accent); }
+  .modal-actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+
+  /* ── STATS CARDS ── */
+  .stats-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .stat-card {
+    flex: 1 1 140px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
+  }
+  .stat-card .label { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+  .stat-card .value { font-size: 22px; font-weight: 800; }
+  .stat-card .sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* ── HISTORY LIST ── */
+  .oc-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  .oc-row:last-child { border-bottom: none; }
+  .oc-row .oc-prov { font-weight: 600; flex: 1; font-size: 12px; }
+  .oc-row .oc-dates { font-size: 11px; color: var(--text-muted); }
+  .oc-row .oc-delta { font-size: 11px; font-weight: 700; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+  .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
+
+  /* ── LOADING ── */
+  .spinner {
+    width: 18px; height: 18px; border: 2px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%; animation: spin .6s linear infinite;
+    display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .section-title {
+    font-size: 12px; font-weight: 700; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px;
+  }
+  .tip { background: var(--info-light); border-left: 3px solid var(--info); border-radius: 4px; padding: 8px 12px; font-size: 11px; color: var(--info); margin-bottom: 12px; }
+
+  @media print {
+    header, nav.tabs, .toolbar, .cal-header .btn { display: none !important; }
+    .panel { display: block !important; }
+    #panelCalendario { display: block !important; }
+    #panelMaestro, #panelHistorial { display: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- FIREBASE -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, update, remove, onValue }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDummyKeyReplaceWithYours",
+  authDomain: "surtidora-de-higienicos.firebaseapp.com",
+  databaseURL: "https://surtidora-de-higienicos-default-rtdb.firebaseio.com",
+  projectId: "surtidora-de-higienicos",
+  storageBucket: "surtidora-de-higienicos.appspot.com",
+  messagingSenderId: "000000000000",
+  appId: "1:000000000000:web:0000000000000000"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+window._db = db;
+window._ref = ref;
+window._set = set;
+window._get = get;
+window._update = update;
+window._remove = remove;
+window._onValue = onValue;
+window._firebaseReady = true;
+document.dispatchEvent(new Event('firebaseReady'));
+</script>
+
+<header>
+  <div>
+    <h1>📦 Calendario de Compras SHS</h1>
+    <span>Gestión de órdenes y comportamiento de proveedores</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.8)">
+    <span id="statusDot"></span><span id="statusText">Conectando...</span>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="active" onclick="switchTab('calendario')">📅 Calendario</button>
+  <button onclick="switchTab('maestro')">🏭 Proveedores</button>
+  <button onclick="switchTab('historial')">📋 Historial OC</button>
+</nav>
+
+<!-- ═══════════════════════════════════ CALENDARIO ═══════════════════════════════════ -->
+<div id="panelCalendario" class="panel active">
+  <div class="cal-header">
+    <div class="cal-nav">
+      <button onclick="changeMonth(-1)">‹</button>
+      <span id="calMonthLabel">—</span>
+      <button onclick="changeMonth(1)">›</button>
+    </div>
+    <button class="btn btn-primary" onclick="generarCalendario()">⚡ Generar pedidos del mes</button>
+    <button class="btn btn-secondary" onclick="window.print()">🖨️ Imprimir</button>
+    <button class="btn btn-secondary btn-sm" onclick="limpiarCalendarioMes()">🗑️ Limpiar mes</button>
+  </div>
+  <div class="tip">💡 Haz clic en cualquier proveedor del calendario para registrar la OC real o moverlo de fecha.</div>
+  <div id="calGrid"></div>
+</div>
+
+<!-- ═══════════════════════════════════ MAESTRO ═══════════════════════════════════ -->
+<div id="panelMaestro" class="panel">
+  <div class="toolbar">
+    <input type="text" id="searchProv" placeholder="🔍 Buscar proveedor..." oninput="renderMaestro()" style="width:220px">
+    <select id="filterFreq" onchange="renderMaestro()">
+      <option value="">Todas las frecuencias</option>
+      <option>SEMANAL</option>
+      <option>QUINCENAL</option>
+      <option>MENSUAL</option>
+      <option>22 DÍAS</option>
+      <option>BIMESTRAL</option>
+    </select>
+    <button class="btn btn-primary" onclick="guardarMaestro()">💾 Guardar cambios</button>
+    <span id="savedMsg" style="font-size:11px;color:var(--accent);display:none">✔ Guardado</span>
+  </div>
+  <div class="table-wrap">
+    <table id="tablaMaestro">
+      <thead>
+        <tr>
+          <th>Proveedor</th>
+          <th>Frecuencia</th>
+          <th>Días OC estimados</th>
+          <th>Días entrega estimados</th>
+          <th style="text-align:center">Entrega real prom.</th>
+          <th style="text-align:center">Vs estimado</th>
+          <th style="text-align:center">Tendencia</th>
+          <th style="text-align:center">Historial</th>
+          <th style="text-align:center">OC</th>
+        </tr>
+      </thead>
+      <tbody id="maestroBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ HISTORIAL ═══════════════════════════════════ -->
+<div id="panelHistorial" class="panel">
+  <div class="stats-row" id="statsRow"></div>
+
+  <div class="toolbar">
+    <select id="filterProvH" onchange="renderHistorial()">
+      <option value="">Todos los proveedores</option>
+    </select>
+    <select id="filterEstadoH" onchange="renderHistorial()">
+      <option value="">Todos los estados</option>
+      <option value="pendiente">Pendiente de llegada</option>
+      <option value="completo">Completo</option>
+    </select>
+    <button class="btn btn-primary" onclick="abrirModalOC(null)">+ Nueva OC</button>
+  </div>
+
+  <div class="section-title">Registro de Órdenes de Compra</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Proveedor</th>
+          <th>Fecha OC</th>
+          <th>Fecha llegada</th>
+          <th style="text-align:center">Días reales</th>
+          <th style="text-align:center">Est.</th>
+          <th style="text-align:center">Diferencia</th>
+          <th>Estado</th>
+          <th>Notas</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="historialBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ MODAL OC ═══════════════════════════════════ -->
+<div id="modalOC" class="modal-overlay">
+  <div class="modal">
+    <h2 id="modalTitle">Registrar Orden de Compra</h2>
+    <div class="field">
+      <label>PROVEEDOR</label>
+      <select id="ocProv"></select>
+    </div>
+    <div class="field">
+      <label>FECHA EN QUE SE GENERÓ LA OC</label>
+      <input type="date" id="ocFechaOC">
+    </div>
+    <div class="field">
+      <label>FECHA DE LLEGADA DEL PEDIDO <span style="font-weight:400;opacity:.7">(dejar vacío si aún no llega)</span></label>
+      <input type="date" id="ocFechaLlegada">
+    </div>
+    <div class="field">
+      <label>NOTAS</label>
+      <input type="text" id="ocNotas" placeholder="Opcional...">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarOC()">Guardar OC</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ MODAL CALENDARIO PILL ═══════════════════════════════════ -->
+<div id="modalPill" class="modal-overlay">
+  <div class="modal">
+    <h2 id="pillTitle">Detalle de pedido</h2>
+    <div class="field">
+      <label>PROVEEDOR</label>
+      <input type="text" id="pillProv" readonly style="background:#F1F5F9">
+    </div>
+    <div class="field">
+      <label>FECHA PROGRAMADA</label>
+      <input type="date" id="pillFechaProg">
+    </div>
+    <div class="field">
+      <label>¿YA SE GENERÓ LA OC?</label>
+      <select id="pillOCGenerada">
+        <option value="no">No — pendiente</option>
+        <option value="si">Sí — registrar OC</option>
+      </select>
+    </div>
+    <div id="pillOCFields" style="display:none">
+      <div class="field">
+        <label>FECHA REAL OC GENERADA</label>
+        <input type="date" id="pillFechaOCReal">
+      </div>
+      <div class="field">
+        <label>FECHA LLEGADA (si ya llegó)</label>
+        <input type="date" id="pillFechaLlegada">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary btn-sm" style="margin-right:auto;color:var(--danger);border-color:var(--danger)" onclick="eliminarPill()">Quitar del calendario</button>
+      <button class="btn btn-secondary" onclick="cerrarModalPill()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarPill()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// DATOS MAESTRO (proveedores)
+// ─────────────────────────────────────────────────────────────────────────────
+const PROVEEDORES_DEFAULT = [
+  { id:"abarrotera_duero",    nombre:"ABARROTERA DUERO",                   frecuencia:"QUINCENAL", diasOC:"8, 22",  diasEntrega:3  },
+  { id:"absormex",            nombre:"ABSORMEX",                           frecuencia:"MENSUAL",   diasOC:"",       diasEntrega:15 },
+  { id:"alejandro_glez",      nombre:"ALEJANDRO GLEZ. DURÁN",              frecuencia:"22 DÍAS",   diasOC:"10",     diasEntrega:12 },
+  { id:"ambiderm",            nombre:"AMBIDERM",                           frecuencia:"MENSUAL",   diasOC:"24",     diasEntrega:3  },
+  { id:"biozone",             nombre:"BIOZONE",                            frecuencia:"MENSUAL",   diasOC:"8",      diasEntrega:10 },
+  { id:"bmc_trupper",         nombre:"BMC TRUPPER",                        frecuencia:"MENSUAL",   diasOC:"10",     diasEntrega:3  },
+  { id:"castor",              nombre:"CASTOR",                             frecuencia:"MENSUAL",   diasOC:"10",     diasEntrega:8  },
+  { id:"christian_gamez",     nombre:"CHRISTIAN GÁMEZ",                   frecuencia:"SEMANAL",   diasOC:"10, 17, 24", diasEntrega:2 },
+  { id:"alberto_mejia",       nombre:"ALBERTO MEJIA (JAR)",                frecuencia:"BIMESTRAL", diasOC:"15",     diasEntrega:12 },
+  { id:"cuplasa",             nombre:"CUPLASA",                            frecuencia:"BIMESTRAL", diasOC:"",       diasEntrega:2  },
+  { id:"derivados_madera",    nombre:"DERIVADOS MADERA",                   frecuencia:"MENSUAL",   diasOC:"10",     diasEntrega:0  },
+  { id:"decasa",              nombre:"DECASA",                             frecuencia:"QUINCENAL", diasOC:"15",     diasEntrega:3  },
+  { id:"efrain_valladares",   nombre:"EFRAÍN VALLADARES",                  frecuencia:"SEMANAL",   diasOC:"8, 22",  diasEntrega:1  },
+  { id:"enrique_glez",        nombre:"ENRIQUE GLEZ. DURÁN (CAMISETA)",     frecuencia:"22 DÍAS",   diasOC:"17",     diasEntrega:12 },
+  { id:"escoffier",           nombre:"ESCOFFIER",                          frecuencia:"MENSUAL",   diasOC:"8",      diasEntrega:2  },
+  { id:"garce",               nombre:"GARCE (PILAS)",                      frecuencia:"BIMESTRAL", diasOC:"",       diasEntrega:1  },
+  { id:"grey_moon",           nombre:"GREY MOON",                          frecuencia:"MENSUAL",   diasOC:"15",     diasEntrega:10 },
+  { id:"copar",               nombre:"COPAR",                              frecuencia:"MENSUAL",   diasOC:"8",      diasEntrega:2  },
+  { id:"salcom",              nombre:"SALCOM",                             frecuencia:"MENSUAL",   diasOC:"",       diasEntrega:15 },
+  { id:"jaime_aranda",        nombre:"JAIME ARANDA (JAR)",                 frecuencia:"MENSUAL",   diasOC:"10",     diasEntrega:3  },
+  { id:"jose_luis_sep",       nombre:"JOSE LUIS SEPÚLVEDA (BOLSA RECICLADA)", frecuencia:"MENSUAL", diasOC:"8",    diasEntrega:2  },
+  { id:"torres_pacheco",      nombre:"TORRES PACHECO",                     frecuencia:"QUINCENAL", diasOC:"8",      diasEntrega:1  },
+  { id:"oval",                nombre:"OVAL",                               frecuencia:"MENSUAL",   diasOC:"",       diasEntrega:2  },
+  { id:"plastic_trends",      nombre:"PLASTIC TRENDS",                     frecuencia:"MENSUAL",   diasOC:"15",     diasEntrega:2  },
+  { id:"prolim",              nombre:"PROLIM",                             frecuencia:"MENSUAL",   diasOC:"",       diasEntrega:10 },
+  { id:"shell_seguridad",     nombre:"SHELL SEGURIDAD",                    frecuencia:"MENSUAL",   diasOC:"8",      diasEntrega:1  },
+  { id:"tesko",               nombre:"TESKO",                              frecuencia:"BIMESTRAL", diasOC:"8",      diasEntrega:8  },
+  { id:"walmart",             nombre:"WALMART",                            frecuencia:"QUINCENAL", diasOC:"12",     diasEntrega:5  },
+  { id:"xiomara_glez",        nombre:"XIOMARA GLEZ. (PISTOLAS Y ENV.)",    frecuencia:"MENSUAL",   diasOC:"10",     diasEntrega:2  },
+  { id:"e_popote_palma",      nombre:"E. POPOTE Y PALMA",                  frecuencia:"QUINCENAL", diasOC:"24, 10", diasEntrega:5  },
+  { id:"po",                  nombre:"PO",                                 frecuencia:"QUINCENAL", diasOC:"10, 24", diasEntrega:1  },
+  { id:"enhu",                nombre:"ENHU",                               frecuencia:"MENSUAL",   diasOC:"",       diasEntrega:2  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ESTADO GLOBAL
+// ─────────────────────────────────────────────────────────────────────────────
+let maestro = [];          // array de proveedores (puede venir de Firebase)
+let historialOC = {};      // { ocId: { provId, fechaOC, fechaLlegada, notas } }
+let calData = {};          // { "YYYY-MM": { "provId_dd": { fechaProg, ocGenerada, ... } } }
+let calYear, calMonth;
+let editingOCId = null;
+let editingPillKey = null;
+let editingPillMes = null;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FIREBASE HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+async function fbGet(path) {
+  const snap = await window._get(window._ref(window._db, path));
+  return snap.val();
+}
+async function fbSet(path, val) {
+  await window._set(window._ref(window._db, path), val);
+}
+async function fbUpdate(path, val) {
+  await window._update(window._ref(window._db, path), val);
+}
+async function fbRemove(path) {
+  await window._remove(window._ref(window._db, path));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────────────────────────
+document.addEventListener('firebaseReady', async () => {
+  setStatus('ok', 'Firebase conectado');
+  await cargarDatos();
+  // Init calendario con mes actual
+  const hoy = new Date();
+  calYear = hoy.getFullYear();
+  calMonth = hoy.getMonth();
+  renderCalendario();
+  renderMaestro();
+  renderHistorial();
+  poblarSelectsProveedores();
+});
+
+function setStatus(state, msg) {
+  document.getElementById('statusDot').className = state === 'ok' ? 'ok' : '';
+  document.getElementById('statusText').textContent = msg;
+}
+
+async function cargarDatos() {
+  try {
+    // Maestro
+    const mFb = await fbGet('compras/maestro');
+    if (mFb) {
+      maestro = Object.values(mFb);
+    } else {
+      maestro = JSON.parse(JSON.stringify(PROVEEDORES_DEFAULT));
+      await fbSet('compras/maestro', arrayToObj(maestro));
+    }
+    // Historial OC
+    const hFb = await fbGet('compras/historial');
+    historialOC = hFb || {};
+    // Calendario
+    const cFb = await fbGet('compras/calendario');
+    calData = cFb || {};
+  } catch(e) {
+    console.error(e);
+    maestro = JSON.parse(JSON.stringify(PROVEEDORES_DEFAULT));
+    setStatus('err', 'Sin conexión — datos locales');
+  }
+}
+
+function arrayToObj(arr) {
+  const o = {};
+  arr.forEach(p => { o[p.id] = p; });
+  return o;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TABS
+// ─────────────────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav.tabs button').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel' + cap(tab)).classList.add('active');
+  event.target.classList.add('active');
+  if (tab === 'historial') renderHistorial();
+}
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAESTRO DE PROVEEDORES
+// ─────────────────────────────────────────────────────────────────────────────
+function renderMaestro() {
+  const q = document.getElementById('searchProv').value.toLowerCase();
+  const fq = document.getElementById('filterFreq').value;
+  const tbody = document.getElementById('maestroBody');
+  tbody.innerHTML = '';
+
+  const stats = calcularStats();
+
+  // Alerta banner: proveedores que empeoraron
+  const empeorados = maestro.filter(p => stats[p.id] && stats[p.id].tendencia === 'peor');
+  let alertBanner = document.getElementById('alertaBanner');
+  if (!alertBanner) {
+    alertBanner = document.createElement('div');
+    alertBanner.id = 'alertaBanner';
+    alertBanner.style.cssText = 'margin-bottom:12px';
+    const tableWrap = document.querySelector('#panelMaestro .table-wrap');
+    tableWrap.parentNode.insertBefore(alertBanner, tableWrap);
+  }
+  if (empeorados.length > 0) {
+    alertBanner.innerHTML = '<div style="background:var(--danger-light);border-left:3px solid var(--danger);border-radius:6px;padding:10px 14px;font-size:12px;color:var(--danger)">' +
+      '⚠️ <strong>' + empeorados.length + ' proveedor' + (empeorados.length>1?'es han':'ha') + ' empeorado su tiempo de entrega recientemente:</strong>' +
+      empeorados.map(p => '<span style="margin-left:8px;font-weight:700">' + p.nombre + '</span>').join('') +
+      '</div>';
+  } else {
+    alertBanner.innerHTML = '';
+  }
+
+  const tendenciaIcon = {
+    mejor:    '<span title="Mejorando: entrega mas rapido" style="color:var(--accent);font-size:15px;font-weight:700">&#8595;</span>',
+    peor:     '<span title="Empeorando: tarda mas" style="color:var(--danger);font-size:15px;font-weight:700">&#8593;</span>',
+    neutral:  '<span title="Estable" style="color:var(--text-muted);font-size:15px">&#8594;</span>',
+    sin_datos:'<span style="color:var(--text-muted);font-size:11px">—</span>',
+  };
+
+  maestro
+    .filter(p => p.nombre.toLowerCase().includes(q) && (!fq || p.frecuencia === fq))
+    .forEach(p => {
+      const st = stats[p.id] || { prom: null, count: 0, vals: [], tendencia: 'sin_datos' };
+      const diff = st.prom !== null ? (st.prom - (p.diasEntrega || 0)) : null;
+      let diffBadge = '<span class="badge badge-gray">Sin datos</span>';
+      if (diff !== null) {
+        if (diff <= 0) diffBadge = '<span class="badge badge-green">✓ ' + (diff === 0 ? 'Exacto' : Math.abs(diff) + ' días antes') + '</span>';
+        else if (diff <= 2) diffBadge = '<span class="badge badge-amber">+' + diff + ' días tarde</span>';
+        else diffBadge = '<span class="badge badge-red">+' + diff + ' días tarde</span>';
+      }
+
+      const rowStyle = st.tendencia === 'peor' ? 'background:var(--danger-light)' : '';
+      const subLabel = st.tendencia === 'peor'
+        ? '<span style="font-size:10px;color:var(--danger);display:block">⚠ Empeorando</span>'
+        : st.tendencia === 'mejor'
+          ? '<span style="font-size:10px;color:var(--accent);display:block">✓ Mejorando</span>'
+          : '';
+
+      const pocasOC = st.count >= 2 && st.count < 4
+        ? '<span style="font-size:9px;color:var(--text-muted)">(pocas OC)</span>' : '';
+
+      const tr = document.createElement('tr');
+      if (rowStyle) tr.setAttribute('style', rowStyle);
+      tr.innerHTML =
+        '<td><strong style="font-size:12px">' + p.nombre + '</strong>' + subLabel + '</td>' +
+        '<td><select onchange="cambiarCampo('' + p.id + '','frecuencia',this.value)">' +
+          ['SEMANAL','QUINCENAL','MENSUAL','22 DÍAS','BIMESTRAL'].map(f =>
+            '<option' + (p.frecuencia===f?' selected':'') + '>' + f + '</option>').join('') +
+        '</select></td>' +
+        '<td><input type="text" value="' + (p.diasOC||'') + '" onchange="cambiarCampo('' + p.id + '','diasOC',this.value)" placeholder="ej: 8, 22"></td>' +
+        '<td><input type="number" value="' + (p.diasEntrega||'') + '" min="0" onchange="cambiarCampo('' + p.id + '','diasEntrega',+this.value)" style="width:70px"> días</td>' +
+        '<td style="text-align:center">' + (st.prom !== null ? '<strong>' + st.prom + '</strong> días' : '<span style="color:var(--text-muted)">—</span>') + '</td>' +
+        '<td style="text-align:center">' + diffBadge + '</td>' +
+        '<td style="text-align:center">' + tendenciaIcon[st.tendencia] + ' ' + pocasOC + '</td>' +
+        '<td style="text-align:center">' + sparkline(st.vals, p.diasEntrega || null) + '</td>' +
+        '<td style="text-align:center"><span class="badge badge-gray">' + st.count + '</span></td>';
+      tbody.appendChild(tr);
+    });
+}
+
+function cambiarCampo(id, campo, valor) {
+  const p = maestro.find(x => x.id === id);
+  if (p) p[campo] = valor;
+}
+
+async function guardarMaestro() {
+  try {
+    await fbSet('compras/maestro', arrayToObj(maestro));
+    const msg = document.getElementById('savedMsg');
+    msg.style.display = 'inline';
+    setTimeout(() => msg.style.display = 'none', 2000);
+  } catch(e) { alert('Error al guardar: ' + e.message); }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CALENDARIO
+// ─────────────────────────────────────────────────────────────────────────────
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DIAS_SEM = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+function changeMonth(d) {
+  calMonth += d;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0)  { calMonth = 11; calYear--; }
+  renderCalendario();
+}
+
+function mesKey() { return `${calYear}-${String(calMonth+1).padStart(2,'0')}`; }
+
+function generarCalendario() {
+  if (!confirm(`¿Generar pedidos automáticos para ${MESES[calMonth]} ${calYear}? Esto agregará las OC estimadas (sin sobreescribir las que ya tengas).`)) return;
+
+  const mk = mesKey();
+  if (!calData[mk]) calData[mk] = {};
+
+  const diasEnMes = new Date(calYear, calMonth+1, 0).getDate();
+
+  maestro.forEach(p => {
+    const diasRaw = (p.diasOC || '').split(',').map(d => parseInt(d.trim())).filter(d => !isNaN(d) && d >= 1 && d <= diasEnMes);
+    if (diasRaw.length === 0) return;
+
+    diasRaw.forEach(dia => {
+      const dd = String(dia).padStart(2, '0');
+      const key = `${p.id}__${dd}`;
+      if (!calData[mk][key]) {
+        calData[mk][key] = {
+          provId: p.id,
+          provNombre: p.nombre,
+          fechaProg: `${calYear}-${String(calMonth+1).padStart(2,'0')}-${dd}`,
+          tipo: 'auto',
+          ocGenerada: 'no'
+        };
+      }
+    });
+  });
+
+  fbSet(`compras/calendario/${mk}`, calData[mk]);
+  renderCalendario();
+}
+
+function renderCalendario() {
+  document.getElementById('calMonthLabel').textContent = `${MESES[calMonth]} ${calYear}`;
+  const mk = mesKey();
+  const mesCalData = (calData[mk] || {});
+
+  // Construir mapa día → pills
+  const porDia = {};
+  Object.entries(mesCalData).forEach(([k, v]) => {
+    const dia = parseInt(v.fechaProg.split('-')[2]);
+    if (!porDia[dia]) porDia[dia] = [];
+    porDia[dia].push({ key: k, ...v });
+  });
+
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+
+  // Headers días semana
+  const diasWrap = document.createElement('div');
+  diasWrap.className = 'cal-grid';
+
+  DIAS_SEM.forEach(d => {
+    const h = document.createElement('div');
+    h.className = 'cal-day-header';
+    h.textContent = d;
+    diasWrap.appendChild(h);
+  });
+
+  const primerDia = new Date(calYear, calMonth, 1).getDay(); // 0=Dom
+  const totalDias = new Date(calYear, calMonth+1, 0).getDate();
+  const hoy = new Date();
+
+  for (let i = 0; i < primerDia; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell empty';
+    diasWrap.appendChild(cell);
+  }
+
+  for (let dia = 1; dia <= totalDias; dia++) {
+    const cell = document.createElement('div');
+    const esHoy = hoy.getFullYear()===calYear && hoy.getMonth()===calMonth && hoy.getDate()===dia;
+    cell.className = 'cal-cell' + (esHoy ? ' today' : '');
+
+    const dateSpan = document.createElement('span');
+    dateSpan.className = 'cal-date';
+    dateSpan.textContent = dia;
+    cell.appendChild(dateSpan);
+
+    (porDia[dia] || []).forEach(item => {
+      const pill = document.createElement('span');
+      const cls = item.ocGenerada === 'si' ? 'done' : item.tipo === 'auto' ? 'auto' : 'manual';
+      pill.className = `cal-pill ${cls}`;
+      pill.title = item.provNombre;
+      // nombre corto
+      const nombre = item.provNombre.length > 18 ? item.provNombre.slice(0,18)+'…' : item.provNombre;
+      pill.textContent = nombre;
+      pill.onclick = () => abrirModalPill(mk, item.key, item);
+      cell.appendChild(pill);
+    });
+
+    // + agregar pedido
+    const addBtn = document.createElement('span');
+    addBtn.style.cssText = 'font-size:10px;color:var(--text-muted);cursor:pointer;display:block;margin-top:2px';
+    addBtn.textContent = '+ pedido';
+    addBtn.onclick = () => abrirModalPillNuevo(dia);
+    cell.appendChild(addBtn);
+
+    diasWrap.appendChild(cell);
+  }
+
+  grid.appendChild(diasWrap);
+}
+
+async function limpiarCalendarioMes() {
+  if (!confirm(`¿Eliminar todos los pedidos de ${MESES[calMonth]} ${calYear}? Solo se borran los automáticos sin OC generada.`)) return;
+  const mk = mesKey();
+  if (!calData[mk]) return;
+  Object.keys(calData[mk]).forEach(k => {
+    if (calData[mk][k].ocGenerada !== 'si') delete calData[mk][k];
+  });
+  await fbSet(`compras/calendario/${mk}`, calData[mk]);
+  renderCalendario();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODAL PILL
+// ─────────────────────────────────────────────────────────────────────────────
+function abrirModalPill(mk, key, item) {
+  editingPillKey = key;
+  editingPillMes = mk;
+  document.getElementById('pillTitle').textContent = 'Pedido: ' + item.provNombre;
+  document.getElementById('pillProv').value = item.provNombre;
+  document.getElementById('pillFechaProg').value = item.fechaProg;
+  document.getElementById('pillOCGenerada').value = item.ocGenerada || 'no';
+  document.getElementById('pillFechaOCReal').value = item.fechaOCReal || '';
+  document.getElementById('pillFechaLlegada').value = item.fechaLlegada || '';
+  togglePillOCFields();
+  document.getElementById('modalPill').classList.add('open');
+}
+
+function abrirModalPillNuevo(dia) {
+  editingPillKey = null;
+  editingPillMes = mesKey();
+  const dd = String(dia).padStart(2,'0');
+  const fecha = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${dd}`;
+  document.getElementById('pillTitle').textContent = 'Agregar pedido';
+  document.getElementById('pillProv').value = '';
+  document.getElementById('pillProv').removeAttribute('readonly');
+  // Reemplazar input de proveedor por select
+  const wrap = document.getElementById('pillProv').parentNode;
+  wrap.innerHTML = '<label>PROVEEDOR</label><select id="pillProv"></select>';
+  const sel = document.getElementById('pillProv');
+  maestro.forEach(p => {
+    const o = document.createElement('option');
+    o.value = p.id; o.textContent = p.nombre;
+    sel.appendChild(o);
+  });
+  document.getElementById('pillFechaProg').value = fecha;
+  document.getElementById('pillOCGenerada').value = 'no';
+  document.getElementById('pillFechaOCReal').value = '';
+  document.getElementById('pillFechaLlegada').value = '';
+  togglePillOCFields();
+  document.getElementById('modalPill').classList.add('open');
+}
+
+document.getElementById('pillOCGenerada').addEventListener('change', togglePillOCFields);
+function togglePillOCFields() {
+  const v = document.getElementById('pillOCGenerada').value;
+  document.getElementById('pillOCFields').style.display = v === 'si' ? 'block' : 'none';
+}
+
+function cerrarModalPill() {
+  document.getElementById('modalPill').classList.remove('open');
+  editingPillKey = null; editingPillMes = null;
+  // Restaurar input readonly para proveedor
+  const wrap = document.getElementById('pillProv').closest('.field');
+  if (wrap) {
+    wrap.innerHTML = '<label>PROVEEDOR</label><input type="text" id="pillProv" readonly style="background:#F1F5F9">';
+  }
+}
+
+async function guardarPill() {
+  const mk = editingPillMes;
+  if (!calData[mk]) calData[mk] = {};
+
+  const provEl = document.getElementById('pillProv');
+  const isSelect = provEl.tagName === 'SELECT';
+  const provId = isSelect ? provEl.value : (editingPillKey ? editingPillKey.split('__')[0] : null);
+  const provNombre = isSelect ? maestro.find(p=>p.id===provId)?.nombre : provEl.value;
+  const fechaProg = document.getElementById('pillFechaProg').value;
+  const ocGenerada = document.getElementById('pillOCGenerada').value;
+  const fechaOCReal = document.getElementById('pillFechaOCReal').value;
+  const fechaLlegada = document.getElementById('pillFechaLlegada').value;
+
+  let key = editingPillKey;
+  if (!key) {
+    const dd = fechaProg.split('-')[2];
+    key = `${provId}__${dd}`;
+  }
+
+  const entry = { provId, provNombre, fechaProg, tipo: 'manual', ocGenerada };
+  if (fechaOCReal) entry.fechaOCReal = fechaOCReal;
+  if (fechaLlegada) entry.fechaLlegada = fechaLlegada;
+
+  calData[mk][key] = entry;
+  await fbSet(`compras/calendario/${mk}`, calData[mk]);
+
+  // Si tiene OC real, también guardar en historial
+  if (ocGenerada === 'si' && fechaOCReal) {
+    const ocId = `${provId}_${fechaOCReal.replace(/-/g,'')}`;
+    if (!historialOC[ocId]) {
+      historialOC[ocId] = { provId, fechaOC: fechaOCReal, fechaLlegada: fechaLlegada || '', notas: `Desde calendario ${mk}` };
+      await fbSet(`compras/historial/${ocId}`, historialOC[ocId]);
+    }
+  }
+
+  cerrarModalPill();
+  renderCalendario();
+  renderHistorial();
+}
+
+async function eliminarPill() {
+  if (!confirm('¿Quitar este pedido del calendario?')) return;
+  const mk = editingPillMes;
+  delete calData[mk][editingPillKey];
+  await fbSet(`compras/calendario/${mk}`, calData[mk]);
+  cerrarModalPill();
+  renderCalendario();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HISTORIAL OC
+// ─────────────────────────────────────────────────────────────────────────────
+function poblarSelectsProveedores() {
+  const sel = document.getElementById('ocProv');
+  sel.innerHTML = '';
+  const selH = document.getElementById('filterProvH');
+  selH.innerHTML = '<option value="">Todos los proveedores</option>';
+  maestro.forEach(p => {
+    const o = new Option(p.nombre, p.id);
+    sel.appendChild(o);
+    selH.appendChild(new Option(p.nombre, p.id));
+  });
+}
+
+function calcularStats() {
+  // Agrupar OC completas por proveedor, ordenadas por fechaOC asc
+  const byProv = {};
+  Object.values(historialOC).forEach(oc => {
+    if (!oc.fechaOC || !oc.fechaLlegada) return;
+    const dias = Math.round((new Date(oc.fechaLlegada) - new Date(oc.fechaOC)) / 86400000);
+    if (dias < 0 || dias > 60) return;
+    if (!byProv[oc.provId]) byProv[oc.provId] = [];
+    byProv[oc.provId].push({ dias, fecha: oc.fechaOC });
+  });
+
+  const out = {};
+  Object.entries(byProv).forEach(([id, arr]) => {
+    // Ordenar cronológico
+    arr.sort((a, b) => a.fecha.localeCompare(b.fecha));
+    const vals = arr.map(x => x.dias);
+    const count = vals.length;
+    const prom = Math.round(vals.reduce((a,b) => a+b, 0) / count);
+
+    // Tendencia: comparar promedio últimas 3 vs las anteriores
+    let tendencia = 'neutral'; // 'mejor' | 'peor' | 'neutral' | 'sin_datos'
+    if (count >= 4) {
+      const ultimas3 = vals.slice(-3);
+      const anteriores = vals.slice(0, -3);
+      const promUlt = ultimas3.reduce((a,b) => a+b, 0) / 3;
+      const promAnt = anteriores.reduce((a,b) => a+b, 0) / anteriores.length;
+      const diff = promUlt - promAnt;
+      if (diff <= -1) tendencia = 'mejor';       // entrega más rápido
+      else if (diff >= 1.5) tendencia = 'peor';  // tarda más
+      else tendencia = 'neutral';
+    } else if (count >= 2) {
+      // Con solo 2-3, comparar última vs primera
+      const diff = vals[vals.length-1] - vals[0];
+      if (diff <= -1) tendencia = 'mejor';
+      else if (diff >= 2) tendencia = 'peor';
+      else tendencia = 'neutral';
+    } else {
+      tendencia = 'sin_datos';
+    }
+
+    out[id] = { prom, count, vals, tendencia };
+  });
+
+  maestro.forEach(p => { if (!out[p.id]) out[p.id] = { prom: null, count: 0, vals: [], tendencia: 'sin_datos' }; });
+  return out;
+}
+
+// Genera un mini SVG sparkline con los valores de días de entrega
+function sparkline(vals, estimado) {
+  if (!vals || vals.length < 2) return '<span style="color:var(--text-muted);font-size:10px">—</span>';
+  const W = 80, H = 28, pad = 3;
+  const min = Math.max(0, Math.min(...vals) - 1);
+  const max = Math.max(...vals) + 1;
+  const range = max - min || 1;
+  const pts = vals.map((v, i) => {
+    const x = pad + (i / (vals.length - 1)) * (W - pad*2);
+    const y = H - pad - ((v - min) / range) * (H - pad*2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const lastV = vals[vals.length - 1];
+  const lastX = W - pad;
+  const lastY = H - pad - ((lastV - min) / range) * (H - pad*2);
+  // línea de estimado
+  const estY = estimado != null ? H - pad - ((estimado - min) / range) * (H - pad*2) : null;
+  const estLine = estY != null
+    ? `<line x1="${pad}" y1="${estY.toFixed(1)}" x2="${W-pad}" y2="${estY.toFixed(1)}" stroke="#D97706" stroke-width="1" stroke-dasharray="3,2" opacity=".6"/>`
+    : '';
+  const color = lastV > (estimado||lastV) ? '#C0392B' : '#1E6B3C';
+  return `<svg width="${W}" height="${H}" style="display:inline-block;vertical-align:middle">
+    ${estLine}
+    <polyline points="${pts.join(' ')}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round"/>
+    <circle cx="${lastX}" cy="${lastY.toFixed(1)}" r="2.5" fill="${color}"/>
+  </svg>`;
+}
+
+function renderHistorial() {
+  // Stats cards
+  const stats = calcularStats();
+  const totalOC = Object.keys(historialOC).length;
+  const pendientes = Object.values(historialOC).filter(o => !o.fechaLlegada).length;
+  const conDatos = Object.values(stats).filter(s => s.prom !== null).length;
+  const puntuales = Object.entries(stats).filter(([id, s]) => {
+    const p = maestro.find(x => x.id === id);
+    return s.prom !== null && p && (s.prom - (p.diasEntrega||0)) <= 0;
+  }).length;
+
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card"><div class="label">Total OC registradas</div><div class="value">${totalOC}</div></div>
+    <div class="stat-card"><div class="label">Pendientes de llegada</div><div class="value" style="color:var(--warn)">${pendientes}</div></div>
+    <div class="stat-card"><div class="label">Proveedores con historial</div><div class="value">${conDatos}</div></div>
+    <div class="stat-card"><div class="label">Cumplen en tiempo</div><div class="value" style="color:var(--accent)">${puntuales}</div><div class="sub">de ${conDatos} con datos</div></div>
+  `;
+
+  const filterP = document.getElementById('filterProvH').value;
+  const filterE = document.getElementById('filterEstadoH').value;
+
+  const tbody = document.getElementById('historialBody');
+  tbody.innerHTML = '';
+
+  const ocs = Object.entries(historialOC)
+    .filter(([_, o]) => {
+      if (filterP && o.provId !== filterP) return false;
+      if (filterE === 'pendiente' && o.fechaLlegada) return false;
+      if (filterE === 'completo' && !o.fechaLlegada) return false;
+      return true;
+    })
+    .sort((a, b) => (b[1].fechaOC || '').localeCompare(a[1].fechaOC || ''));
+
+  if (ocs.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="icon">📋</div><div>Sin OC registradas. Usa "+ Nueva OC" para empezar a capturar el historial de tus proveedores.</div></div></td></tr>`;
+    return;
+  }
+
+  ocs.forEach(([id, oc]) => {
+    const prov = maestro.find(p => p.id === oc.provId);
+    const provNombre = prov ? prov.nombre : (oc.provId || '—');
+    const estDias = prov ? (prov.diasEntrega || '—') : '—';
+
+    let diasReales = '—', diff = '', diffBadge = '';
+    if (oc.fechaOC && oc.fechaLlegada) {
+      const d = Math.round((new Date(oc.fechaLlegada) - new Date(oc.fechaOC)) / 86400000);
+      diasReales = d;
+      if (typeof estDias === 'number') {
+        const dif = d - estDias;
+        if (dif <= 0) diffBadge = `<span class="badge badge-green">${dif === 0 ? 'Exacto' : dif + ' días'}</span>`;
+        else if (dif <= 2) diffBadge = `<span class="badge badge-amber">+${dif} días</span>`;
+        else diffBadge = `<span class="badge badge-red">+${dif} días</span>`;
+      }
+    }
+
+    const estado = oc.fechaLlegada
+      ? '<span class="badge badge-green">Completo</span>'
+      : '<span class="badge badge-amber">Pendiente</span>';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong style="font-size:12px">${provNombre}</strong></td>
+      <td>${fmt(oc.fechaOC)}</td>
+      <td>
+        ${oc.fechaLlegada ? fmt(oc.fechaLlegada) :
+          `<input type="date" value="" onchange="registrarLlegada('${id}',this.value)" style="border:1px solid var(--border-strong);border-radius:4px;padding:3px 6px;font-size:11px">`}
+      </td>
+      <td style="text-align:center"><strong>${diasReales}</strong></td>
+      <td style="text-align:center">${estDias !== '—' ? estDias + ' días' : '—'}</td>
+      <td style="text-align:center">${diffBadge}</td>
+      <td>${estado}</td>
+      <td style="color:var(--text-muted);font-size:11px">${oc.notas || ''}</td>
+      <td><button class="btn btn-secondary btn-sm" onclick="editarOC('${id}')">✏️</button>
+          <button class="btn btn-danger btn-sm" style="margin-left:4px" onclick="eliminarOC('${id}')">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function fmt(fechaStr) {
+  if (!fechaStr) return '—';
+  const [y,m,d] = fechaStr.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+async function registrarLlegada(id, fecha) {
+  if (!fecha) return;
+  historialOC[id].fechaLlegada = fecha;
+  await fbUpdate(`compras/historial/${id}`, { fechaLlegada: fecha });
+  renderHistorial();
+  renderMaestro();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODAL OC
+// ─────────────────────────────────────────────────────────────────────────────
+function abrirModalOC(id) {
+  editingOCId = id;
+  document.getElementById('modalTitle').textContent = id ? 'Editar OC' : 'Registrar Orden de Compra';
+  if (id && historialOC[id]) {
+    const oc = historialOC[id];
+    document.getElementById('ocProv').value = oc.provId;
+    document.getElementById('ocFechaOC').value = oc.fechaOC || '';
+    document.getElementById('ocFechaLlegada').value = oc.fechaLlegada || '';
+    document.getElementById('ocNotas').value = oc.notas || '';
+  } else {
+    document.getElementById('ocProv').selectedIndex = 0;
+    document.getElementById('ocFechaOC').value = hoyStr();
+    document.getElementById('ocFechaLlegada').value = '';
+    document.getElementById('ocNotas').value = '';
+  }
+  document.getElementById('modalOC').classList.add('open');
+}
+
+function editarOC(id) { abrirModalOC(id); }
+
+function cerrarModal() {
+  document.getElementById('modalOC').classList.remove('open');
+  editingOCId = null;
+}
+
+async function guardarOC() {
+  const provId = document.getElementById('ocProv').value;
+  const fechaOC = document.getElementById('ocFechaOC').value;
+  const fechaLlegada = document.getElementById('ocFechaLlegada').value;
+  const notas = document.getElementById('ocNotas').value;
+
+  if (!provId || !fechaOC) { alert('Selecciona proveedor y fecha OC.'); return; }
+
+  const id = editingOCId || `${provId}_${fechaOC.replace(/-/g,'')}`;
+  const entry = { provId, fechaOC, fechaLlegada, notas };
+  historialOC[id] = entry;
+  await fbSet(`compras/historial/${id}`, entry);
+  cerrarModal();
+  renderHistorial();
+  renderMaestro();
+}
+
+async function eliminarOC(id) {
+  if (!confirm('¿Eliminar este registro de OC?')) return;
+  delete historialOC[id];
+  await fbRemove(`compras/historial/${id}`);
+  renderHistorial();
+  renderMaestro();
+}
+
+function hoyStr() {
+  const h = new Date();
+  return `${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-${String(h.getDate()).padStart(2,'0')}`;
+}
+
+// Cerrar modales con clic fuera
+document.getElementById('modalOC').addEventListener('click', e => { if (e.target === e.currentTarget) cerrarModal(); });
+document.getElementById('modalPill').addEventListener('click', e => { if (e.target === e.currentTarget) cerrarModalPill(); });
+</script>
+</body>
+</html>
