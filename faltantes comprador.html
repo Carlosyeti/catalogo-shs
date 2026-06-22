@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Faltantes SHS – Comprador</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4f8; color: #1a202c; }
+
+  header { background: #065f46; color: white; padding: 14px 16px; }
+  header h1 { font-size: 1.1rem; font-weight: 700; }
+  header p { font-size: 0.75rem; opacity: 0.7; margin-top: 2px; }
+
+  .summary-bar { display: -webkit-flex; display: flex; gap: 8px; padding: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .summary-card { -webkit-flex: 0 0 auto; flex: 0 0 auto; background: white; border-radius: 10px; padding: 12px 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); text-align: center; min-width: 90px; }
+  .summary-card .num { font-size: 1.5rem; font-weight: 800; color: #065f46; }
+  .summary-card .label { font-size: 0.7rem; color: #6b7280; font-weight: 600; margin-top: 2px; }
+  .summary-card.comprados .num { color: #10b981; }
+  .summary-card.pendientes .num { color: #f59e0b; }
+
+  .filter-bar { padding: 0 12px 12px; display: -webkit-flex; display: flex; gap: 8px; -webkit-flex-wrap: wrap; flex-wrap: wrap; }
+  .filter-btn { padding: 7px 14px; border-radius: 20px; border: 1.5px solid #d1d5db; background: white; font-size: 0.8rem; font-weight: 600; cursor: pointer; color: #6b7280; -webkit-appearance: none; }
+  .filter-btn.active { background: #065f46; color: white; border-color: #065f46; }
+
+  .search-bar { padding: 0 12px 12px; }
+  .search-input { width: 100%; padding: 11px 14px; border: 1.5px solid #d1d5db; border-radius: 8px; font-size: 16px; -webkit-appearance: none; }
+  .search-input:focus { outline: none; border-color: #065f46; }
+
+  .group-header { padding: 8px 12px 4px; }
+  .group-title { font-size: 0.75rem; font-weight: 700; color: #374151; background: #e5e7eb; padding: 6px 10px; border-radius: 6px; display: inline-block; }
+
+  .faltante-card { background: white; margin: 0 12px 8px; border-radius: 12px; padding: 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.07); border-left: 4px solid #f59e0b; }
+  .faltante-card.comprado { border-left-color: #10b981; }
+
+  .fc-top { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; -webkit-align-items: flex-start; align-items: flex-start; margin-bottom: 8px; }
+  .fc-vendedora-tag { font-size: 0.7rem; background: #e8f0fe; color: #1e3a5f; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+  .fc-vendedora-nombre { font-size: 0.75rem; color: #6b7280; font-weight: 600; }
+  .fc-articulo { font-size: 0.95rem; font-weight: 700; color: #1a202c; margin-bottom: 3px; }
+  .fc-clave { font-size: 0.75rem; color: #9ca3af; font-family: monospace; }
+
+  .fc-bottom { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; -webkit-align-items: center; align-items: center; margin-top: 10px; }
+  .fc-qty { font-size: 1rem; font-weight: 700; color: #374151; }
+
+  .btn-comprado { padding: 8px 16px; border-radius: 8px; border: none; font-size: 0.85rem; font-weight: 700; cursor: pointer; -webkit-appearance: none; }
+  .btn-comprado.pendiente { background: #f59e0b; color: white; }
+  .btn-comprado.done { background: #d1fae5; color: #065f46; }
+
+  .fc-time { font-size: 0.7rem; color: #9ca3af; margin-top: 6px; }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: #9ca3af; }
+  .empty-state .icon { font-size: 3rem; margin-bottom: 10px; }
+
+  .loading { text-align: center; padding: 40px; color: #6b7280; font-size: 0.9rem; }
+
+  .toast { position: fixed; bottom: 20px; left: 50%; -webkit-transform: translateX(-50%); transform: translateX(-50%); background: #065f46; color: white; padding: 12px 24px; border-radius: 20px; font-size: 0.9rem; font-weight: 600; z-index: 9999; opacity: 0; pointer-events: none; }
+  .toast.show { opacity: 1; }
+
+  .badge-new { display: inline-block; background: #ef4444; color: white; font-size: 0.65rem; padding: 1px 6px; border-radius: 10px; margin-left: 4px; }
+
+  #listContainer { padding-bottom: 80px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🛒 Panel Comprador – Faltantes SHS</h1>
+  <p id="statusBar">Conectando...</p>
+</header>
+
+<div class="summary-bar">
+  <div class="summary-card">
+    <div class="num" id="totalNum">–</div>
+    <div class="label">Total</div>
+  </div>
+  <div class="summary-card pendientes">
+    <div class="num" id="pendNum">–</div>
+    <div class="label">Pendientes</div>
+  </div>
+  <div class="summary-card comprados">
+    <div class="num" id="compNum">–</div>
+    <div class="label">Comprados</div>
+  </div>
+  <div class="summary-card">
+    <div class="num" id="clientesNum">–</div>
+    <div class="label">Clientes</div>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <button class="filter-btn active" onclick="setFiltro(this,'todos')">Todos</button>
+  <button class="filter-btn" onclick="setFiltro(this,'pendiente')">⏳ Pendientes</button>
+  <button class="filter-btn" onclick="setFiltro(this,'comprado')">✅ Comprados</button>
+  <button class="filter-btn" onclick="setFiltro(this,'TM1')">TM 1</button>
+  <button class="filter-btn" onclick="setFiltro(this,'TM2')">TM 2</button>
+  <button class="filter-btn" onclick="setFiltro(this,'TM3')">TM 3</button>
+</div>
+
+<div class="search-bar">
+  <input type="text" class="search-input" id="searchInput" placeholder="Buscar cliente o artículo..." oninput="renderLista()">
+</div>
+
+<div id="listContainer">
+  <div class="loading">Cargando datos...</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var todosFaltantes = [];
+var filtroActual = 'todos';
+
+var firebaseConfig = {
+  apiKey: "AIzaSyBbsrtNH2yHsn7lJrZQm3TJX5o5mOjJOj8",
+  authDomain: "surtidora-de-higienicos.firebaseapp.com",
+  databaseURL: "https://surtidora-de-higienicos-default-rtdb.firebaseio.com",
+  projectId: "surtidora-de-higienicos",
+  storageBucket: "surtidora-de-higienicos.appspot.com",
+  messagingSenderId: "812907879537",
+  appId: "1:812907879537:web:a6f0d3c8e5b2f1a9d4c721"
+};
+
+firebase.initializeApp(firebaseConfig);
+var db = firebase.database();
+
+// ── FILTRO ──
+function setFiltro(btn, f) {
+  filtroActual = f;
+  var btns = document.querySelectorAll('.filter-btn');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+  btn.classList.add('active');
+  renderLista();
+}
+window.setFiltro = setFiltro;
+
+// ── FIREBASE LISTENER ──
+db.ref('faltantes').on('value', function(snap) {
+  todosFaltantes = [];
+  if (snap.exists()) {
+    snap.forEach(function(child) {
+      var d = child.val();
+      d.id = child.key;
+      todosFaltantes.push(d);
+    });
+  }
+  todosFaltantes.sort(function(a,b){ return b.timestamp - a.timestamp; });
+  document.getElementById('statusBar').textContent = 'Actualización en tiempo real';
+  updateSummary();
+  renderLista();
+}, function(err) {
+  document.getElementById('statusBar').textContent = 'Error: ' + err.message;
+  document.getElementById('listContainer').innerHTML = '<div class="loading">Error de conexión: ' + err.message + '</div>';
+});
+
+function updateSummary() {
+  var total = todosFaltantes.length;
+  var pend = 0, comp = 0;
+  var clientes = {};
+  for (var i = 0; i < todosFaltantes.length; i++) {
+    var f = todosFaltantes[i];
+    if (f.comprado) comp++; else pend++;
+    clientes[f.cliente_clave] = 1;
+  }
+  document.getElementById('totalNum').textContent = total;
+  document.getElementById('pendNum').textContent = pend;
+  document.getElementById('compNum').textContent = comp;
+  document.getElementById('clientesNum').textContent = Object.keys(clientes).length;
+}
+
+// ── RENDER ──
+function renderLista() {
+  var q = document.getElementById('searchInput').value.trim().toLowerCase();
+
+  var lista = [];
+  for (var i = 0; i < todosFaltantes.length; i++) {
+    var f = todosFaltantes[i];
+    if (filtroActual === 'pendiente' && f.comprado) continue;
+    if (filtroActual === 'comprado' && !f.comprado) continue;
+    if (filtroActual === 'TM1' && f.vendedora !== 'TELEMARKETING 1') continue;
+    if (filtroActual === 'TM2' && f.vendedora !== 'TELEMARKETING 2') continue;
+    if (filtroActual === 'TM3' && f.vendedora !== 'TELEMARKETING 3') continue;
+    if (q) {
+      var cn = (f.cliente_nombre || '').toLowerCase();
+      var cc = (f.cliente_clave || '').toLowerCase();
+      var an = (f.articulo_nombre || '').toLowerCase();
+      var ac = (f.articulo_clave || '').toLowerCase();
+      if (cn.indexOf(q) < 0 && cc.indexOf(q) < 0 && an.indexOf(q) < 0 && ac.indexOf(q) < 0) continue;
+    }
+    lista.push(f);
+  }
+
+  var container = document.getElementById('listContainer');
+
+  if (lista.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>Sin faltantes</p></div>';
+    return;
+  }
+
+  // Agrupar por cliente
+  var grupos = {};
+  var orden = [];
+  for (var i = 0; i < lista.length; i++) {
+    var f = lista[i];
+    var key = (f.cliente_clave || '') + '||' + (f.cliente_nombre || '');
+    if (!grupos[key]) { grupos[key] = []; orden.push(key); }
+    grupos[key].push(f);
+  }
+
+  var vm = { 'TELEMARKETING 1': 'Jazmín', 'TELEMARKETING 2': 'Nancy', 'TELEMARKETING 3': 'Karen' };
+  var html = '';
+
+  for (var k = 0; k < orden.length; k++) {
+    var key = orden[k];
+    var parts = key.split('||');
+    var clave = parts[0];
+    var nombre = parts[1] || '';
+    var items = grupos[key];
+    var pendCount = 0;
+    for (var j = 0; j < items.length; j++) if (!items[j].comprado) pendCount++;
+
+    html += '<div class="group-header"><span class="group-title">🏢 [' + clave + '] ' + nombre;
+    if (pendCount > 0) html += ' <span class="badge-new">' + pendCount + ' pend.</span>';
+    html += '</span></div>';
+
+    for (var j = 0; j < items.length; j++) {
+      var f = items[j];
+      var label = vm[f.vendedora] || f.vendedora || '—';
+      var fecha = '';
+      try { fecha = new Date(f.timestamp).toLocaleString('es-MX'); } catch(e) { fecha = ''; }
+
+      html += '<div class="faltante-card' + (f.comprado ? ' comprado' : '') + '">';
+      html += '<div class="fc-top"><div class="fc-vendedora-nombre">' + label + '</div><span class="fc-vendedora-tag">' + (f.vendedora || '') + '</span></div>';
+      html += '<div class="fc-articulo">' + (f.articulo_nombre || '') + '</div>';
+      html += '<div class="fc-clave">' + (f.articulo_clave || '') + '</div>';
+      html += '<div class="fc-bottom"><div class="fc-qty">' + (f.cantidad || '') + ' ' + (f.unidad || '') + '</div>';
+      if (f.comprado) {
+        html += '<button class="btn-comprado done">✅ Comprado</button>';
+      } else {
+        html += '<button class="btn-comprado pendiente" onclick="marcarComprado(\'' + f.id + '\')">Marcar comprado</button>';
+      }
+      html += '</div><div class="fc-time">' + fecha + '</div></div>';
+    }
+  }
+
+  container.innerHTML = html;
+}
+window.renderLista = renderLista;
+
+// ── MARCAR COMPRADO ──
+function marcarComprado(id) {
+  db.ref('faltantes/' + id).update({
+    comprado: true,
+    comprado_at: Date.now()
+  }).then(function() {
+    showToast('✅ Marcado como comprado');
+  }).catch(function(e) {
+    showToast('❌ Error: ' + e.message);
+  });
+}
+window.marcarComprado = marcarComprado;
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 2500);
+}
+</script>
+
+</body>
+</html>
