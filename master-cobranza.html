@@ -153,6 +153,37 @@ tbody tr:hover td{background:var(--bg2)}
     </div>
   </div>
 
+  <!-- ── BANNER ALERTA GESTORA ───────────────────────────────── -->
+  <div id="alerta-gestora" style="display:none;margin:0;padding:14px 28px;background:#7f1d1d;border-bottom:2px solid #ef4444;color:#fef2f2;font-family:inherit">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:22px">⚠️</span>
+        <div>
+          <div style="font-weight:700;font-size:14px" id="alerta-titulo">Sin corte de cobranza del día</div>
+          <div style="font-size:12px;opacity:.85;margin-top:2px" id="alerta-detalle"></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button onclick="verRegistroIncumplimientos()" style="background:rgba(255,255,255,.15);color:#fef2f2;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📋 Ver registro del mes</button>
+        <button onclick="document.getElementById('alerta-gestora').style.display='none'" style="background:transparent;color:#fca5a5;border:none;font-size:18px;cursor:pointer;line-height:1">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL REGISTRO INCUMPLIMIENTOS -->
+  <div id="modal-incump" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:3000;align-items:center;justify-content:center">
+    <div style="background:#1e293b;border-radius:14px;padding:28px;max-width:680px;width:92%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.4)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <div>
+          <div style="font-weight:700;font-size:16px;color:#f1f5f9">📋 Registro de incumplimientos</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:3px">Días que la gestora subió tarde o no subió el corte / programación</div>
+        </div>
+        <button onclick="document.getElementById('modal-incump').style.display='none'" style="background:transparent;color:#94a3b8;border:none;font-size:22px;cursor:pointer">✕</button>
+      </div>
+      <div id="incump-body"></div>
+    </div>
+  </div>
+
   <div class="tab-bar">
     <button class="tab-btn active" id="tab-v" onclick="switchTab('v')">📉 Cartera Vencida</button>
     <button class="tab-btn" id="tab-g" onclick="switchTab('g')">📈 Cartera Global</button>
@@ -161,6 +192,7 @@ tbody tr:hover td{background:var(--bg2)}
     <button class="tab-btn" id="tab-f" onclick="switchTab('f')">🏦 Factoraje</button>
     <button class="tab-btn" id="tab-kf" onclick="switchTab('kf')">📊 KredFeed</button>
     <button class="tab-btn" id="tab-fl" onclick="switchTab('fl')">💰 Flujo</button>
+    <button class="tab-btn" id="tab-act" onclick="switchTab('act')">🕐 Actividad</button>
   </div>
 
   <!-- ═══ TAB 1: CARTERA VENCIDA ═══ -->
@@ -171,7 +203,13 @@ tbody tr:hover td{background:var(--bg2)}
         <div class="chart-card full">
           <div class="chart-title">Cobros diarios y acumulado mensual</div>
           <div class="chart-sub" id="chart-daily-sub">Monto cobrado por día — corte de cobranza Microsip</div>
+          <div id="semanas-cobranza" style="display:none;margin-bottom:14px"></div>
           <div id="wrap-daily"><div class="chart-wrap tall"><canvas id="chart-daily"></canvas></div></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Clientes en mora — histórico</div>
+          <div class="chart-sub" id="chart-clientes-mora-sub">Número de clientes con saldo vencido por día</div>
+          <div id="wrap-clientes-mora"><div class="chart-wrap tall"><canvas id="chart-clientes-mora"></canvas></div></div>
         </div>
         <div class="chart-card">
           <div class="chart-title">Distribución de mora</div>
@@ -363,6 +401,26 @@ tbody tr:hover td{background:var(--bg2)}
       </div>
       <input type="file" id="fi-global" accept=".xlsx,.xls" style="display:none">
 
+      <!-- Campo: Venta del mes cerrado -->
+      <div id="venta-mes-card" style="background:var(--card);border-radius:12px;box-shadow:var(--shadow);padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px">
+          <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">Venta del mes cerrado</div>
+          <div style="font-size:11px;color:var(--text3)">Necesario para calcular el DSO real. Actualiza cada inicio de mes.</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div>
+            <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:3px">Mes de referencia</label>
+            <input id="venta-mes-ref" type="month" style="padding:7px 10px;border:1px solid var(--border2);border-radius:7px;font-size:13px;font-family:inherit;outline:none">
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:3px">Monto de ventas ($)</label>
+            <input id="venta-mes-monto" type="number" min="0" step="0.01" placeholder="0.00" style="width:160px;padding:7px 10px;border:1px solid var(--border2);border-radius:7px;font-size:13px;font-family:inherit;outline:none;text-align:right">
+          </div>
+          <button onclick="guardarVentaMes()" style="background:var(--navy);color:white;border:none;border-radius:8px;padding:8px 20px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:14px">Guardar</button>
+        </div>
+        <div id="venta-mes-saved" style="font-size:12px;color:var(--green);display:none;width:100%">✓ Guardado</div>
+      </div>
+
       <div class="kpi-grid" id="kpis-global">
         <div class="empty-state" style="grid-column:1/-1"><div style="font-size:36px;margin-bottom:10px">📂</div><p>Carga el archivo de cartera global para ver el análisis completo</p></div>
       </div>
@@ -410,35 +468,8 @@ tbody tr:hover td{background:var(--bg2)}
   <div id="content-f" class="tab-content">
     <div class="main">
 
-      <!-- ══ PANEL: FACTURAS EN FACTORAJE ══ -->
-      <div style="background:var(--navy);border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-        <div>
-          <div style="color:white;font-weight:700;font-size:15px">📌 Facturas en Factoraje</div>
-          <div style="color:rgba(255,255,255,.5);font-size:12px;margin-top:2px" id="fp-sub">Cargando…</div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <div id="fp-alerta" style="display:none;background:#b91c1c;color:white;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700"></div>
-          <button onclick="limpiarVencidas()" id="btn-limpiar" style="display:none;background:#1a3a5c;color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:inherit">🗑 Quitar vencidas</button>
-        </div>
-      </div>
-
-      <!-- Buckets semáforo -->
-      <div id="fp-buckets" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px"></div>
-
-      <!-- Tabla facturas en factoraje -->
-      <div class="table-card" id="fp-card" style="margin-bottom:24px">
-        <div class="table-header">
-          <div><div class="table-title">Detalle — facturas ingresadas a factoraje</div>
-          <div class="table-sub">Selecciona una fila y usa el botón para retirarla cuando se cobre</div></div>
-          <div id="fp-total" style="font-size:13px;font-weight:700;color:var(--teal)"></div>
-        </div>
-        <div id="fp-tabla"><div class="empty-state" style="padding:40px 20px"><div style="font-size:32px;margin-bottom:8px">📭</div><p style="color:var(--text2)">Todavía no hay facturas ingresadas a factoraje.<br>Carga el Excel y selecciónalas abajo.</p></div></div>
-      </div>
-
-      <hr style="border:none;border-top:2px dashed var(--border2);margin-bottom:20px">
-
       <!-- ══ PANEL: BUSCAR FACTURAS ELEGIBLES ══ -->
-      <div style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">🔎 Buscar facturas elegibles para ingresar</div>
+      <div style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">🔎 Seleccionar facturas para solicitar en Factoraje</div>
 
       <div class="upload-card" id="dz-factor" onclick="document.getElementById('fi-factor').click()">
         <div style="font-size:22px">📂</div>
@@ -629,6 +660,8 @@ tbody tr:hover td{background:var(--bg2)}
               </div>
               <div style="display:flex;align-items:center;gap:8px">
                 <span id="pend-count-badge" style="background:rgba(255,255,255,.2);color:white;border-radius:8px;padding:4px 14px;font-size:13px;font-weight:700">0</span>
+                <button onclick="limpiarPendientesResueltos()" style="background:rgba(163,45,45,.35);color:#fca5a5;border:1px solid rgba(163,45,45,.5);border-radius:7px;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">🗑 Limpiar resueltos</button>
+                <button onclick="descartarTodosPendientes()" style="background:rgba(100,100,100,.35);color:#e5e7eb;border:1px solid rgba(150,150,150,.5);border-radius:7px;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">✕ Descartar todos</button>
                 <button onclick="togglePendientes()" id="btn-toggle-pend" style="background:rgba(255,255,255,.15);color:white;border:1px solid rgba(255,255,255,.25);border-radius:7px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">▼ Ver todo</button>
               </div>
             </div>
@@ -673,6 +706,39 @@ tbody tr:hover td{background:var(--bg2)}
     </div>
   </div>
 
+  <!-- ── TAB ACTIVIDAD ──────────────────────────────────────── -->
+  <div id="content-act" class="tab-content">
+    <div style="max-width:900px;margin:0 auto;padding:28px 20px">
+
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:24px">
+        <div>
+          <div style="font-weight:700;font-size:18px;color:var(--text1)">🕐 Registro de actividad — Gestora de cobranza</div>
+          <div style="font-size:13px;color:var(--text2);margin-top:4px">Fecha y hora exacta de cada carga de cartera y corte diario</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <select id="act-filtro-mes" onchange="renderActividad()" style="background:var(--bg2);color:var(--text1);border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:13px;font-family:inherit">
+            <option value="">Todos los meses</option>
+          </select>
+          <select id="act-filtro-tipo" onchange="renderActividad()" style="background:var(--bg2);color:var(--text1);border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:13px;font-family:inherit">
+            <option value="">Todos los tipos</option>
+            <option value="cartera">Solo cartera vencida</option>
+            <option value="corte">Solo corte diario</option>
+          </select>
+          <button onclick="renderActividad()" style="background:var(--blue);color:white;border:none;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">↻ Actualizar</button>
+        </div>
+      </div>
+
+      <!-- KPIs resumen -->
+      <div id="act-kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px"></div>
+
+      <!-- Tabla logs -->
+      <div id="act-tabla-wrap" style="background:var(--bg2);border-radius:12px;border:1px solid var(--border);overflow:hidden">
+        <div id="act-tabla-body" style="padding:40px;text-align:center;color:var(--text2);font-size:13px">Cargando registros…</div>
+      </div>
+
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -692,12 +758,12 @@ var todayStr=function(){var d=new Date();return d.getFullYear()+'-'+String(d.get
 function sanitizeKey(n){return(n||'').replace(/[.#$\/\[\]]/g,'_');}
 var pct=function(n){return(isNaN(n)?0:(n||0)).toFixed(1)+'%';};
 var esc=function(s){return(''+s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');};
-function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},3000);}
+function showToast(msg){var t=document.getElementById('toast');if(!t){console.log('Toast:',msg);return;}t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},3000);}
 function destroyChart(id){if(CHARTS[id]){CHARTS[id].destroy();delete CHARTS[id];}}
 
 function switchTab(tab){
   ACTIVE_TAB=tab;
-  ['v','g','r','b','f','kf','fl'].forEach(function(t){
+  ['v','g','r','b','f','kf','fl','act'].forEach(function(t){
     document.getElementById('tab-'+t).classList.toggle('active',t===tab);
     document.getElementById('content-'+t).classList.toggle('active',t===tab);
   });
@@ -707,6 +773,7 @@ function switchTab(tab){
   if(tab==='f'){renderPanelFP();renderFactoraje();}
   if(tab==='kf')renderKF();
   if(tab==='fl'){renderFlujo();actualizarListaProveedores();}
+  if(tab==='act')renderActividad();
 }
 
 function renderBono(){
@@ -998,6 +1065,7 @@ function initMC(onOk,onErr){
       DB_MC.ref('cobranza/data').once('value').then(function(snap){
         RAW=snap.val()||{};
         if(onOk) onOk();
+        evaluarAlertaGestora();
       }).catch(function(e){ if(onErr) onErr(e.message); });
     }).catch(function(e){ if(onErr) onErr(e.message); });
   }catch(e){ if(onErr) onErr(e.message); }
@@ -1029,6 +1097,7 @@ function loadData(manual){
     renderVencida();
     if(manual) showToast('✓ Datos actualizados — '+(RAW.cobros_diarios||[]).length+' cortes cargados');
     if(syncEl) syncEl.textContent='Sync: '+LAST_SYNC.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+    evaluarAlertaGestora();
   }).catch(function(){
     if(manual) showToast('⚠ No se pudo conectar a Firebase');
   });
@@ -1043,6 +1112,269 @@ function filterByPeriod(items,field){
 }
 function applyPeriod(){renderVencida();}
 
+// ══ ALERTA GESTORA ══════════════════════════════════════════════
+// Horario límite: 13:30. Se evalúa al cargar datos (loadData).
+// Registra incumplimientos en Firebase: cobranza/incumplimientos/{yyyy-mm-dd}
+// Campos: fecha, horaDeteccion, tieneCorte, tieneProgramacion, tipo
+
+var ALERTA_HOY_REGISTRADA=false;
+
+function evaluarAlertaGestora(){
+  var now=new Date();
+  var hoy=todayStr();
+  var hora=now.getHours()*60+now.getMinutes(); // minutos del día
+  var limite=13*60+30; // 13:30
+
+  // Solo evaluar en días hábiles lun-vie (0=dom,6=sab)
+  var diaSemana=now.getDay();
+  if(diaSemana===0||diaSemana===6) return;
+
+  // Solo mostrar alerta si ya pasó la 1:30 pm
+  if(hora<limite) return;
+
+  if(!RAW) return;
+
+  // ¿Hay corte del día de AYER? (la gestora siempre sube el corte del día anterior)
+  var ayer=new Date(now);ayer.setDate(ayer.getDate()-1);
+  var ayerStr=ayer.getFullYear()+'-'+String(ayer.getMonth()+1).padStart(2,'0')+'-'+String(ayer.getDate()).padStart(2,'0');
+  var cobros=RAW.cobros_diarios||[];
+  var tieneCorte=cobros.some(function(c){return c.d===ayerStr;});
+
+  // ¿Hay clientes con seguimiento programado para hoy o futuro (es decir, ya programó)?
+  var followups=RAW.followups||{};
+  var tieneProgramacion=Object.keys(followups).some(function(k){
+    var fu=followups[k];
+    return fu&&fu.p&&fu.p>=hoy;
+  });
+
+  var hayProblema=!tieneCorte||!tieneProgramacion;
+  if(!hayProblema) return;
+
+  // Mostrar banner
+  var banner=document.getElementById('alerta-gestora');
+  var titulo=document.getElementById('alerta-titulo');
+  var detalle=document.getElementById('alerta-detalle');
+  if(!banner||!titulo||!detalle) return;
+
+  var msgs=[];
+  if(!tieneCorte) msgs.push('no se ha subido el corte de cobranza del '+ayerStr.split('-').reverse().join('/'));
+  if(!tieneProgramacion) msgs.push('no hay clientes programados para cobro');
+  var horaStr=now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+
+  titulo.textContent='⚠ Son las '+horaStr+' — '+msgs[0].charAt(0).toUpperCase()+msgs[0].slice(1);
+  detalle.textContent='Límite: 1:30 pm. '+( msgs.length>1?msgs.join(' y ').charAt(0).toUpperCase()+msgs.join(' y ').slice(1):'');
+  banner.style.display='block';
+
+  // Registrar incumplimiento en Firebase (solo una vez por día)
+  if(!ALERTA_HOY_REGISTRADA&&DB_MC){
+    ALERTA_HOY_REGISTRADA=true;
+    var tipo=(!tieneCorte&&!tieneProgramacion)?'ambos':(!tieneCorte?'sin_corte':'sin_programacion');
+    var reg={
+      fecha:hoy,
+      horaDeteccion:horaStr,
+      tieneCorte:tieneCorte,
+      tieneProgramacion:tieneProgramacion,
+      tipo:tipo
+    };
+    DB_MC.ref('cobranza/incumplimientos/'+hoy).transaction(function(existing){
+      // Solo escribe si no existe registro previo del día (no sobreescribir)
+      return existing===null?reg:existing;
+    });
+  }
+}
+
+// ══ TAB ACTIVIDAD ═══════════════════════════════════════════════
+var _ACT_CACHE=null;
+
+function renderActividad(){
+  if(!DB_MC){
+    document.getElementById('act-tabla-body').innerHTML='<div style="padding:40px;text-align:center;color:var(--text2)">Sin conexión a Firebase</div>';
+    return;
+  }
+
+  var wrapBody=document.getElementById('act-tabla-body');
+  wrapBody.innerHTML='<div style="padding:40px;text-align:center;color:var(--text2)">Cargando registros…</div>';
+
+  DB_MC.ref('cobranza/logs_carga').orderByKey().once('value').then(function(snap){
+    var data=snap.val()||{};
+    var logs=Object.values(data).sort(function(a,b){return b.ts-a.ts;}); // más reciente primero
+    _ACT_CACHE=logs;
+
+    // Llenar filtro de meses
+    var meses={};
+    logs.forEach(function(l){if(l.fecha)meses[l.fecha.substring(0,7)]=true;});
+    var mesSel=document.getElementById('act-filtro-mes');
+    var mesActual=mesSel.value;
+    mesSel.innerHTML='<option value="">Todos los meses</option>';
+    Object.keys(meses).sort().reverse().forEach(function(m){
+      var p=m.split('-');
+      var label=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(p[1])-1]+' '+p[0];
+      mesSel.innerHTML+='<option value="'+m+'"'+(m===mesActual?' selected':'')+'>'+label+'</option>';
+    });
+
+    // Aplicar filtros
+    var filtroMes=document.getElementById('act-filtro-mes').value;
+    var filtroTipo=document.getElementById('act-filtro-tipo').value;
+    var filtered=logs.filter(function(l){
+      if(filtroMes&&(!l.fecha||l.fecha.substring(0,7)!==filtroMes))return false;
+      if(filtroTipo&&l.tipo!==filtroTipo)return false;
+      return true;
+    });
+
+    _renderActKpis(filtered,logs);
+    _renderActTabla(filtered);
+  }).catch(function(){
+    wrapBody.innerHTML='<div style="padding:40px;text-align:center;color:var(--red)">Error al cargar registros</div>';
+  });
+}
+
+function _renderActKpis(filtered, all){
+  var kpisEl=document.getElementById('act-kpis');
+  if(!kpisEl) return;
+
+  // Calcular hora promedio de carga (en minutos desde medianoche)
+  var LIMITE=13*60+30;
+  var tardios=0, totalMin=0, count=0;
+  var horasPorTipo={cartera:[],corte:[]};
+
+  filtered.forEach(function(l){
+    if(!l.hora) return;
+    var parts=l.hora.split(':');
+    var min=parseInt(parts[0])*60+parseInt(parts[1]);
+    totalMin+=min; count++;
+    if(min>LIMITE) tardios++;
+    if(l.tipo==='cartera') horasPorTipo.cartera.push(min);
+    if(l.tipo==='corte') horasPorTipo.corte.push(min);
+  });
+
+  function avgMin(arr){
+    if(!arr.length) return null;
+    var avg=arr.reduce(function(a,b){return a+b;},0)/arr.length;
+    return Math.round(avg/60)*60+(Math.round((avg%60)/5)*5); // redondear a 5min
+  }
+  function fmtMin(m){if(m===null)return'—';return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');}
+
+  var pctTardio=count?Math.round(tardios/count*100):0;
+  var avgCartera=avgMin(horasPorTipo.cartera);
+  var avgCorte=avgMin(horasPorTipo.corte);
+
+  var kpis=[
+    {label:'Total registros',val:filtered.length,sub:'en el período seleccionado',color:'blue'},
+    {label:'Cargas tardías (>1:30pm)',val:tardios+' ('+pctTardio+'%)',sub:'del total de cargas',color:pctTardio>30?'red':'amber'},
+    {label:'Hora prom. cartera',val:fmtMin(avgCartera),sub:'hora promedio de subida',color:'blue'},
+    {label:'Hora prom. corte',val:fmtMin(avgCorte),sub:'hora promedio de subida',color:'blue'}
+  ];
+
+  var colorMap={blue:'var(--blue)',red:'var(--red)',amber:'var(--amber)',green:'var(--green)'};
+  kpisEl.innerHTML=kpis.map(function(k){
+    return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 18px">'+
+      '<div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">'+k.label+'</div>'+
+      '<div style="font-size:22px;font-weight:700;color:'+colorMap[k.color]+'">'+k.val+'</div>'+
+      '<div style="font-size:11px;color:var(--text2);margin-top:3px">'+k.sub+'</div>'+
+      '</div>';
+  }).join('');
+}
+
+function _renderActTabla(logs){
+  var wrap=document.getElementById('act-tabla-body');
+  if(!logs.length){
+    wrap.innerHTML='<div style="padding:48px;text-align:center;color:var(--text2);font-size:13px">Sin registros para el período seleccionado</div>';
+    return;
+  }
+
+  var LIMITE=13*60+30;
+  var tipoLabel={cartera:'📋 Cartera vencida',corte:'💰 Corte diario'};
+  var tipoColor={cartera:'var(--blue)',corte:'var(--green)'};
+
+  var html='<table style="width:100%;border-collapse:collapse;font-size:13px">';
+  html+='<thead><tr style="border-bottom:2px solid var(--border)">';
+  ['Fecha','Hora','Tipo','Detalle','Estado'].forEach(function(h){
+    html+='<th style="text-align:left;padding:12px 16px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em">'+h+'</th>';
+  });
+  html+='</tr></thead><tbody>';
+
+  logs.forEach(function(l,i){
+    var p=l.fecha?l.fecha.split('-'):['','',''];
+    var fechaFmt=p[2]+'/'+p[1]+'/'+p[0];
+    var parts=l.hora?l.hora.split(':'):[0,0];
+    var minutos=parseInt(parts[0])*60+parseInt(parts[1]);
+    var tarde=minutos>LIMITE;
+    var estadoBg=tarde?'rgba(239,68,68,.12)':'rgba(74,222,128,.12)';
+    var estadoColor=tarde?'var(--red)':'var(--green)';
+    var estadoTxt=tarde?'⚠ Tarde':'✓ A tiempo';
+    var rowBg=i%2===0?'transparent':'rgba(255,255,255,.02)';
+
+    html+='<tr style="border-bottom:1px solid var(--border);background:'+rowBg+'">';
+    html+='<td style="padding:12px 16px;font-weight:600;color:var(--text1)">'+fechaFmt+'</td>';
+    html+='<td style="padding:12px 16px;font-family:monospace;font-size:13px;color:'+(tarde?'var(--red)':'var(--text1)')+'">'+( l.hora||'—')+'</td>';
+    html+='<td style="padding:12px 16px"><span style="background:'+(tipoColor[l.tipo]||'var(--text2)')+'22;color:'+(tipoColor[l.tipo]||'var(--text2)')+';border:1px solid '+(tipoColor[l.tipo]||'var(--text2)')+'44;border-radius:5px;padding:3px 9px;font-size:11px;font-weight:600">'+(tipoLabel[l.tipo]||l.tipo)+'</span></td>';
+    html+='<td style="padding:12px 16px;color:var(--text2);font-size:12px">'+( l.detalle||'—')+'</td>';
+    html+='<td style="padding:12px 16px"><span style="background:'+estadoBg+';color:'+estadoColor+';border-radius:5px;padding:3px 9px;font-size:11px;font-weight:600">'+estadoTxt+'</span></td>';
+    html+='</tr>';
+  });
+
+  html+='</tbody></table>';
+  wrap.innerHTML=html;
+}
+
+function verRegistroIncumplimientos(){
+  document.getElementById('modal-incump').style.display='flex';
+  var body=document.getElementById('incump-body');
+  body.innerHTML='<div style="color:#94a3b8;font-size:13px">Cargando…</div>';
+
+  if(!DB_MC){
+    body.innerHTML='<div style="color:#94a3b8">Sin conexión a Firebase</div>';
+    return;
+  }
+
+  // Leer el mes actual
+  var now=new Date();
+  var mesKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+
+  DB_MC.ref('cobranza/incumplimientos').orderByKey().startAt(mesKey).endAt(mesKey+'\uf8ff').once('value').then(function(snap){
+    var data=snap.val()||{};
+    var keys=Object.keys(data).sort().reverse();
+
+    if(!keys.length){
+      body.innerHTML='<div style="text-align:center;padding:32px;color:#4ade80;font-size:28px">✅</div><div style="text-align:center;color:#94a3b8;font-size:13px">Sin incumplimientos registrados este mes</div>';
+      return;
+    }
+
+    var tipoLabel={sin_corte:'Sin corte',sin_programacion:'Sin programación',ambos:'Sin corte ni programación'};
+    var tipoColor={sin_corte:'#f59e0b',sin_programacion:'#f59e0b',ambos:'#ef4444'};
+
+    var html='<div style="margin-bottom:12px;font-size:12px;color:#94a3b8">'+keys.length+' incumplimiento'+(keys.length===1?'':'s')+' en '+mesKey+'</div>';
+    html+='<table style="width:100%;border-collapse:collapse;font-size:13px">';
+    html+='<thead><tr style="border-bottom:1px solid rgba(255,255,255,.1)">';
+    html+='<th style="text-align:left;padding:8px 10px;color:#94a3b8;font-weight:600">Fecha</th>';
+    html+='<th style="text-align:left;padding:8px 10px;color:#94a3b8;font-weight:600">Hora detección</th>';
+    html+='<th style="text-align:left;padding:8px 10px;color:#94a3b8;font-weight:600">Tipo</th>';
+    html+='<th style="text-align:center;padding:8px 10px;color:#94a3b8;font-weight:600">Corte</th>';
+    html+='<th style="text-align:center;padding:8px 10px;color:#94a3b8;font-weight:600">Programación</th>';
+    html+='</tr></thead><tbody>';
+
+    keys.forEach(function(k){
+      var r=data[k];
+      var p=k.split('-');
+      var fechaFmt=p[2]+'/'+p[1]+'/'+p[0];
+      var color=tipoColor[r.tipo]||'#f59e0b';
+      html+='<tr style="border-bottom:1px solid rgba(255,255,255,.06)">';
+      html+='<td style="padding:10px;font-weight:600;color:#f1f5f9">'+fechaFmt+'</td>';
+      html+='<td style="padding:10px;color:#94a3b8">'+( r.horaDeteccion||'—')+'</td>';
+      html+='<td style="padding:10px"><span style="background:'+color+'22;color:'+color+';border:1px solid '+color+'44;border-radius:5px;padding:2px 8px;font-size:11px;font-weight:600">'+(tipoLabel[r.tipo]||r.tipo)+'</span></td>';
+      html+='<td style="padding:10px;text-align:center">'+(r.tieneCorte?'<span style="color:#4ade80">✓</span>':'<span style="color:#ef4444">✗</span>')+'</td>';
+      html+='<td style="padding:10px;text-align:center">'+(r.tieneProgramacion?'<span style="color:#4ade80">✓</span>':'<span style="color:#ef4444">✗</span>')+'</td>';
+      html+='</tr>';
+    });
+
+    html+='</tbody></table>';
+    body.innerHTML=html;
+  }).catch(function(){
+    body.innerHTML='<div style="color:#ef4444">Error al cargar registros</div>';
+  });
+}
+
+
 // ══ MÉTRICAS CARTERA VENCIDA ════════════════════════════════════
 function computeMetrics(){
   var clients=RAW.clients||[],followups=RAW.followups||{};
@@ -1050,6 +1382,9 @@ function computeMetrics(){
   var cobros=RAW.cobros_diarios||[];  // corte diario real
   var histCartera=RAW.historico_cartera||[];
   histCartera=histCartera.slice().sort(function(a,b){return a.d>b.d?1:-1;});
+
+  // Guardar snapshot del día si clients tiene datos
+  if(clients.length>0) guardarSnapshotClientesMora(clients, histCartera);
 
   var totalCartera=clients.reduce(function(a,c){return a+(c.tot||0);},0);
   var totalClientes=clients.length;
@@ -1207,6 +1542,61 @@ function renderVencida(){
     ?'Corte de cobranza real Microsip — '+M.cobrosFiltered.length+' días en el período seleccionado'
     :'Estimado por comparación de reportes de cartera vencida';
 
+  // ── RESUMEN SEMANAL ──────────────────────────────────────────
+  (function(){
+    var semEl=document.getElementById('semanas-cobranza');
+    if(!semEl||!days||!days.length){if(semEl)semEl.style.display='none';return;}
+
+    // Agrupar días por semana calendario (lunes a domingo)
+    var semanas={};
+    days.forEach(function(d){
+      var dt=new Date(d+'T00:00:00');
+      // Obtener lunes de esa semana
+      var dow=dt.getDay(); // 0=dom,1=lun,...,6=sab
+      var diffToMon=dow===0?-6:1-dow;
+      var lunes=new Date(dt);
+      lunes.setDate(dt.getDate()+diffToMon);
+      var domingo=new Date(lunes);
+      domingo.setDate(lunes.getDate()+6);
+      // Clave: lunes ISO
+      var key=lunes.toISOString().split('T')[0];
+      if(!semanas[key]){semanas[key]={lunes:lunes,domingo:domingo,total:0,dias:0};}
+      semanas[key].total+=M.byDay[d]||0;
+      semanas[key].dias++;
+    });
+
+    var keys=Object.keys(semanas).sort();
+    if(!keys.length){semEl.style.display='none';return;}
+
+    // Encontrar máximo para barra proporcional
+    var maxTotal=Math.max.apply(null,keys.map(function(k){return semanas[k].total;}));
+
+    var meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    function fmtShort(dt){return dt.getDate()+' '+meses[dt.getMonth()];}
+
+    var html='<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:stretch">';
+    keys.forEach(function(key){
+      var s=semanas[key];
+      var pct=maxTotal>0?Math.round((s.total/maxTotal)*100):0;
+      var barColor=s.total===maxTotal?'var(--green)':'var(--blue)';
+      html+=
+        '<div style="flex:1;min-width:120px;background:var(--bg2);border-radius:10px;padding:12px 14px;border:1px solid var(--border)">'+
+          '<div style="font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">'+
+            fmtShort(s.lunes)+' – '+fmtShort(s.domingo)+
+          '</div>'+
+          '<div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:8px">'+fmx(s.total)+'</div>'+
+          '<div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden">'+
+            '<div style="height:100%;width:'+pct+'%;background:'+barColor+';border-radius:2px;transition:width .4s"></div>'+
+          '</div>'+
+          '<div style="font-size:10px;color:var(--text2);margin-top:5px">'+s.dias+' día'+(s.dias===1?'':'s')+' con cobro</div>'+
+        '</div>';
+    });
+    html+='</div>';
+
+    semEl.innerHTML=html;
+    semEl.style.display='block';
+  })();
+
   destroyChart('chart-daily');
   if(days.length>0){
     restoreCanvas('wrap-daily','chart-daily','tall');
@@ -1230,6 +1620,9 @@ function renderVencida(){
   } else {
     showEmpty('wrap-daily','📂','Sin cobros registrados en el período seleccionado.<br>El gestor debe subir el <strong>corte diario de cobranza</strong> de Microsip.');
   }
+
+  // ── GRÁFICA: Clientes en mora histórico ──
+  renderGraficaClientesMora();
 
   // ── GRÁFICA: Distribución de mora ──
   destroyChart('chart-mora');
@@ -1530,6 +1923,48 @@ function processGlobal(file){
   reader.readAsArrayBuffer(file);
 }
 
+// ── VENTA MES CERRADO ─────────────────────────────────────────
+async function cargarVentaMes(){
+  if(DB_MC){
+    var s=await DB_MC.ref('cobranza/venta_mes').get();
+    return s.val()?JSON.parse(s.val()):null;
+  }
+  var s=localStorage.getItem('cobranza:venta_mes');
+  return s?JSON.parse(s):null;
+}
+async function guardarVentaMes(){
+  var mes=document.getElementById('venta-mes-ref').value;
+  var monto=parseFloat(document.getElementById('venta-mes-monto').value);
+  if(!mes){showToast('Selecciona el mes de referencia');return;}
+  if(!monto||monto<=0){showToast('Ingresa un monto válido');return;}
+  var obj={mes:mes,monto:monto,fechaGuardado:new Date().toISOString().split('T')[0]};
+  // Guardar SIEMPRE en localStorage para que renderGlobal lo lea sincrónicamente
+  localStorage.setItem('cobranza:venta_mes',JSON.stringify(obj));
+  if(DB_MC){await DB_MC.ref('cobranza/venta_mes').set(JSON.stringify(obj));}
+  var saved=document.getElementById('venta-mes-saved');
+  if(saved){saved.style.display='block';setTimeout(function(){saved.style.display='none';},3000);}
+  showToast('✓ Venta de '+mes+' guardada — '+fmx(monto));
+  // Re-render para actualizar DSO
+  renderGlobal();
+}
+async function iniciarVentaMes(){
+  var vm=await cargarVentaMes();
+  // Sync to localStorage so renderGlobal can read it synchronously
+  if(vm) localStorage.setItem('cobranza:venta_mes', JSON.stringify(vm));
+  if(vm){
+    var refEl=document.getElementById('venta-mes-ref');
+    var montoEl=document.getElementById('venta-mes-monto');
+    if(refEl)refEl.value=vm.mes||'';
+    if(montoEl)montoEl.value=vm.monto||'';
+  } else {
+    // Default: mes anterior
+    var d=new Date();d.setMonth(d.getMonth()-1);
+    var mesAnt=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    var refEl=document.getElementById('venta-mes-ref');
+    if(refEl)refEl.value=mesAnt;
+  }
+}
+
 function renderGlobal(){
   if(!GLOBAL||!GLOBAL.length)return;
   var G=GLOBAL;var today=todayStr();
@@ -1539,7 +1974,23 @@ function renderGlobal(){
   var pctVencida=totalGlobal>0?(totalVencida/totalGlobal)*100:0;
   var dsoNum=0,dsoDen=0;
   G.forEach(function(c){c.fx.forEach(function(f){if(f.atraso>0){dsoNum+=f.saldo*f.atraso;dsoDen+=f.saldo;}});});
-  var dso=dsoDen>0?dsoNum/dsoDen:0;
+  var dsoCalculado=dsoDen>0?dsoNum/dsoDen:0;
+  // DSO real con venta del mes cerrado (más preciso)
+  var ventaMesData=null;
+  try{
+    if(DB_MC){var vmSnap=DB_MC.ref('cobranza/venta_mes');} 
+  }catch(e){}
+  var vmStr=localStorage.getItem('cobranza:venta_mes');
+  if(vmStr){try{ventaMesData=JSON.parse(vmStr);}catch(e){}}
+  var dso=dsoCalculado;
+  var dsoSub='Days Sales Outstanding';
+  if(ventaMesData&&ventaMesData.monto>0){
+    dso=(totalGlobal/ventaMesData.monto)*30;
+    var mesesArr=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    var mesParts=ventaMesData.mes.split('-');
+    var mesLabel=mesesArr[parseInt(mesParts[1])-1]+' '+mesParts[0];
+    dsoSub='Basado en ventas de '+mesLabel+' ('+fmx(ventaMesData.monto)+')';
+  }
   var condMap={};
   G.forEach(function(c){
     var k=c.cond||'Sin condición';
@@ -1583,7 +2034,7 @@ function renderGlobal(){
     {label:'Cartera total global',value:fmx(totalGlobal),sub:G.length+' clientes',c:'blue',tip:'Total de todos los saldos (vigente + vencida)'},
     {label:'Cartera vigente',value:fmx(totalVigente),sub:pct(100-pctVencida)+' del total',c:'green',tip:'Saldos que aún no han vencido'},
     {label:'Cartera vencida',value:fmx(totalVencida),sub:pct(pctVencida)+' del total',c:pctVencida>=30?'red':pctVencida>=15?'amber':'green',tip:'Saldos que ya pasaron su fecha de vencimiento'},
-    {label:'DSO',value:dso.toFixed(1)+' días',sub:'Days Sales Outstanding',c:dso<=20?'green':dso<=35?'amber':'red',tip:'Promedio ponderado de días en cobranza. Meta: menor es mejor'},
+    {label:'DSO',value:dso.toFixed(1)+' días',sub:dsoSub,c:dso<=20?'green':dso<=35?'amber':'red',tip:'DSO = (Cartera total ÷ Ventas mes) × 30. Captura la venta del mes cerrado para mayor precisión.'},
   ].map(function(k){return'<div class="kpi-card" data-c="'+k.c+'"><div class="kpi-tip" title="'+k.tip+'">ℹ️</div><div class="kpi-label">'+k.label+'</div><div class="kpi-value">'+k.value+'</div><div class="kpi-sub">'+k.sub+'</div></div>';}).join('');
 
   // Alerta
@@ -1694,7 +2145,7 @@ document.addEventListener('DOMContentLoaded',function(){
     if(DB_MC){cb();return;}
     var t=0;var iv=setInterval(function(){t+=150;if(DB_MC||t>6000){clearInterval(iv);cb();}},150);
   }
-  esperarDB(function(){renderPanelFP();renderKF();renderFlujo();actualizarListaProveedores();actualizarBadgeComplementos();});
+  esperarDB(function(){renderPanelFP();renderKF();renderFlujo();actualizarListaProveedores();actualizarBadgeComplementos();iniciarVentaMes();});
 
   var fiProv=document.getElementById('fi-prov');
   var dzProv=document.getElementById('dz-prov');
@@ -2018,6 +2469,9 @@ async function guardarContratos(arr){
     localStorage.setItem(KF_KEY,JSON.stringify(arr));
   }catch(e){}
 }
+// Días de gracia para KredFeed (colchón antes de que inicie la mora)
+var DIAS_GRACIA_KF = 2;
+
 function calcularCostoReal(c,fechaRealISO){
   var intereses=c.interesesOrdinarios||0;
   var comision=c.comisionesIVA||0;
@@ -2025,7 +2479,8 @@ function calcularCostoReal(c,fechaRealISO){
   if(fechaRealISO&&c.fechaLimitePago){
     var limISO=isoFromDMY(c.fechaLimitePago);
     if(limISO){
-      dias=Math.max(0,diasEntre(limISO,fechaRealISO));
+      var diasBrutos=Math.max(0,diasEntre(limISO,fechaRealISO));
+      dias=Math.max(0,diasBrutos-DIAS_GRACIA_KF); // descontar días de gracia
       if(dias>0){
         mora=(c.valorNominal||0)*((c.tasaInteresMoratoria||4)/100/30)*dias;
         penal=(c.penalConvencional||1000)*1.16;
@@ -2166,7 +2621,8 @@ function renderActivosKF(contratos){
       function grupoLabel(dpv,fecha){
         var fechaFmt=fecha?fmtD(isoFromDMY(fecha)):' Sin fecha';
         if(dpv===null)return'📅 '+fechaFmt+' — Sin fecha definida';
-        if(dpv<0)return'🔴 '+fechaFmt+' — Vencido hace '+Math.abs(dpv)+' día'+(Math.abs(dpv)===1?'':'s');
+        if(dpv<0&&Math.abs(dpv)>DIAS_GRACIA_KF)return'🔴 '+fechaFmt+' — Vencido hace '+Math.abs(dpv)+' día'+(Math.abs(dpv)===1?'':'s');
+        if(dpv<0&&Math.abs(dpv)<=DIAS_GRACIA_KF)return'🟡 '+fechaFmt+' — Gracia: '+DIAS_GRACIA_KF+' días ('+Math.abs(dpv)+'d pasado)';
         if(dpv===0)return'🚨 '+fechaFmt+' — VENCE HOY';
         if(dpv<=5)return'🟠 '+fechaFmt+' — En '+dpv+' día'+(dpv===1?'':'s');
         if(dpv<=15)return'🟡 '+fechaFmt+' — En '+dpv+' días';
@@ -2793,7 +3249,20 @@ async function guardarSnapshot(){
   if(snaps.length&&snaps[snaps.length-1].fecha===hoy)return;
   var hoyDate=new Date();hoyDate.setHours(0,0,0,0);
   var pendProv=provs.filter(function(p){return p.estado==='pendiente';});
-  var totalProv=pendProv.reduce(function(a,p){return a+p.monto;},0);
+  // Cargar NC pendientes para calcular neto (igual que en la tabla de resumen)
+  var ncsSnap=[];
+  try{ncsSnap=(await cargarNC()).filter(function(n){return n.estado==='pendiente';});}catch(e){}
+  var ncPorProvSnap={};
+  ncsSnap.forEach(function(n){
+    var k=(n.proveedor||'').toUpperCase().trim();
+    ncPorProvSnap[k]=(ncPorProvSnap[k]||0)+(n.monto||0);
+  });
+  var totalProv=pendProv.reduce(function(a,p){
+    var k=(p.proveedor||'').toUpperCase().trim();
+    var nc=ncPorProvSnap[k]||0;
+    // Aplicar NC proporcionalmente solo si hay NC del proveedor
+    return a+Math.max(0,p.monto-Math.min(nc,p.monto));
+  },0);
   var vencidosProv=pendProv.filter(function(p){return p.fechaVencimiento&&p.fechaVencimiento<hoy;}).reduce(function(a,p){return a+p.monto;},0);
   var kfActivo=contratos.filter(function(c){return c.estado==='activo';}).reduce(function(a,c){return a+c.valorNominal;},0);
   snaps.push({fecha:hoy,totalProv:totalProv,vencidosProv:vencidosProv,kfActivo:kfActivo,total:totalProv+kfActivo});
@@ -2873,8 +3342,118 @@ async function renderGastosFijos(){
       '</tbody></table></div>';
   }
 
+  // ── GASTOS VARIABLES ──────────────────────────────────────
+  var gvs=await cargarGV();
+  var hoyMes=new Date().toISOString().slice(0,7); // YYYY-MM
+  var gvsMes=gvs.filter(function(g){return g.fecha&&g.fecha.slice(0,7)===hoyMes;});
+  var totalGVMes=gvsMes.reduce(function(a,g){return a+g.monto;},0);
+
+  html+='<div class="table-card" style="margin-top:16px">'+
+    '<div class="table-header">'+
+      '<div><div class="table-title">📊 Gastos Variables — '+new Date().toLocaleString('es-MX',{month:'long',year:'numeric'})+'</div>'+
+      '<div class="table-sub">Gastos reales del mes — nómina variable, luz, agua, servicios, etc.</div></div>'+
+      '<div style="font-weight:700;color:var(--red)">'+fmx(totalGVMes)+' este mes</div>'+
+    '</div>'+
+    // Form agregar
+    '<div style="padding:14px 16px;background:var(--bg2);border-bottom:1px solid var(--border)">'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:10px">'+
+    '<div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:3px">Concepto *</label>'+
+    '<input id="gv-concepto" type="text" placeholder="Ej. Nómina 1a quincena" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"></div>'+
+    '<div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:3px">Monto *</label>'+
+    '<input id="gv-monto" type="number" min="0" step="0.01" placeholder="0.00" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;text-align:right"></div>'+
+    '<div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:3px">Fecha *</label>'+
+    '<input id="gv-fecha" type="date" value="'+new Date().toISOString().split('T')[0]+'" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"></div>'+
+    '<div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:3px">Categoría</label>'+
+    '<select id="gv-cat" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;background:white">'+
+    Object.keys(GV_CATS).map(function(k){return'<option value="'+k+'">'+GV_CATS[k]+'</option>';}).join('')+
+    '</select></div>'+
+    '</div>'+
+    '<div style="display:flex;justify-content:flex-end">'+
+    '<button onclick="agregarGV()" style="background:var(--navy);color:white;border:none;border-radius:8px;padding:9px 22px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">+ Registrar gasto</button>'+
+    '</div></div>';
+
+  // Tabla gastos del mes
+  if(gvsMes.length){
+    // Agrupar por semana
+    var gvPorSem={};
+    gvsMes.forEach(function(g){
+      var d=parseInt(g.fecha.split('-')[2]);
+      var sem=d<=7?'Sem.1 (1–7)':d<=14?'Sem.2 (8–14)':d<=21?'Sem.3 (15–21)':'Sem.4 (22–fin)';
+      if(!gvPorSem[sem]){gvPorSem[sem]={label:sem,items:[],total:0};}
+      gvPorSem[sem].items.push(g);
+      gvPorSem[sem].total+=g.monto;
+    });
+    var semKeys=['Sem.1 (1–7)','Sem.2 (8–14)','Sem.3 (15–21)','Sem.4 (22–fin)'].filter(function(k){return gvPorSem[k];});
+    html+='<table><thead><tr>'+
+      '<th>Fecha</th><th>Concepto</th><th>Categoría</th><th style="text-align:right">Monto</th><th>×</th>'+
+      '</tr></thead><tbody>';
+    semKeys.forEach(function(sk){
+      var sg=gvPorSem[sk];
+      html+='<tr style="background:var(--bg2)"><td colspan="3" style="font-size:11px;font-weight:700;color:var(--text2);padding:7px 12px;text-transform:uppercase;letter-spacing:.4px">'+sg.label+'</td>'+
+        '<td style="text-align:right;font-weight:700;color:var(--navy);padding:7px 12px">'+fmx(sg.total)+'</td><td></td></tr>';
+      sg.items.sort(function(a,b){return a.fecha.localeCompare(b.fecha);}).forEach(function(g){
+        var safeId=g.id.replace(/'/g,"\\\'");
+        html+='<tr>'+
+          '<td style="font-size:12px;color:var(--text2)">'+fmtD(g.fecha)+'</td>'+
+          '<td style="font-weight:500">'+esc(g.concepto)+'</td>'+
+          '<td style="font-size:12px">'+esc(GV_CATS[g.cat]||g.cat)+'</td>'+
+          '<td style="text-align:right;font-weight:700;color:var(--red)">'+fmx(g.monto)+'</td>'+
+          '<td><button data-gvid="'+g.id+'" onclick="eliminarGVById(this)" style="background:var(--red-bg);color:var(--red);border:1px solid #f5c0c0;border-radius:6px;padding:3px 9px;font-size:11px;cursor:pointer;font-family:inherit">×</button></td>'+
+          '</tr>';
+      });
+    });
+    html+='<tr style="border-top:2px solid var(--border2)"><td colspan="3" style="font-weight:700;padding:10px 12px">Total mes</td>'+
+      '<td style="text-align:right;font-weight:800;color:var(--red);padding:10px 12px">'+fmx(totalGVMes)+'</td><td></td></tr>';
+    html+='</tbody></table>';
+  } else {
+    html+='<div style="padding:30px;text-align:center;color:var(--text3);font-size:13px">Sin gastos variables registrados este mes.</div>';
+  }
+  html+='</div>';
+
   el.innerHTML=html;
   cargarCreditosFinanciero();
+}
+
+// ── GASTOS VARIABLES ─────────────────────────────────────────
+async function cargarGV(){
+  if(DB_MC){var s=await DB_MC.ref('flujo/gastos_variables').get();return s.val()?JSON.parse(s.val()):[];}
+  var s=localStorage.getItem('flujo:gastos_variables');return s?JSON.parse(s):[];
+}
+async function guardarGV(arr){
+  if(DB_MC){await DB_MC.ref('flujo/gastos_variables').set(JSON.stringify(arr));return;}
+  localStorage.setItem('flujo:gastos_variables',JSON.stringify(arr));
+}
+
+var GV_CATS={nomina:'👥 Nómina',luz:'💡 Luz',agua:'💧 Agua',telefono:'📱 Teléfono/Internet',combustible:'⛽ Combustible',mantenimiento:'🔧 Mantenimiento',limpieza:'🧹 Limpieza',otro:'📋 Otro'};
+
+async function agregarGV(){
+  var concepto=(document.getElementById('gv-concepto').value||'').trim();
+  var monto=parseFloat(document.getElementById('gv-monto').value);
+  var fecha=document.getElementById('gv-fecha').value;
+  var cat=document.getElementById('gv-cat').value;
+  if(!concepto){showToast('Ingresa el concepto');return;}
+  if(!monto||monto<=0){showToast('Ingresa un monto válido');return;}
+  if(!fecha){showToast('Ingresa la fecha');return;}
+  var gvs=await cargarGV();
+  gvs.push({id:'gv_'+Date.now(),concepto:concepto,monto:monto,fecha:fecha,cat:cat,fechaRegistro:new Date().toISOString().split('T')[0]});
+  await guardarGV(gvs);
+  document.getElementById('gv-concepto').value='';
+  document.getElementById('gv-monto').value='';
+  renderGastosFijos();
+  showToast('✓ Gasto variable registrado — '+fmx(monto));
+}
+
+function eliminarGVById(el){
+  var id=el.getAttribute('data-gvid');
+  if(id)eliminarGV(id);
+}
+async function eliminarGV(id){
+  if(!confirm('¿Eliminar este gasto variable?'))return;
+  var gvs=await cargarGV();
+  gvs=gvs.filter(function(g){return g.id!==id;});
+  await guardarGV(gvs);
+  renderGastosFijos();
+  showToast('Gasto eliminado');
 }
 
 function toggleDiaGF(){
@@ -3313,10 +3892,19 @@ async function abonarProveedor(id){
   var nuevoSaldo=Math.max(0,p.monto-totalAbonado);
   p.saldo=nuevoSaldo;
 
-  // Si saldo llega a 0 → liquidar
+  // Si saldo llega a 0 → liquidar y quitar del DOM
   if(nuevoSaldo===0){
     p.estado='pagado';
     p.fechaPagoReal=fecha;
+    // Quitar del DOM inmediatamente
+    var agendaItems2=document.querySelectorAll('.agenda-item');
+    agendaItems2.forEach(function(el){
+      if(el.innerHTML.indexOf(id)>=0){
+        var grupo=el.closest('.agenda-fecha-group');
+        el.remove();
+        if(grupo&&grupo.querySelectorAll('.agenda-item').length===0)grupo.style.display='none';
+      }
+    });
     showToast('✅ Factura liquidada completamente — '+p.proveedor);
   } else {
     showToast('✓ Abono registrado — Saldo restante: '+fmx(nuevoSaldo));
@@ -3349,6 +3937,18 @@ async function pagarProveedor(id){
   var p=provs.find(function(x){return x.id===id;});if(!p)return;
   var fecha=prompt('Fecha real de pago (YYYY-MM-DD):',new Date().toISOString().split('T')[0]);
   if(!fecha)return;
+
+  // Quitar del DOM inmediatamente
+  var agendaItems=document.querySelectorAll('.agenda-item');
+  agendaItems.forEach(function(el){
+    if(el.querySelector('[onclick*="'+id+'"]')||el.innerHTML.indexOf(id)>=0){
+      var grupo=el.closest('.agenda-fecha-group');
+      el.remove();
+      // Si el grupo quedó vacío, ocultarlo
+      if(grupo&&grupo.querySelectorAll('.agenda-item').length===0) grupo.style.display='none';
+    }
+  });
+
   p.estado='pagado';p.fechaPagoReal=fecha;
   await guardarProveedores(provs);
 
@@ -3398,6 +3998,15 @@ async function guardarComplementos(arr){
   localStorage.setItem('flujo:complementos_pendientes',JSON.stringify(arr));
 }
 
+async function limpiarSnapshotsHistorial(){
+  if(!confirm('¿Limpiar el historial de snapshots de la gráfica?\nEsto reinicia la gráfica desde hoy con valores correctos.'))return;
+  if(DB_MC){
+    await DB_MC.ref('flujo/snapshots').remove();
+    showToast('✓ Historial limpiado — la gráfica se reconstruye desde hoy');
+    renderFlujo();
+  }
+}
+
 async function actualizarBadgeComplementos(){
   var comps=await cargarComplementos();
   var pend=comps.filter(function(c){return c.estado==='pendiente';}).length;
@@ -3408,137 +4017,179 @@ async function actualizarBadgeComplementos(){
   }
 }
 
+// ── COMPULSA FISCAL — 26 comprobantes sin método de pago (junio 2026) ──
+var COMPULSA_PROVS=[
+  {nombre:'ABARROTERA DEL DUERO',rfc:'ADU800131T10',folios:[{folio:'C1425150647M0012026',fecha:'2026-06-01',importe:29888.00},{folio:'C1425209827M0012026',fecha:'2026-06-10',importe:29888.00},{folio:'C1425238398M0012026',fecha:'2026-06-15',importe:29888.01}]},
+  {nombre:'ALEJANDRO GONZALEZ DURAN OROZCO',rfc:'GOOA941217UW3',folios:[{folio:'RE1093',fecha:'2026-06-03',importe:39010.80}]},
+  {nombre:'AUTO SERVICIOS COSTEÑO',rfc:'ASC591104TT1',folios:[{folio:'COP1036',fecha:'2026-06-15',importe:6132.25}]},
+  {nombre:'CHRISTIAN FERNANDO GAMEZ GALARZA',rfc:'GAGC830923JM5',folios:[{folio:'20736',fecha:'2026-06-03',importe:37453.77}]},
+  {nombre:'CONSOLIDADOS Y TRANSPORTES EXPRESS DE MANZANILLO',rfc:'CTE150227N10',folios:[{folio:'COL115131',fecha:'2026-06-16',importe:201.83}]},
+  {nombre:'DESARROLLO COMERCIAL ABARROTERO',rfc:'DCA930316BY9',folios:[{folio:'CX420907',fecha:'2026-06-01',importe:26576.99}]},
+  {nombre:'EFRAIN VALLADARES MANCILLA',rfc:'VAME510616GK9',folios:[{folio:'CO3249',fecha:'2026-06-04',importe:5514.62},{folio:'CO3263',fecha:'2026-06-11',importe:5514.62}]},
+  {nombre:'ENHU SUPPLIES',rfc:'ESU170308HVA',folios:[{folio:'COMMAT_14560_00001',fecha:'2026-06-05',importe:8700.00}]},
+  {nombre:'ESCOFFIER',rfc:'ESC9807078B4',folios:[{folio:'BREP93397',fecha:'2026-06-15',importe:7033.77}]},
+  {nombre:'GETNET MEXICO SERVICIOS DE ADQUIRENCIA',rfc:'EMS0912039N7',folios:[{folio:'MERCP2073640',fecha:'2026-06-09',importe:357.67},{folio:'MERCP2177197',fecha:'2026-06-12',importe:357.67}]},
+  {nombre:'INDUSTRIAS SALCOM',rfc:'ISA951017A10',folios:[{folio:'RBBV68003',fecha:'2026-06-05',importe:66360.70}]},
+  {nombre:'JOSE LUIS SEPULVEDA MONDRAGON',rfc:'SEML880803NL5',folios:[{folio:'RP424',fecha:'2026-06-11',importe:58290.00}]},
+  {nombre:'MARIA DEL CARMEN CABRERA MARTINEZ',rfc:'CAMC5305165L2',folios:[{folio:'18195',fecha:'2026-06-05',importe:4060.00}]},
+  {nombre:'OVALCOM',rfc:'IAN170419JQ9',folios:[{folio:'PPT4421',fecha:'2026-06-09',importe:26468.23}]},
+  {nombre:'PAPEL ORO',rfc:'POR0211149D1',folios:[{folio:'PGOC8608',fecha:'2026-06-01',importe:29353.73}]},
+  {nombre:'PROLIM INDUSTRIAL',rfc:'PIN0311106X4',folios:[{folio:'BBVA21981',fecha:'2026-06-10',importe:50772.12}]},
+  {nombre:'RADIOMOVIL DIPSA',rfc:'RDI841003QJ4',folios:[{folio:'PE130644387',fecha:'2026-06-02',importe:409.04},{folio:'PE130883060',fecha:'2026-06-03',importe:409.04},{folio:'PE131177482',fecha:'2026-06-08',importe:409.04},{folio:'PE131378366',fecha:'2026-06-10',importe:409.04},{folio:'PE131630680',fecha:'2026-06-12',importe:409.02}]},
+  {nombre:'RIVERA DESECHABLES Y PLASTICOS',rfc:'RDP130108MPA',folios:[{folio:'REP15969',fecha:'2026-06-06',importe:22898.73}]}
+];
+
+var COMPULSA_DB_KEY='flujo/compulsa_jun2026';
+
+async function cargarCompulsaEstados(){
+  if(DB_MC){var s=await DB_MC.ref(COMPULSA_DB_KEY).get();return s.val()?JSON.parse(s.val()):{};}
+  return JSON.parse(localStorage.getItem(COMPULSA_DB_KEY)||'{}');
+}
+async function guardarCompulsaEstados(obj){
+  if(DB_MC){await DB_MC.ref(COMPULSA_DB_KEY).set(JSON.stringify(obj));return;}
+  localStorage.setItem(COMPULSA_DB_KEY,JSON.stringify(obj));
+}
+async function marcarCompulsaRec(rfc,folio){
+  var est=await cargarCompulsaEstados();
+  est[rfc+'|'+folio]={e:'rec',f:new Date().toISOString().split('T')[0]};
+  await guardarCompulsaEstados(est);
+  renderComplementos();
+  showToast('✓ Complemento recibido — '+folio);
+}
+async function marcarCompulsaNA(rfc,folio){
+  var est=await cargarCompulsaEstados();
+  est[rfc+'|'+folio]={e:'na',f:new Date().toISOString().split('T')[0]};
+  await guardarCompulsaEstados(est);
+  renderComplementos();
+  showToast('Factura marcada como no aplica — '+folio);
+}
+async function resetCompulsa(rfc,folio){
+  var est=await cargarCompulsaEstados();
+  delete est[rfc+'|'+folio];
+  await guardarCompulsaEstados(est);
+  renderComplementos();
+}
+
 async function renderComplementos(){
   var el=document.getElementById('fl-comp-body');
   if(!el)return;
-  var comps=await cargarComplementos();
-  var pendientes=comps.filter(function(c){return c.estado==='pendiente';});
-  var recibidos=comps.filter(function(c){return c.estado==='recibido';});
   actualizarBadgeComplementos();
 
-  if(!pendientes.length&&!recibidos.length){
-    el.innerHTML='<div class="empty-state"><div style="font-size:36px;margin-bottom:10px">📨</div><p>Sin complementos de pago pendientes.<br>Aparecerán aquí cuando marques un pago como pagado y confirmes que necesitas complemento.</p></div>';
-    return;
-  }
-
-  var totalPend=pendientes.reduce(function(a,c){return a+c.monto;},0);
+  var est=await cargarCompulsaEstados();
   var hoy=new Date().toISOString().split('T')[0];
-
-  // Build with innerHTML safe approach
   var wrapper=document.createElement('div');
 
-  // KPIs
-  var kpiDiv=document.createElement('div');
-  kpiDiv.className='kpi-grid';
-  kpiDiv.style.marginBottom='16px';
-  kpiDiv.innerHTML=
-    '<div class="kpi-card" data-c="amber"><div class="kpi-label">Complementos pendientes</div><div class="kpi-value">'+pendientes.length+'</div><div class="kpi-sub">'+fmxS(totalPend)+' a solicitar</div></div>'+
-    (recibidos.length?'<div class="kpi-card" data-c="green"><div class="kpi-label">Recibidos</div><div class="kpi-value">'+recibidos.length+'</div><div class="kpi-sub">complementos confirmados</div></div>':'');
-  wrapper.appendChild(kpiDiv);
+  // Aplanar todos los folios individuales con su estado
+  var todosFolios=[];
+  COMPULSA_PROVS.forEach(function(p){
+    p.folios.forEach(function(f){
+      var key=p.rfc+'|'+f.folio;
+      var s=est[key]||{e:'pend'};
+      todosFolios.push({nombre:p.nombre,rfc:p.rfc,folio:f.folio,fecha:f.fecha,importe:f.importe,key:key,estado:s.e,fechaAcc:s.f||null});
+    });
+  });
 
-  // Pendientes table
-  if(pendientes.length){
-    var card=document.createElement('div');
-    card.className='table-card';
-    card.style.marginBottom='16px';
-    var hdr='<div class="table-header"><div><div class="table-title">⏳ Pendientes de recibir</div><div class="table-sub">Solicita estos complementos a tus proveedores</div></div><div style="font-weight:700;color:var(--amber)">'+fmx(totalPend)+'</div></div>';
-    var tbl='<table><thead><tr><th>Proveedor</th><th>Folio factura</th><th style="text-align:right">Monto</th><th>Fecha pago</th><th>Días espera</th><th>Notas</th><th style="text-align:center">Acción</th></tr></thead><tbody id="comp-pend-tbody"></tbody></table>';
-    card.innerHTML=hdr+tbl;
-    wrapper.appendChild(card);
+  var cfPend=todosFolios.filter(function(f){return f.estado==='pend';});
+  var cfRec =todosFolios.filter(function(f){return f.estado==='rec';});
+  var cfNA  =todosFolios.filter(function(f){return f.estado==='na';});
+  var totalPendImp=cfPend.reduce(function(a,f){return a+f.importe;},0);
+  var totalRecImp =cfRec.reduce(function(a,f){return a+f.importe;},0);
 
-    var tbody=card.querySelector('#comp-pend-tbody');
-    pendientes.forEach(function(c){
-      var diasEspera=c.fechaPago?Math.round((new Date(hoy+'T00:00:00')-new Date(c.fechaPago+'T00:00:00'))/86400000):null;
+  // ── KPIs ──────────────────────────────────────────────────
+  var kpi=document.createElement('div');
+  kpi.className='kpi-grid';
+  kpi.style.marginBottom='16px';
+  kpi.innerHTML=
+    '<div class="kpi-card" data-c="red"><div class="kpi-label">🔴 Sin complemento</div><div class="kpi-value">'+cfPend.length+'</div><div class="kpi-sub">'+fmxS(totalPendImp)+' pendiente</div></div>'+
+    (cfRec.length?'<div class="kpi-card" data-c="green"><div class="kpi-label">✅ Recibidos</div><div class="kpi-value">'+cfRec.length+'</div><div class="kpi-sub">'+fmxS(totalRecImp)+' confirmados</div></div>':'')+
+    (cfNA.length?'<div class="kpi-card" data-c="blue"><div class="kpi-label">⊘ No aplica</div><div class="kpi-value">'+cfNA.length+'</div><div class="kpi-sub">descartadas</div></div>':'');
+  wrapper.appendChild(kpi);
+
+  // ── TABLA PENDIENTES ──────────────────────────────────────
+  if(cfPend.length){
+    var cardP=document.createElement('div');
+    cardP.className='table-card';
+    cardP.style.marginBottom='16px';
+    cardP.innerHTML=
+      '<div class="table-header"><div><div class="table-title">⏳ Complementos pendientes de recibir</div>'+
+      '<div class="table-sub">Facturas de tus proveedores sin método de pago en el SAT — solicita el complemento</div></div>'+
+      '<div style="font-weight:700;color:var(--red)">'+cfPend.length+' facturas · '+fmx(totalPendImp)+'</div></div>'+
+      '<table><thead><tr><th>Proveedor</th><th>RFC</th><th>Folio</th><th style="text-align:right">Importe</th><th>Fecha</th><th>Días</th><th style="text-align:center">Acción</th></tr></thead><tbody id="cmp-pend-tbody"></tbody></table>';
+    wrapper.appendChild(cardP);
+    var tbP=cardP.querySelector('#cmp-pend-tbody');
+    cfPend.forEach(function(f){
+      var dias=Math.round((new Date(hoy+'T00:00:00')-new Date(f.fecha+'T00:00:00'))/86400000);
+      var dc=dias>10?'var(--red)':dias>5?'var(--amber)':'var(--text2)';
       var tr=document.createElement('tr');
-
-      // Proveedor
-      var tdProv=document.createElement('td');
-      tdProv.innerHTML='<div style="font-weight:600">'+esc(c.proveedor)+'</div>'+(c.rfc?'<div style="font-size:10px;color:var(--text2)">'+esc(c.rfc)+'</div>':'');
-      tr.appendChild(tdProv);
-
-      // Folio
-      var tdFolio=document.createElement('td');
-      tdFolio.style.fontFamily='monospace'; tdFolio.style.fontSize='12px';
-      tdFolio.textContent=c.folio||'—';
-      tr.appendChild(tdFolio);
-
-      // Monto
-      var tdMonto=document.createElement('td');
-      tdMonto.style.textAlign='right'; tdMonto.style.fontWeight='700';
-      tdMonto.textContent=fmx(c.monto);
-      tr.appendChild(tdMonto);
-
-      // Fecha pago
-      var tdFecha=document.createElement('td');
-      tdFecha.style.fontSize='12px';
-      tdFecha.textContent=c.fechaPago?fmtD(c.fechaPago):'—';
-      tr.appendChild(tdFecha);
-
-      // Días espera
-      var tdDias=document.createElement('td');
-      tdDias.style.fontSize='12px'; tdDias.style.color='var(--text2)';
-      tdDias.textContent=diasEspera!==null?diasEspera+'d':'—';
-      tr.appendChild(tdDias);
-
-      // Notas input
-      var tdNotas=document.createElement('td');
-      var inp=document.createElement('input');
-      inp.type='text'; inp.placeholder='Agregar nota…';
-      inp.value=c.notas||'';
-      inp.style.cssText='width:130px;padding:4px 8px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit;outline:none';
-      inp.setAttribute('data-cid', c.id);
-      inp.addEventListener('change', function(){actualizarNotaComp(this.getAttribute('data-cid'),this.value);});
-      tdNotas.appendChild(inp);
-      tr.appendChild(tdNotas);
-
-      // Acciones
-      var tdAcc=document.createElement('td');
-      tdAcc.style.textAlign='center';
-      var btnRec=document.createElement('button');
-      btnRec.textContent='✓ Recibido';
-      btnRec.style.cssText='background:var(--green-bg);color:var(--green);border:1px solid #a7d9a7;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;margin-right:4px';
-      btnRec.addEventListener('click',(function(cid){return function(){marcarCompRecibido(cid);};})(c.id));
-      var btnDel=document.createElement('button');
-      btnDel.textContent='×';
-      btnDel.style.cssText='background:var(--red-bg);color:var(--red);border:1px solid #f5c0c0;border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;font-family:inherit';
-      btnDel.addEventListener('click',(function(cid){return function(){eliminarComp(cid);};})(c.id));
-      tdAcc.appendChild(btnRec); tdAcc.appendChild(btnDel);
-      tr.appendChild(tdAcc);
-      tbody.appendChild(tr);
+      function td(html,css){var t=document.createElement('td');t.innerHTML=html;if(css)t.style.cssText=css;return t;}
+      tr.appendChild(td('<div style="font-weight:600;font-size:13px">'+esc(f.nombre)+'</div>'));
+      tr.appendChild(td('<span style="font-family:monospace;font-size:11px;color:var(--text2)">'+esc(f.rfc)+'</span>'));
+      tr.appendChild(td('<span style="font-family:monospace;font-size:12px">'+esc(f.folio)+'</span>'));
+      tr.appendChild(td(fmx(f.importe),'text-align:right;font-weight:700'));
+      tr.appendChild(td(fmtD(f.fecha),'font-size:12px'));
+      tr.appendChild(td(dias+'d','font-size:12px;font-weight:600;color:'+dc));
+      var tdA=document.createElement('td');tdA.style.cssText='text-align:center;white-space:nowrap';
+      var bR=document.createElement('button');
+      bR.textContent='✓ Recibido';
+      bR.style.cssText='background:var(--green-bg);color:var(--green);border:1px solid #a7d9a7;border-radius:7px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;margin-right:4px';
+      bR.addEventListener('click',(function(r,fo){return function(){marcarCompulsaRec(r,fo);};})(f.rfc,f.folio));
+      var bNA=document.createElement('button');
+      bNA.textContent='⊘ No aplica';
+      bNA.title='No procede complemento (efectivo, gasto menor, etc.)';
+      bNA.style.cssText='background:var(--surface2);color:var(--text2);border:1px solid var(--border2);border-radius:7px;padding:4px 9px;font-size:11px;cursor:pointer;font-family:inherit';
+      bNA.addEventListener('click',(function(r,fo){return function(){marcarCompulsaNA(r,fo);};})(f.rfc,f.folio));
+      tdA.appendChild(bR);tdA.appendChild(bNA);tr.appendChild(tdA);
+      tbP.appendChild(tr);
     });
   }
 
-  // Recibidos table
-  if(recibidos.length){
-    var card2=document.createElement('div');
-    card2.className='table-card';
-    card2.innerHTML='<div class="table-header"><div class="table-title">✅ Complementos recibidos</div></div>'+
-      '<table><thead><tr><th>Proveedor</th><th>Folio</th><th style="text-align:right">Monto</th><th>Fecha recibido</th><th>×</th></tr></thead><tbody id="comp-rec-tbody"></tbody></table>';
-    wrapper.appendChild(card2);
-
-    var tbody2=card2.querySelector('#comp-rec-tbody');
-    recibidos.slice(-20).reverse().forEach(function(c){
+  // ── TABLA RECIBIDOS ───────────────────────────────────────
+  if(cfRec.length){
+    var cardR=document.createElement('div');
+    cardR.className='table-card';
+    cardR.style.marginBottom='16px';
+    cardR.innerHTML=
+      '<div class="table-header"><div class="table-title">✅ Complementos recibidos</div></div>'+
+      '<table><thead><tr><th>Proveedor</th><th>Folio</th><th style="text-align:right">Importe</th><th>Fecha factura</th><th>Confirmado</th><th style="text-align:center">↩</th></tr></thead><tbody id="cmp-rec-tbody"></tbody></table>';
+    wrapper.appendChild(cardR);
+    var tbR=cardR.querySelector('#cmp-rec-tbody');
+    cfRec.forEach(function(f){
       var tr=document.createElement('tr');
-      var cells=[
-        '<div style="font-size:13px">'+esc(c.proveedor)+'</div>',
-        '<span style="font-family:monospace;font-size:12px">'+(c.folio||'—')+'</span>',
-        fmx(c.monto),
-        c.fechaRecibido?fmtD(c.fechaRecibido):'—'
-      ];
-      cells.forEach(function(html,i){
-        var td=document.createElement('td');
-        td.innerHTML=html;
-        if(i===2)td.style.textAlign='right';
-        tr.appendChild(td);
-      });
-      var tdDel=document.createElement('td');
-      var btnDel2=document.createElement('button');
-      btnDel2.textContent='×';
-      btnDel2.style.cssText='background:var(--red-bg);color:var(--red);border:1px solid #f5c0c0;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;font-family:inherit';
-      btnDel2.addEventListener('click',(function(cid){return function(){eliminarComp(cid);};})(c.id));
-      tdDel.appendChild(btnDel2);
-      tr.appendChild(tdDel);
-      tbody2.appendChild(tr);
+      function td(html,css){var t=document.createElement('td');t.innerHTML=html;if(css)t.style.cssText=css;return t;}
+      tr.appendChild(td('<span style="font-size:13px;color:var(--text2)">'+esc(f.nombre)+'</span>'));
+      tr.appendChild(td('<span style="font-family:monospace;font-size:11px">'+esc(f.folio)+'</span>'));
+      tr.appendChild(td(fmx(f.importe),'text-align:right'));
+      tr.appendChild(td(fmtD(f.fecha),'font-size:12px'));
+      tr.appendChild(td(f.fechaAcc?fmtD(f.fechaAcc):'—','font-size:12px'));
+      var tdBtn=document.createElement('td');tdBtn.style.textAlign='center';
+      var b=document.createElement('button');b.textContent='↩';b.title='Revertir a pendiente';
+      b.style.cssText='background:none;color:var(--text2);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;font-family:inherit';
+      b.addEventListener('click',(function(r,fo){return function(){resetCompulsa(r,fo);};})(f.rfc,f.folio));
+      tdBtn.appendChild(b);tr.appendChild(tdBtn);tbR.appendChild(tr);
+    });
+  }
+
+  // ── TABLA NO APLICA ───────────────────────────────────────
+  if(cfNA.length){
+    var cardNA=document.createElement('div');
+    cardNA.className='table-card';
+    cardNA.style.marginBottom='16px';
+    cardNA.innerHTML=
+      '<div class="table-header"><div class="table-title">⊘ No aplica complemento</div></div>'+
+      '<table><thead><tr><th>Proveedor</th><th>Folio</th><th style="text-align:right">Importe</th><th style="text-align:center">↩</th></tr></thead><tbody id="cmp-na-tbody"></tbody></table>';
+    wrapper.appendChild(cardNA);
+    var tbNA=cardNA.querySelector('#cmp-na-tbody');
+    cfNA.forEach(function(f){
+      var tr=document.createElement('tr');
+      function td(html,css){var t=document.createElement('td');t.innerHTML=html;if(css)t.style.cssText=css;return t;}
+      tr.appendChild(td('<span style="font-size:12px;color:var(--text2)">'+esc(f.nombre)+'</span>'));
+      tr.appendChild(td('<span style="font-family:monospace;font-size:11px;color:var(--text2)">'+esc(f.folio)+'</span>'));
+      tr.appendChild(td(fmx(f.importe),'text-align:right;color:var(--text2)'));
+      var tdBtn=document.createElement('td');tdBtn.style.textAlign='center';
+      var b=document.createElement('button');b.textContent='↩';b.title='Revertir a pendiente';
+      b.style.cssText='background:none;color:var(--text2);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;font-family:inherit';
+      b.addEventListener('click',(function(r,fo){return function(){resetCompulsa(r,fo);};})(f.rfc,f.folio));
+      tdBtn.appendChild(b);tr.appendChild(tdBtn);tbNA.appendChild(tr);
     });
   }
 
@@ -3635,14 +4286,37 @@ async function renderReal(){
   var activosKF2=contratos.filter(function(c){return c.estado==='activo';});
   var gfsActivos2=gfs.filter(function(g){return g.activo!==false;});
   var provVencidos2=pendProv2.filter(function(p){return p.fechaVencimiento&&p.fechaVencimiento<hoyISO;});
-  var kfVencidos2=activosKF2.filter(function(c){var iso=isoFromDMY(c.fechaLimitePago);return iso&&iso<hoyISO;});
+  var kfVencidos2=activosKF2.filter(function(c){var iso=isoFromDMY(c.fechaLimitePago);return iso&&diasEntre(iso,hoyISO)>DIAS_GRACIA_KF;});
 
-  var proximoLunes2=new Date(hoy);
-  var dow3=proximoLunes2.getDay();
-  if(dow3===0)proximoLunes2.setDate(proximoLunes2.getDate()+1);
-  else if(dow3!==1)proximoLunes2.setDate(proximoLunes2.getDate()+(8-dow3));
-  var finSem1b=new Date(proximoLunes2);finSem1b.setDate(finSem1b.getDate()-1);
-  var finSem1ISOb=finSem1b.toISOString().split('T')[0];
+  // ── SEMANAS FIJAS DEL MES EN CURSO (lunes a domingo) ──────────
+  // Las semanas no se mueven — siempre muestran el mes completo
+  // para poder capturar el cierre de semana aunque ya haya pasado
+  function semanasDelMes(anio, mes){
+    // mes: 0-11
+    var semanas=[];
+    var primerDia=new Date(anio, mes, 1);
+    var ultimoDia=new Date(anio, mes+1, 0);
+    // Encontrar el primer lunes del mes (o antes si el mes empieza antes)
+    var cursor=new Date(primerDia);
+    var dowCursor=cursor.getDay(); // 0=dom
+    if(dowCursor!==1){
+      // Retroceder al lunes anterior (puede ser del mes previo)
+      var diffToMon=dowCursor===0?-6:1-dowCursor;
+      cursor.setDate(cursor.getDate()+diffToMon);
+    }
+    while(cursor<=ultimoDia){
+      var lunes=new Date(cursor);
+      var domingo=new Date(cursor);
+      domingo.setDate(domingo.getDate()+6);
+      semanas.push({
+        ini:lunes.toISOString().split('T')[0],
+        fin:domingo.toISOString().split('T')[0]
+      });
+      cursor.setDate(cursor.getDate()+7);
+    }
+    return semanas;
+  }
+  var semsDelMes=semanasDelMes(hoy.getFullYear(), hoy.getMonth());
 
   // Rebuild semanas array (same logic as renderProyeccion)
   var byMS2={};
@@ -3688,16 +4362,17 @@ async function renderReal(){
   }
 
   var sems=[];
-  for(var w=0;w<4;w++){
-    var iniISO3,finISO3;
-    if(w===0){iniISO3=hoyISO;finISO3=finSem1ISOb;}
-    else{var ini3=new Date(proximoLunes2);ini3.setDate(ini3.getDate()+(w-1)*7);var fin3=new Date(ini3);fin3.setDate(fin3.getDate()+5);iniISO3=ini3.toISOString().split('T')[0];finISO3=fin3.toISOString().split('T')[0];}
-    var ingProy=nMeses2===0?0:ingSem2(w===0?hoy:new Date(iniISO3+'T00:00:00'));
+  for(var w=0;w<semsDelMes.length;w++){
+    var iniISO3=semsDelMes[w].ini;
+    var finISO3=semsDelMes[w].fin;
+    var ingProy=nMeses2===0?0:ingSem2(new Date(iniISO3+'T00:00:00'));
+    // Semana que contiene hoy = semana "activa" — vencidos se agregan aquí
+    var esActiva=(iniISO3<=hoyISO&&finISO3>=hoyISO);
     var kfItems2=activosKF2.filter(function(c){var iso=isoFromDMY(c.fechaLimitePago);return iso&&iso>=iniISO3&&iso<=finISO3;});
     var eKF=kfItems2.reduce(function(a,c){return a+c.valorNominal;},0);
-    if(w===0){eKF+=kfVencidos2.reduce(function(a,c){return a+c.valorNominal;},0);}
+    if(esActiva){eKF+=kfVencidos2.reduce(function(a,c){return a+c.valorNominal;},0);kfItems2=kfItems2.concat(kfVencidos2);}
     var egrPItems=pendProv2.filter(function(p){return p.fechaVencimiento&&p.fechaVencimiento>=iniISO3&&p.fechaVencimiento<=finISO3;});
-    if(w===0)egrPItems=egrPItems.concat(provVencidos2);
+    if(esActiva)egrPItems=egrPItems.concat(provVencidos2);
     var eProv=egrPItems.reduce(function(a,p){return a+(p.monto||0);},0);
     var gfItems2=gfsActivos2.filter(function(g){return gfAplicaEnSemana(g,iniISO3,finISO3);});
     var eGF=gfItems2.reduce(function(a,g){return a+g.monto;},0);
@@ -3710,7 +4385,7 @@ async function renderReal(){
     });
     var eCred=credItems2.reduce(function(a,c){return a+(parseFloat(c.pagoMensual)||0);},0);
     var totalEgr2=eKF+eProv+eGF+eCred;
-    var semKey='sem'+w+'_'+iniISO3;
+    var semKey='semfija_'+iniISO3; // clave fija por fecha, no por posición
     var rd=realData[semKey]||{};
     sems.push({w:w,ini:iniISO3,fin:finISO3,ingProy:ingProy,
       eKF:eKF,eProv:eProv,eGF:eGF,eCred:eCred,totalEgr:totalEgr2,
@@ -3797,13 +4472,20 @@ async function renderReal(){
     var periodoLabel=fmD(s.ini)+' – '+fmD(s.fin);
     var isPast=s.fin<hoyISO;
     var isCurrent=s.ini<=hoyISO&&s.fin>=hoyISO;
-    var headerColor=isCurrent?'var(--navy)':isPast?'var(--text2)':'var(--text)';
+    var isFuture=s.ini>hoyISO;
+    var headerColor=isCurrent?'var(--navy)':isPast?'var(--text2)':'var(--text3)';
+    // Status badge
+    var statusBadge='';
+    if(isPast&&(s.rd.ingreso||0)>0) statusBadge='<span style="font-size:10px;background:var(--green-bg);color:var(--green);padding:2px 8px;border-radius:10px;margin-left:6px;font-weight:700">✅ Capturado</span>';
+    else if(isPast) statusBadge='<span style="font-size:10px;background:var(--red-bg);color:var(--red);padding:2px 8px;border-radius:10px;margin-left:6px;font-weight:700">⏳ Pendiente de capturar</span>';
+    else if(isCurrent) statusBadge='<span style="font-size:10px;background:var(--navy);color:white;padding:2px 8px;border-radius:10px;margin-left:6px;font-weight:700">📍 En curso</span>';
+    else statusBadge='<span style="font-size:10px;background:var(--bg2);color:var(--text3);padding:2px 8px;border-radius:10px;margin-left:6px;font-weight:700">🔒 Próxima</span>';
 
     html+='<div class="table-card" style="margin-bottom:14px">'+
       '<div style="padding:14px 16px;border-bottom:1px solid var(--border)">'+
         '<div style="display:flex;justify-content:space-between;align-items:center">'+
           '<div><span style="font-weight:700;font-size:15px;color:'+headerColor+'">'+semLabel+'</span>'+
-            (isCurrent?' <span style="font-size:11px;background:var(--navy);color:white;padding:2px 7px;border-radius:10px;margin-left:6px">Esta semana</span>':'')+
+            statusBadge+
             '<span style="font-size:12px;color:var(--text3);margin-left:8px">'+periodoLabel+'</span></div>'+
         '</div>'+
       '</div>'+
@@ -3927,10 +4609,34 @@ function toggleProvFacturas(idx){
   if(chev)chev.textContent=open?'▼':'▶';
 }
 
+function toggleAbonoInput(cb){
+  var id=cb.dataset.id;
+  var montoOrig=parseFloat(cb.dataset.monto)||0;
+  var cell=document.getElementById('abono-cell-'+id);
+  if(!cell)return;
+  if(cb.checked){
+    // Mostrar input de abono
+    cell.innerHTML='<div style="display:flex;align-items:center;gap:4px">'+
+      '<span style="font-size:10px;color:var(--text2);white-space:nowrap">Abono:</span>'+
+      '<input id="abono-inp-'+id+'" type="number" min="1" max="'+montoOrig+'" step="0.01" value="'+montoOrig+'" '+
+      'oninput="actualizarPlan()" '+
+      'style="width:110px;padding:3px 6px;border:1.5px solid var(--blue);border-radius:6px;font-size:12px;font-family:inherit;text-align:right;outline:none">'+
+      '</div>';
+  } else {
+    cell.innerHTML='';
+  }
+  actualizarPlan();
+}
+
 function actualizarPlan(){
   var checks=document.querySelectorAll('.fact-check:checked');
   var total=0;
-  checks.forEach(function(c){total+=parseFloat(c.dataset.monto)||0;});
+  checks.forEach(function(c){
+    // Usar monto editable si existe, sino usar monto original
+    var inp=document.getElementById('abono-inp-'+c.dataset.id);
+    var monto=inp?parseFloat(inp.value)||0:parseFloat(c.dataset.monto)||0;
+    total+=monto;
+  });
   var ingreso=window._PLAN_INGRESO||calcIngresoSem1()||0;
   window._PLAN_INGRESO=ingreso; // asegurar que esté seteado
   var saldo=ingreso-total;
@@ -3963,9 +4669,12 @@ function exportarCompromisos(){
   var total=0;
   var filas=[];
   checks.forEach(function(c){
-    var m=parseFloat(c.dataset.monto)||0;
+    var inp=document.getElementById('abono-inp-'+c.dataset.id);
+    var m=inp?parseFloat(inp.value)||0:parseFloat(c.dataset.monto)||0;
+    var montoTotal=parseFloat(c.dataset.monto)||0;
+    var esAbono=m<montoTotal;
     total+=m;
-    filas.push({proveedor:c.dataset.prov,folio:c.dataset.folio,monto:m,vencimiento:c.dataset.fecha});
+    filas.push({proveedor:c.dataset.prov,folio:c.dataset.folio,monto:m,vencimiento:c.dataset.fecha,esAbono:esAbono,montoTotal:montoTotal});
   });
   // Agrupar por proveedor
   var porProv={};
@@ -3999,7 +4708,7 @@ function exportarCompromisos(){
   a.click();
 }
 
-async function renderProveedores(){
+async function renderProveedores(cachedPendientes){
   var provs=await cargarProveedores();
   var ncs=await cargarNC();
   // Mapa de NC pendientes por proveedor
@@ -4014,7 +4723,8 @@ async function renderProveedores(){
   if(!kpisEl||!bodyEl)return;
 
   // ── PENDIENTES DE ASIGNAR (conteo para KPI) ──────────────────
-  var _pendData=await cargarPendientes();
+  // Usar caché si viene de una operación reciente para no releer Firebase antes de que confirme
+  var _pendData=cachedPendientes||await cargarPendientes();
   window._PEND_COUNT=_pendData.filter(function(p){return p.estado==='pendiente';}).length;
 
   var hoy=new Date();hoy.setHours(0,0,0,0);
@@ -4081,7 +4791,8 @@ async function renderProveedores(){
   function dpvLabel(dpv,fecha){
     var ff=fecha?fmtD(fecha):'Sin fecha';
     if(dpv===null)return'📅 '+ff;
-    if(dpv<0)return'🔴 '+ff+' — Vencido hace '+Math.abs(dpv)+'d';
+    if(dpv<0&&Math.abs(dpv)>DIAS_GRACIA_KF)return'🔴 '+ff+' — Vencido hace '+Math.abs(dpv)+'d';
+    if(dpv<0&&Math.abs(dpv)<=DIAS_GRACIA_KF)return'🟡 '+ff+' — Gracia: '+(DIAS_GRACIA_KF-Math.abs(dpv)+1)+'d restante'+(DIAS_GRACIA_KF-Math.abs(dpv)+1===1?'':'s');
     if(dpv===0)return'🚨 '+ff+' — VENCE HOY';
     if(dpv<=7)return'🟠 '+ff+' — En '+dpv+' día'+(dpv===1?'':'s');
     if(dpv<=15)return'🟡 '+ff+' — En '+dpv+' días';
@@ -4127,8 +4838,8 @@ async function renderProveedores(){
       agendaHTML+='</div>';
       agendaHTML+='<div style="font-weight:700;font-size:14px">'+fmx(p.saldo!==undefined?p.saldo:p.monto)+(p.saldo!==undefined&&p.saldo<p.monto?'<div style="font-size:10px;color:var(--text2);font-weight:400">de '+fmx(p.monto)+'</div>':'')+'</div>';
       agendaHTML+='<button onclick="editarProveedor(\''+safeId+'\')" style="background:var(--blue-bg);color:var(--blue);border:1px solid #b3d0f0;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">✏ Editar</button>';
-      agendaHTML+='<button onclick="abonarProveedor(\\\''+safeId+'\\\')" style="background:var(--purple-bg);color:var(--purple);border:1px solid #a5a0d8;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💰 Abonar</button>';
-      agendaHTML+='<button onclick="pagarProveedor(\\\''+safeId+'\\\')" style="background:var(--green-bg);color:var(--green);border:1px solid #a7d9a7;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">✓ Liquidar</button>';
+      agendaHTML+='<button onclick="abonarProveedor(\''+safeId+'\')" style="background:var(--purple-bg);color:var(--purple);border:1px solid #a5a0d8;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">&#x1F4B0; Abonar</button>';
+      agendaHTML+='<button onclick="pagarProveedor(\''+safeId+'\')" style="background:var(--green-bg);color:var(--green);border:1px solid #a7d9a7;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">✓ Liquidar</button>';
       agendaHTML+='<button onclick="eliminarProveedor(\''+safeId+'\')" style="background:var(--red-bg);color:var(--red);border:1px solid #f5c0c0;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;font-family:inherit">×</button>';
       agendaHTML+='</div>';
     });
@@ -4258,7 +4969,7 @@ async function renderProveedores(){
           var folio=p.folio||p.concepto||'—';
           return'<tr class="factura-row" data-prov="'+xi+'" style="background:#fafaf8">'+
             '<td style="text-align:center;padding-left:24px">'+
-              '<input type="checkbox" class="fact-check" data-id="'+safeId+'" data-monto="'+p.monto+'" data-prov="'+esc(p.proveedor)+'" data-folio="'+esc(folio)+'" data-fecha="'+esc(p.fechaVencimiento||'')+'" onchange="actualizarPlan()" style="width:16px;height:16px;cursor:pointer;accent-color:var(--blue)">'+
+              '<input type="checkbox" class="fact-check" data-id="'+safeId+'" data-monto="'+p.monto+'" data-prov="'+esc(p.proveedor)+'" data-folio="'+esc(folio)+'" data-fecha="'+esc(p.fechaVencimiento||'')+'" onchange="toggleAbonoInput(this)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--blue)">'+
             '</td>'+
             '<td colspan="2" style="font-size:12px;padding-left:8px;color:var(--text2)">'+
               '<span style="font-weight:600;color:var(--text)">'+esc(folio)+'</span>'+
@@ -4266,8 +4977,7 @@ async function renderProveedores(){
               (p.categoria?'<span style="margin-left:6px;background:var(--bg2);border-radius:4px;padding:1px 5px;font-size:10px">'+esc(p.categoria)+'</span>':'')+
             '</td>'+
             '<td style="text-align:right;font-weight:600">'+fmx(p.monto)+'</td>'+
-            '<td></td>'+
-            '<td></td>'+
+            '<td style="padding:2px 6px" colspan="2" id="abono-cell-'+safeId+'"></td>'+
             '<td style="font-size:12px;color:'+colorFecha+';font-weight:600">'+
               (p.fechaVencimiento?fmtD(p.fechaVencimiento)+(dpvF!==null?' <span style="font-size:10px">'+(dpvF<0?'venc.':'en '+dpvF+'d')+'</span>':''):'—')+
             '</td>'+
@@ -4299,7 +5009,7 @@ async function renderProveedores(){
   }
 
   bodyEl.innerHTML=semHTML+resumenHTML+agendaHTML+pagsHTML;
-  await renderPendientesAsignar();
+  await renderPendientesAsignar(cachedPendientes||_pendData);
 }
 
 // ── PENDIENTES DE ASIGNAR ────────────────────────────────────
@@ -4444,72 +5154,122 @@ async function renderPendientesAsignar(cachedPendientes){
 
 
 async function enviarPendienteAComplemento(id){
-  var pendientes=await cargarPendientes();
-  var p=pendientes.find(function(x){return x.id===id;});
-  if(!p)return;
-  // Agregar a complementos pendientes
-  var comps=await cargarComplementos();
-  comps.push({
-    id:'cp_pend_'+Date.now(),
-    proveedor:p.proveedor,
-    rfc:p.rfc||'',
-    folio:p.folio||'',
-    monto:p.monto,
-    fechaPago:p.fechaFactura||new Date().toISOString().split('T')[0],
-    fechaRegistro:new Date().toISOString().split('T')[0],
-    estado:'pendiente',
-    notas:'Enviado desde Pendientes de asignar — '+(p.motivo||'')
-  });
-  await guardarComplementos(comps);
-  // Marcar pendiente como resuelto
-  p.estado='resuelto';
-  p.fechaResolucion=new Date().toISOString().split('T')[0];
-  p.tipoResolucion='complemento';
-  await guardarPendientes(pendientes);
-  actualizarBadgeComplementos();
-  showToast('✓ Enviado a Complementos pendientes — '+p.proveedor);
-  await renderProveedores();
-  switchFLNav('comp');
+  try{
+    var pendientes=await cargarPendientes();
+    var p=pendientes.find(function(x){return x.id===id;});
+    if(!p)return;
+    // Agregar a complementos pendientes
+    var comps=await cargarComplementos();
+    comps.push({
+      id:'cp_pend_'+Date.now(),
+      proveedor:p.proveedor,
+      rfc:p.rfc||'',
+      folio:p.folio||'',
+      monto:p.monto,
+      fechaPago:p.fechaFactura||new Date().toISOString().split('T')[0],
+      fechaRegistro:new Date().toISOString().split('T')[0],
+      estado:'pendiente',
+      notas:'Enviado desde Pendientes de asignar — '+(p.motivo||'')
+    });
+    await guardarComplementos(comps);
+    // Marcar pendiente como resuelto
+    p.estado='resuelto';
+    p.fechaResolucion=new Date().toISOString().split('T')[0];
+    p.tipoResolucion='complemento';
+    await guardarPendientes(pendientes);
+    actualizarBadgeComplementos();
+    showToast('✓ Enviado a Complementos pendientes — '+p.proveedor);
+    await renderPendientesAsignar(pendientes);
+    switchFLNav('comp');
+  }catch(err){
+    showToast('⚠ Error al guardar — reintentando...');
+    console.error('enviarPendienteAComplemento error:',err);
+    try{
+      var pendientes2=await cargarPendientes();
+      var p2=pendientes2.find(function(x){return x.id===id;});
+      if(p2&&p2.estado==='pendiente'){
+        p2.estado='resuelto';p2.fechaResolucion=new Date().toISOString().split('T')[0];p2.tipoResolucion='complemento';
+        await guardarPendientes(pendientes2);
+        showToast('✓ Estado guardado en reintento');
+      }
+    }catch(e2){showToast('⚠ Error persistente — recarga la página y verifica');console.error(e2);}
+  }
 }
 
 
-async function enviarPendienteANotaCredito(id){
+async function limpiarPendientesResueltos(){
   var pendientes=await cargarPendientes();
-  var p=pendientes.find(function(x){return x.id===id;});
-  if(!p)return;
+  var activos=pendientes.filter(function(p){return p.estado==='pendiente';});
+  var resueltos=pendientes.filter(function(p){return p.estado!=='pendiente';});
+  if(!resueltos.length){showToast('No hay registros resueltos que limpiar');return;}
+  if(!confirm('¿Eliminar '+resueltos.length+' registro'+(resueltos.length===1?'':'s')+' ya resuelto'+(resueltos.length===1?'':'s')+'?\nLos pendientes activos no se tocan.'))return;
+  await guardarPendientes(activos);
+  showToast('✓ '+resueltos.length+' registro'+(resueltos.length===1?'':'s')+' limpiado'+(resueltos.length===1?'':'s'));
+  renderProveedores(activos);
+}
 
-  // Registrar directo en Notas de Crédito con los datos del pendiente
-  var ncs=await cargarNC();
-  ncs.push({
-    id:'nc_'+Date.now(),
-    proveedor:p.proveedor,
-    folio:p.folio||'',
-    monto:p.monto,
-    fecha:p.fechaFactura||new Date().toISOString().split('T')[0],
-    motivo:'Registrado desde Pendientes de asignar — '+(p.motivo||''),
-    estado:'pendiente',
-    fechaAplicacion:null,
-    fechaRegistro:new Date().toISOString().split('T')[0]
-  });
-  await guardarNC(ncs);
-
-  // Marcar pendiente como resuelto
-  p.estado='resuelto';
-  p.fechaResolucion=new Date().toISOString().split('T')[0];
-  p.tipoResolucion='nota_credito';
+async function descartarTodosPendientes(){
+  var pendientes=await cargarPendientes();
+  var activos=pendientes.filter(function(p){return p.estado==='pendiente';});
+  if(!activos.length){showToast('No hay pendientes activos');return;}
+  if(!confirm('¿Marcar como resueltos los '+activos.length+' pendientes activos?\nEsto limpiará la lista permanentemente.'))return;
+  var hoy=new Date().toISOString().split('T')[0];
+  activos.forEach(function(p){p.estado='descartado';p.fechaResolucion=hoy;p.tipoResolucion='descartado_manual';});
+  // Guardar array completo con todos descartados
   await guardarPendientes(pendientes);
+  showToast('✓ '+activos.length+' pendientes descartados');
+  renderProveedores(pendientes);
+}
 
-  showToast('✓ Nota de crédito registrada — '+p.proveedor+' '+fmx(p.monto));
-  actualizarBadgeComplementos();
-  switchFLNav('nc');
+async function enviarPendienteANotaCredito(id){
+  try{
+    var pendientes=await cargarPendientes();
+    var p=pendientes.find(function(x){return x.id===id;});
+    if(!p)return;
+
+    var ncs=await cargarNC();
+    ncs.push({
+      id:'nc_'+Date.now(),
+      proveedor:p.proveedor,
+      folio:p.folio||'',
+      monto:p.monto,
+      fecha:p.fechaFactura||new Date().toISOString().split('T')[0],
+      motivo:'Registrado desde Pendientes de asignar — '+(p.motivo||''),
+      estado:'pendiente',
+      fechaAplicacion:null,
+      fechaRegistro:new Date().toISOString().split('T')[0]
+    });
+    await guardarNC(ncs);
+
+    p.estado='resuelto';
+    p.fechaResolucion=new Date().toISOString().split('T')[0];
+    p.tipoResolucion='nota_credito';
+    await guardarPendientes(pendientes);
+
+    showToast('✓ Nota de crédito registrada — '+p.proveedor+' '+fmx(p.monto));
+    actualizarBadgeComplementos();
+    switchFLNav('nc');
+  }catch(err){
+    showToast('⚠ Error al guardar — reintentando...');
+    console.error('enviarPendienteANotaCredito error:',err);
+    try{
+      var pendientes2=await cargarPendientes();
+      var p2=pendientes2.find(function(x){return x.id===id;});
+      if(p2&&p2.estado==='pendiente'){
+        p2.estado='resuelto';p2.fechaResolucion=new Date().toISOString().split('T')[0];p2.tipoResolucion='nota_credito';
+        await guardarPendientes(pendientes2);
+        showToast('✓ Estado guardado en reintento');
+      }
+    }catch(e2){showToast('⚠ Error persistente — recarga la página y verifica');console.error(e2);}
+  }
 }
 
 async function resolverPendienteConQuitar(id,tipo){
-  // For credito: show prompt first, only remove row if user confirms
+  // For credito: show prompt first before any DOM changes
   if(tipo==='credito'){
     var dias=prompt('¿Cuántos días de crédito para esta factura?','30');
-    if(dias===null)return; // cancelled - don't remove row
-    // Remove row immediately after confirm
+    if(dias===null)return; // cancelled
+    // Remove row from DOM after confirmation
     var row=document.querySelector('[data-pid="'+id+'"]');
     if(row)row.remove();
     var tb=document.getElementById('pend-tbody');
@@ -4520,63 +5280,26 @@ async function resolverPendienteConQuitar(id,tipo){
       bdg.textContent=remaining;
       if(remaining===0&&wr)wr.style.display='none';
     }
-    // Now resolve with the captured dias
     await resolverPendienteConDias(id, parseInt(dias)||30);
   }
 }
 
 async function resolverPendienteConDias(id, dias){
-  var pendientes=await cargarPendientes();
-  var p=pendientes.find(function(x){return x.id===id;});
-  if(!p)return;
-  var fechaVenc='';
-  if(p.fechaFactura){
-    var d=new Date(p.fechaFactura+'T00:00:00');
-    d.setDate(d.getDate()+dias);
-    fechaVenc=d.toISOString().split('T')[0];
-  }
-  var provs=await cargarProveedores();
-  provs.push({
-    id:'pa_res_'+Date.now(),
-    proveedor:p.proveedor,rfc:p.rfc||'',folio:p.folio||'',
-    concepto:'Asignado desde pendientes — '+(p.motivo||''),
-    monto:p.monto,categoria:'mercancia',
-    fechaVencimiento:fechaVenc,diasCredito:dias,
-    fechaFactura:p.fechaFactura,
-    estado:'pendiente',fechaPagoReal:null,
-    fechaRegistro:new Date().toISOString().split('T')[0],
-    origenCarga:'pendiente_asignado',
-    notas:p.motivo||''
-  });
-  await guardarProveedores(provs);
-  p.estado='resuelto';p.fechaResolucion=new Date().toISOString().split('T')[0];p.tipoResolucion='credito';
-  await guardarPendientes(pendientes);
-  showToast('✓ Registrado como crédito a '+dias+' días — '+p.proveedor);
-  actualizarListaProveedores();
-}
-
-async function resolverPendiente(id,tipo){
-  var pendientes=await cargarPendientes();
-  var p=pendientes.find(function(x){return x.id===id;});
-  if(!p){showToast('⚠ Registro no encontrado');return;}
-
-  if(tipo==='credito'){
-    // Abrir mini-modal para capturar días de crédito
-    var dias=prompt('¿Cuántos días de crédito para esta factura de '+p.proveedor+'?','30');
-    if(dias===null)return;
-    dias=parseInt(dias)||30;
+  try{
+    var pendientes=await cargarPendientes();
+    var p=pendientes.find(function(x){return x.id===id;});
+    if(!p)return;
     var fechaVenc='';
     if(p.fechaFactura){
       var d=new Date(p.fechaFactura+'T00:00:00');
       d.setDate(d.getDate()+dias);
       fechaVenc=d.toISOString().split('T')[0];
     }
-    // Agregar a proveedores
     var provs=await cargarProveedores();
     provs.push({
       id:'pa_res_'+Date.now(),
       proveedor:p.proveedor,rfc:p.rfc||'',folio:p.folio||'',
-      concepto:'Asignado desde pendientes — '+( p.motivo||''),
+      concepto:'Asignado desde pendientes — '+(p.motivo||''),
       monto:p.monto,categoria:'mercancia',
       fechaVencimiento:fechaVenc,diasCredito:dias,
       fechaFactura:p.fechaFactura,
@@ -4586,31 +5309,109 @@ async function resolverPendiente(id,tipo){
       notas:p.motivo||''
     });
     await guardarProveedores(provs);
+    p.estado='resuelto';p.fechaResolucion=new Date().toISOString().split('T')[0];p.tipoResolucion='credito';
+    await guardarPendientes(pendientes);
     showToast('✓ Registrado como crédito a '+dias+' días — '+p.proveedor);
-  } else {
-    // Marcar como pagado — registrar en proveedores con estado pagado
-    var provs2=await cargarProveedores();
-    provs2.push({
-      id:'pa_res_'+Date.now(),
-      proveedor:p.proveedor,rfc:p.rfc||'',folio:p.folio||'',
-      concepto:'Asignado desde pendientes — '+(p.motivo||''),
-      monto:p.monto,categoria:'mercancia',
-      fechaVencimiento:'',diasCredito:0,
-      fechaFactura:p.fechaFactura,
-      estado:'pagado',fechaPagoReal:new Date().toISOString().split('T')[0],
-      fechaRegistro:new Date().toISOString().split('T')[0],
-      origenCarga:'pendiente_asignado',
-      notas:p.motivo||''
-    });
-    await guardarProveedores(provs2);
-    showToast('✓ Marcado como pagado — '+p.proveedor);
+    actualizarListaProveedores();
+  }catch(err){
+    showToast('⚠ Error al guardar — reintentando...');
+    console.error('resolverPendienteConDias error:',err);
+    // Retry once
+    try{
+      var pendientes2=await cargarPendientes();
+      var p2=pendientes2.find(function(x){return x.id===id;});
+      if(p2&&p2.estado==='pendiente'){
+        p2.estado='resuelto';p2.fechaResolucion=new Date().toISOString().split('T')[0];p2.tipoResolucion='credito';
+        await guardarPendientes(pendientes2);
+        showToast('✓ Guardado en reintento');
+      }
+    }catch(e2){showToast('⚠ Error persistente — recarga y verifica');console.error(e2);}
+  }
+}
+
+async function resolverPendiente(id,tipo){
+  // Quitar del DOM inmediatamente — usa data-pid que es el atributo real de las filas
+  var filaDOM=document.querySelector('[data-pid="'+id+'"]');
+  if(filaDOM){
+    filaDOM.remove();
+    var tb2=document.getElementById('pend-tbody');
+    var badge=document.getElementById('pend-count-badge');
+    var wr2=document.getElementById('fl-pend-wrap');
+    if(tb2&&badge){
+      var remaining2=tb2.querySelectorAll('tr').length;
+      badge.textContent=remaining2;
+      if(remaining2===0&&wr2)wr2.style.display='none';
+    }
   }
 
-  // Marcar pendiente como resuelto
-  p.estado='resuelto';p.fechaResolucion=new Date().toISOString().split('T')[0];p.tipoResolucion=tipo;
-  await guardarPendientes(pendientes);
-  await renderProveedores();
-  actualizarListaProveedores();
+  try{
+    var pendientes=await cargarPendientes();
+    var p=pendientes.find(function(x){return x.id===id;});
+    if(!p){showToast('⚠ Registro no encontrado');return;}
+
+    if(tipo==='credito'){
+      var dias=prompt('¿Cuántos días de crédito para esta factura de '+p.proveedor+'?','30');
+      if(dias===null)return;
+      dias=parseInt(dias)||30;
+      var fechaVenc='';
+      if(p.fechaFactura){
+        var d=new Date(p.fechaFactura+'T00:00:00');
+        d.setDate(d.getDate()+dias);
+        fechaVenc=d.toISOString().split('T')[0];
+      }
+      var provs=await cargarProveedores();
+      provs.push({
+        id:'pa_res_'+Date.now(),
+        proveedor:p.proveedor,rfc:p.rfc||'',folio:p.folio||'',
+        concepto:'Asignado desde pendientes — '+(p.motivo||''),
+        monto:p.monto,categoria:'mercancia',
+        fechaVencimiento:fechaVenc,diasCredito:dias,
+        fechaFactura:p.fechaFactura,
+        estado:'pendiente',fechaPagoReal:null,
+        fechaRegistro:new Date().toISOString().split('T')[0],
+        origenCarga:'pendiente_asignado',
+        notas:p.motivo||''
+      });
+      await guardarProveedores(provs);
+      showToast('✓ Registrado como crédito a '+dias+' días — '+p.proveedor);
+    } else {
+      var provs2=await cargarProveedores();
+      provs2.push({
+        id:'pa_res_'+Date.now(),
+        proveedor:p.proveedor,rfc:p.rfc||'',folio:p.folio||'',
+        concepto:'Asignado desde pendientes — '+(p.motivo||''),
+        monto:p.monto,categoria:'mercancia',
+        fechaVencimiento:'',diasCredito:0,
+        fechaFactura:p.fechaFactura,
+        estado:'pagado',fechaPagoReal:new Date().toISOString().split('T')[0],
+        fechaRegistro:new Date().toISOString().split('T')[0],
+        origenCarga:'pendiente_asignado',
+        notas:p.motivo||''
+      });
+      await guardarProveedores(provs2);
+      showToast('✓ Marcado como pagado — '+p.proveedor);
+    }
+
+    // Marcar pendiente como resuelto y guardar
+    p.estado='resuelto';p.fechaResolucion=new Date().toISOString().split('T')[0];p.tipoResolucion=tipo;
+    await guardarPendientes(pendientes);
+    // Pasar pendientes ya actualizados directamente para evitar releer Firebase antes de que confirme la escritura
+    await renderPendientesAsignar(pendientes);
+    actualizarListaProveedores();
+  }catch(err){
+    showToast('⚠ Error al guardar — reintentando...');
+    console.error('resolverPendiente error:',err);
+    // Retry solo el guardado del estado del pendiente
+    try{
+      var pendientes3=await cargarPendientes();
+      var p3=pendientes3.find(function(x){return x.id===id;});
+      if(p3&&p3.estado==='pendiente'){
+        p3.estado='resuelto';p3.fechaResolucion=new Date().toISOString().split('T')[0];p3.tipoResolucion=tipo;
+        await guardarPendientes(pendientes3);
+        showToast('✓ Estado guardado en reintento');
+      }
+    }catch(e2){showToast('⚠ Error persistente — recarga la página y verifica');console.error(e2);}
+  }
 }
 
 async function descartarPendiente(id){
@@ -4706,6 +5507,17 @@ async function renderProyeccion(){
   var pendProv=provs.filter(function(p){return p.estado==='pendiente';});
   var activosKF=contratos.filter(function(c){return c.estado==='activo';});
   var gfsActivos=gfs.filter(function(g){return g.activo!==false;});
+  // Cargar gastos variables reales
+  var gvsAll=await cargarGV();
+  // Cargar NC pendientes para descontarlas de proveedores en proyección
+  var ncsProyAll=await cargarNC();
+  var ncPorProvProy={};
+  ncsProyAll.filter(function(n){return n.estado==='pendiente';}).forEach(function(n){
+    var k=(n.proveedor||'').toUpperCase().trim();
+    ncPorProvProy[k]=(ncPorProvProy[k]||0)+(n.monto||0);
+  });
+  // Clonar para cada iteración (se consume por proveedor)
+  var ncPorProvProyBase=JSON.parse(JSON.stringify(ncPorProvProy));
 
   // Créditos del MASTER FINANCIERO
   var credFin=[];
@@ -4769,29 +5581,60 @@ async function renderProyeccion(){
     var pa=mesActStr.split('-'),pi=mesIni.split('-');
     var diff=(parseInt(pi[0])-parseInt(pa[0]))*12+(parseInt(pi[1])-parseInt(pa[1]));
     var off=Math.max(1,diff),base=proyectarMes(off);
-    var dia=iniDate.getDate(),sem=dia<=7?1:dia<=14?2:dia<=21?3:4;
-    var finDate=new Date(iniDate);finDate.setDate(finDate.getDate()+5);
-    if(finDate.getMonth()!==iniDate.getMonth()){
-      var dI=new Date(iniDate.getFullYear(),iniDate.getMonth()+1,0).getDate()-dia+1,dF=6-dI;
-      return(dist[sem]*base*dI+dist[1]*proyectarMes(off+1)*dF)/6;
-    }
-    return dist[sem]*base;
+    // Semana del mes por día (1-7=sem1, 8-14=sem2, 15-21=sem3, 22+=sem4)
+    var dia=iniDate.getDate();
+    var sem=dia<=7?1:dia<=14?2:dia<=21?3:4;
+    // Sem 5+ (día 29+) usa mismo peso que sem4
+    return dist[Math.min(sem,4)]*base;
   }
 
-  // Próximo lunes (para semanas 2-8)
-  var proximoLunes=new Date(hoy);
-  var dow2=proximoLunes.getDay();
-  if(dow2===0)proximoLunes.setDate(proximoLunes.getDate()+1);
-  else if(dow2!==1)proximoLunes.setDate(proximoLunes.getDate()+(8-dow2));
+  // Semanas fijas del mes: 1-7, 8-14, 15-21, 22-28, 29-fin
+  // Si hay egresos más allá del mes, continuar con semanas del mes siguiente
+  function generarSemanasProyeccion(fechaBase, nSemanas){
+    var sems=[];
+    var anio=fechaBase.getFullYear(), mes=fechaBase.getMonth(); // mes 0-11
+    var semMes=1; // contador de semana dentro del mes (1-4+)
+    while(sems.length<nSemanas){
+      var ini, fin;
+      if(semMes===1){ini=1;fin=7;}
+      else if(semMes===2){ini=8;fin=14;}
+      else if(semMes===3){ini=15;fin=21;}
+      else if(semMes===4){ini=22;fin=28;}
+      else{
+        // Sem 5+: del 29 al fin de mes
+        ini=29;
+        fin=new Date(anio,mes+1,0).getDate();
+      }
+      var iniISO=anio+'-'+String(mes+1).padStart(2,'0')+'-'+String(ini).padStart(2,'0');
+      var finISO=anio+'-'+String(mes+1).padStart(2,'0')+'-'+String(fin).padStart(2,'0');
+      sems.push({ini:iniISO,fin:finISO,semMes:semMes,anio:anio,mes:mes});
+      // Avanzar semana
+      if(semMes>=4&&fin>=new Date(anio,mes+1,0).getDate()){
+        // Fin de mes, pasar al siguiente
+        mes++;
+        if(mes>11){mes=0;anio++;}
+        semMes=1;
+      } else if(semMes>=4){
+        semMes++;
+      } else {
+        semMes++;
+      }
+    }
+    return sems;
+  }
+  var semanasProyec=generarSemanasProyeccion(hoy, 8);
 
-  // Sem.1 empieza HOY y termina el domingo próximo (o sábado de esa semana)
-  // Para que capture: vencidos + vence hoy + vence esta semana
-  var finSem1=new Date(proximoLunes);finSem1.setDate(finSem1.getDate()-1); // domingo antes del próximo lunes
-  var finSem1ISO=finSem1.toISOString().split('T')[0];
-
-  // Vencidos (antes de hoy)
-  var provVencidos=pendProv.filter(function(p){return p.fechaVencimiento&&p.fechaVencimiento<hoyISO;});
-  var kfVencidos=activosKF.filter(function(c){var iso=isoFromDMY(c.fechaLimitePago);return iso&&iso<hoyISO;});
+  // Vencidos (antes del día 1 de la semana actual)
+  var semActualIni=semanasProyec[0].ini;
+  // Encontrar qué semana contiene hoy
+  for(var si=0;si<semanasProyec.length;si++){
+    if(semanasProyec[si].ini<=hoyISO&&semanasProyec[si].fin>=hoyISO){semActualIni=semanasProyec[si].ini;break;}
+  }
+  var provVencidos=pendProv.filter(function(p){return p.fechaVencimiento&&p.fechaVencimiento<semActualIni;});
+  // KredFeed vencidos (superaron gracia) → acumular en semana actual
+  var kfVencidos=activosKF.filter(function(c){var iso=isoFromDMY(c.fechaLimitePago);return iso&&diasEntre(iso,hoyISO)>DIAS_GRACIA_KF;});
+  // KredFeed en periodo de gracia (vencidos pero aun dentro del plazo) → también a semana actual
+  var kfEnGracia=activosKF.filter(function(c){var iso=isoFromDMY(c.fechaLimitePago);return iso&&iso<hoyISO&&diasEntre(iso,hoyISO)<=DIAS_GRACIA_KF;});
 
   // NC pendientes por proveedor para restar en proyección
   var ncPorProv={};
@@ -4811,29 +5654,38 @@ async function renderProyeccion(){
   }
 
   var semanas=[];
-  for(var w=0;w<8;w++){
-    var iniISO2,finISO2;
-    if(w===0){
-      // Sem.1: desde hoy hasta el día anterior al próximo lunes (incluye vencidos + esta semana)
-      iniISO2=hoyISO;
-      finISO2=finSem1ISO;
-    } else {
-      var ini=new Date(proximoLunes);ini.setDate(ini.getDate()+(w-1)*7);
-      var fin=new Date(ini);fin.setDate(fin.getDate()+5);
-      iniISO2=ini.toISOString().split('T')[0];
-      finISO2=fin.toISOString().split('T')[0];
-    }
-    var ingreso=sinDatos?0:ingresoSem(w===0?hoy:new Date(iniISO2+'T00:00:00'));
+  for(var w=0;w<semanasProyec.length;w++){
+    var iniISO2=semanasProyec[w].ini;
+    var finISO2=semanasProyec[w].fin;
+    var esActual=(iniISO2<=hoyISO&&finISO2>=hoyISO);
+    // Resetear NC disponibles por proveedor para cada semana (descuento independiente)
+    ncPorProvProy=JSON.parse(JSON.stringify(ncPorProvProyBase));
 
-    var kfItems=activosKF.filter(function(c){var iso=isoFromDMY(c.fechaLimitePago);return iso&&iso>=iniISO2&&iso<=finISO2;});
+    var ingreso=sinDatos?0:ingresoSem(new Date(iniISO2+'T00:00:00'));
+
+    // Semanas pasadas no muestran sus facturas (se acumulan en semana actual)
+    var esPasada=finISO2<hoyISO&&!esActual;
+    var kfItems=esPasada?[]:activosKF.filter(function(c){var iso=isoFromDMY(c.fechaLimitePago);return iso&&iso>=iniISO2&&iso<=finISO2;});
     var egresoKF=kfItems.reduce(function(a,c){return a+c.valorNominal;},0);
-    if(w===0){egresoKF+=kfVencidos.reduce(function(a,c){return a+c.valorNominal;},0);kfItems=kfItems.concat(kfVencidos);}
+    // Vencidos se agregan a la semana actual
+    if(esActual){egresoKF+=kfVencidos.reduce(function(a,c){return a+c.valorNominal;},0);kfItems=kfItems.concat(kfVencidos);egresoKF+=kfEnGracia.reduce(function(a,c){return a+c.valorNominal;},0);kfItems=kfItems.concat(kfEnGracia);}
 
     // Facturas que vencen en el rango de esta semana
-    var egrProvItems=pendProv.filter(function(p){return p.fechaVencimiento&&p.fechaVencimiento>=iniISO2&&p.fechaVencimiento<=finISO2;});
-    // Sem.1: agregar también las vencidas (antes de hoy) — ya no están en el rango porque iniISO2=hoy
-    if(w===0)egrProvItems=egrProvItems.concat(provVencidos);
-    var egrProv=egrProvItems.reduce(function(a,p){return a+netoFactura(p);},0);
+    // Semanas pasadas NO muestran sus facturas (se acumulan en semana actual)
+    var egrProvItems=esPasada?[]:pendProv.filter(function(p){return p.fechaVencimiento&&p.fechaVencimiento>=iniISO2&&p.fechaVencimiento<=finISO2;});
+    // Vencidos de proveedores → acumular en semana actual
+    if(esActual)egrProvItems=egrProvItems.concat(provVencidos);
+    var egrProv=(function(){
+      var ncDisp=JSON.parse(JSON.stringify(ncPorProvProyBase));
+      return egrProvItems.reduce(function(a,p){
+        var k=(p.proveedor||'').toUpperCase().trim();
+        var nc=ncDisp[k]||0;
+        var monto=p.saldo!==undefined?p.saldo:p.monto;
+        var montoNet=Math.max(0,monto-nc);
+        if(nc>0)ncDisp[k]=Math.max(0,nc-monto);
+        return a+montoNet;
+      },0);
+    })();
 
     // Gastos fijos manuales
     var gfItems=gfsActivos.filter(function(g){return gfAplicaEnSemana(g,iniISO2,finISO2);});
@@ -4850,11 +5702,15 @@ async function renderProyeccion(){
     });
     var egresoCredFin=credItems.reduce(function(a,c){return a+(parseFloat(c.pagoMensual)||0);},0);
 
-    var totalEgr=egresoKF+egrProv+egresoGF+egresoCredFin;
+    // Gastos variables reales de esta semana
+    var gvItems=gvsAll.filter(function(g){return g.fecha&&g.fecha>=iniISO2&&g.fecha<=finISO2;});
+    var egresoGV=gvItems.reduce(function(a,g){return a+g.monto;},0);
+
+    var totalEgr=egresoKF+egrProv+egresoGF+egresoCredFin+egresoGV;
     var neto=ingreso-totalEgr;
     var margen=ingreso>0?Math.round((neto/ingreso)*100):null;
     semanas.push({w:w,ini:iniISO2,fin:finISO2,ingreso:ingreso,
-      egresoKF:egresoKF,egrProv:egrProv,egresoGF:egresoGF,egresoCredFin:egresoCredFin,
+      egresoKF:egresoKF,egrProv:egrProv,egresoGF:egresoGF,egresoCredFin:egresoCredFin,egresoGV:egresoGV,gvItems:gvItems,
       totalEgr:totalEgr,neto:neto,margen:margen,
       provItems:egrProvItems,kfItems:kfItems,gfItems:gfItems,credItems:credItems,
       tieneVencidos:w===0&&(provVencidos.length>0||kfVencidos.length>0)});
@@ -4878,6 +5734,7 @@ async function renderProyeccion(){
       '<div class="table-header"><div><div class="table-title">📉 Monitor de compromisos — evolución semanal</div>'+
       '<div class="table-sub">Cómo va cambiando tu deuda total semana a semana</div></div>'+
       '<div style="text-align:right">'+
+      '<button onclick="limpiarSnapshotsHistorial()" style="background:var(--red-bg);color:var(--red);border:1px solid #f5c0c0;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit;margin-bottom:6px;display:block">🗑 Limpiar historial</button>'+
         '<div style="font-size:11px;color:var(--text3)">Cambio vs semana anterior</div>'+
         (function(){
           var ult=snaps[snaps.length-1],ant=snaps[snaps.length-2];
@@ -4886,7 +5743,7 @@ async function renderProyeccion(){
           return'<div style="font-size:14px;font-weight:700;color:'+c+'">'+ico+' '+(diff<0?'−':'+')+'$'+Math.abs(Math.round(diff)).toLocaleString('es-MX')+'</div>';
         })()+'</div>'+
       '</div>'+
-      '<div style="padding:16px"><canvas id="'+canvasId+'" height="120"></canvas></div>'+
+      '<div style="padding:16px;position:relative;height:200px"><canvas id="'+canvasId+'"></canvas></div>'+
       '</div>';
 
     // Build chart after render
@@ -4899,7 +5756,7 @@ async function renderProyeccion(){
       new Chart(ctx,{type:'bar',data:{labels:labels,datasets:[
         {label:'Proveedores',data:dataProv,backgroundColor:'rgba(245,158,11,.7)',borderRadius:4},
         {label:'KredFeed activo',data:dataKF,backgroundColor:'rgba(59,130,246,.7)',borderRadius:4}
-      ]},options:{responsive:true,plugins:{legend:{position:'top'}},scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:function(v){return'$'+Math.round(v/1000)+'K';}}}}}});
+      ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:function(v){return'$'+Math.round(v/1000)+'K';}}}}}});
     },300);
   } else {
     html+='<div style="background:var(--bg2);border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:var(--text3);text-align:center">'+
@@ -4948,14 +5805,14 @@ async function renderProyeccion(){
   // ── TABLA PROYECCIÓN ──────────────────────────────────────────
   html+='<div class="table-card"><div class="table-header">'+
     '<div><div class="table-title">📅 Proyección — 8 semanas (lun–sáb)</div>'+
-    '<div class="table-sub">Todos los egresos integrados: KredFeed + Proveedores + Gastos Fijos + Créditos</div></div></div>';
+    '<div class="table-sub">Todos los egresos integrados: KredFeed + Proveedores + Gastos Fijos + Gastos Variables + Créditos</div></div></div>';
 
   html+='<table><thead><tr>'+
     '<th>Semana</th><th>Período</th>'+
     '<th style="text-align:right;color:var(--green)">Ingreso</th>'+
     '<th style="text-align:right;color:var(--blue)">KredFeed</th>'+
     '<th style="text-align:right;color:var(--amber)">Prov.</th>'+
-    '<th style="text-align:right;color:#7c3aed">G. Fijos</th>'+
+    '<th style="text-align:right;color:#7c3aed">G. Fijos</th>'+'<th style="text-align:right;color:#e11d48">G. Var.</th>'+
     '<th style="text-align:right;color:#0891b2">Créditos</th>'+
     '<th style="text-align:right">Total egr.</th>'+
     '<th style="text-align:right">Saldo neto</th>'+
@@ -4982,6 +5839,7 @@ async function renderProyeccion(){
       '<td style="text-align:right">'+(s.egresoKF?'<span title="'+kfDet+'" style="color:var(--blue);font-weight:600;cursor:help">'+fmx(s.egresoKF)+'</span>':'<span style="color:var(--text3)">—</span>')+'</td>'+
       '<td style="text-align:right">'+(s.egrProv?'<span title="'+pvDet+'" style="color:var(--amber);font-weight:600;cursor:help">'+fmx(s.egrProv)+'</span>':'<span style="color:var(--text3)">—</span>')+'</td>'+
       '<td style="text-align:right">'+(s.egresoGF?'<span title="'+gfDet+'" style="color:#7c3aed;font-weight:600;cursor:help">'+fmx(s.egresoGF)+'</span>':'<span style="color:var(--text3)">—</span>')+'</td>'+
+      '<td style="text-align:right">'+(s.egresoGV?'<span style="color:#e11d48;font-weight:600">'+fmx(s.egresoGV)+'</span>':'<span style="color:var(--text3)">—</span>')+'</td>'+
       '<td style="text-align:right">'+(s.egresoCredFin?'<span title="'+crDet+'" style="color:#0891b2;font-weight:600;cursor:help">'+fmx(s.egresoCredFin)+'</span>':'<span style="color:var(--text3)">—</span>')+'</td>'+
       '<td style="text-align:right;font-weight:600">'+fmx(s.totalEgr)+'</td>'+
       '<td style="text-align:right;font-weight:700;color:'+(sinDatos?'var(--text3)':pos?'var(--green)':'var(--red)')+'">'+
@@ -5022,6 +5880,92 @@ function guardarCarteraFirebase(){
   DB_MC.ref('cobranza/cartera_global').set(payload)
     .then(function(){showToast('☁ Cartera guardada en Firebase — visible en Estados Financieros');})
     .catch(function(e){console.warn('Error guardando cartera:',e);});
+}
+
+// ══ HISTÓRICO CLIENTES EN MORA ═══════════════════════════════════
+
+// Guarda snapshot diario. Se llama desde renderVencida() cuando clients ya tiene datos.
+function guardarSnapshotClientesMora(clients, histCartera){
+  if(!DB_MC) return;
+  var hoy=new Date().toISOString().split('T')[0];
+  // No guardar si ya existe el de hoy
+  if(histCartera.some(function(s){return s.d===hoy;})) return;
+  // Contar clientes con días de mora > 0
+  var clientesMora=clients.filter(function(c){return(c.mx||0)>0;}).length;
+  var totalVencido=clients.reduce(function(a,c){return a+(c.tot||0);},0);
+  if(!clientesMora&&!totalVencido) return; // sin datos reales aún
+  var hist=histCartera.slice();
+  hist.push({d:hoy, t:totalVencido, clientes:clientesMora});
+  if(hist.length>180) hist=hist.slice(-180);
+  // Actualizar RAW local para que la gráfica lo vea inmediatamente
+  RAW.historico_cartera=hist;
+  DB_MC.ref('cobranza/data/historico_cartera').set(hist)
+    .catch(function(e){console.warn('Error guardando snapshot mora:',e);});
+}
+
+// Renderiza la gráfica de clientes en mora histórico
+function renderGraficaClientesMora(){
+  destroyChart('chart-clientes-mora');
+  restoreCanvas('wrap-clientes-mora','chart-clientes-mora','tall');
+  var el=document.getElementById('chart-clientes-mora');
+  if(!el) return;
+  var hist=(RAW&&RAW.historico_cartera||[]).slice().sort(function(a,b){return a.d>b.d?1:-1;});
+  var conClientes=hist.filter(function(s){return s.clientes!=null;});
+  if(conClientes.length<2){
+    showEmpty('wrap-clientes-mora','📊','El historial se construye día a día.<br>Aparecerá aquí desde mañana conforme se carguen reportes diarios.');
+    return;
+  }
+  var sub=document.getElementById('chart-clientes-mora-sub');
+  if(sub){
+    var ult=conClientes[conClientes.length-1];
+    var pen=conClientes.length>=2?conClientes[conClientes.length-2]:null;
+    var tendDir=pen?(ult.clientes<pen.clientes?'↓ bajando':ult.clientes>pen.clientes?'↑ subiendo':'= sin cambio'):'';
+    sub.textContent=conClientes.length+' días de historial · Hoy: '+ult.clientes+' clientes en mora '+tendDir;
+  }
+  var pointColors=conClientes.map(function(s,i){
+    if(i===0) return '#64748b';
+    return s.clientes<=conClientes[i-1].clientes?'#3B6D11':'#A32D2D';
+  });
+  CHARTS['chart-clientes-mora']=new Chart(el,{
+    type:'line',
+    data:{
+      labels:conClientes.map(function(s){return fmtD(s.d);}),
+      datasets:[{
+        label:'Clientes en mora',
+        data:conClientes.map(function(s){return s.clientes;}),
+        borderColor:'#1d4ed8',
+        backgroundColor:'rgba(29,78,216,0.08)',
+        borderWidth:2.5,
+        pointBackgroundColor:pointColors,
+        pointRadius:4,
+        pointHoverRadius:6,
+        fill:true,
+        tension:0.3
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            label:function(ctx){
+              var s=conClientes[ctx.dataIndex];
+              return [' '+ctx.parsed.y+' clientes en mora',' Cartera: $'+Math.round(s.t).toLocaleString('es-MX')];
+            }
+          }
+        }
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{maxTicksLimit:12,font:{size:11}}},
+        y:{
+          beginAtZero:true,
+          ticks:{stepSize:1,font:{size:11},callback:function(v){return Number.isInteger(v)?v:'';}},
+          grid:{color:'rgba(0,0,0,0.06)'}
+        }
+      }
+    }
+  });
 }
 
 </script>
@@ -5079,5 +6023,6 @@ function guardarCarteraFirebase(){
     </div>
   </div>
 </div>
+<div id="toast" class="toast"></div>
 </body>
 </html>
