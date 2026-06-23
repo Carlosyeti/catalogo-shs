@@ -207,11 +207,6 @@ tbody tr:hover td{background:var(--bg2)}
           <div id="wrap-daily"><div class="chart-wrap tall"><canvas id="chart-daily"></canvas></div></div>
         </div>
         <div class="chart-card">
-          <div class="chart-title">Clientes en mora — histórico</div>
-          <div class="chart-sub" id="chart-clientes-mora-sub">Número de clientes con saldo vencido por día</div>
-          <div id="wrap-clientes-mora"><div class="chart-wrap tall"><canvas id="chart-clientes-mora"></canvas></div></div>
-        </div>
-        <div class="chart-card">
           <div class="chart-title">Distribución de mora</div>
           <div class="chart-sub">Clientes por rango de días de atraso</div>
           <div id="wrap-mora"><div class="chart-wrap"><canvas id="chart-mora"></canvas></div></div>
@@ -1136,9 +1131,10 @@ function evaluarAlertaGestora(){
 
   // ¿Hay corte del día de AYER? (la gestora siempre sube el corte del día anterior)
   var ayer=new Date(now);ayer.setDate(ayer.getDate()-1);
+  var ayerEsDomingo=ayer.getDay()===0;
   var ayerStr=ayer.getFullYear()+'-'+String(ayer.getMonth()+1).padStart(2,'0')+'-'+String(ayer.getDate()).padStart(2,'0');
   var cobros=RAW.cobros_diarios||[];
-  var tieneCorte=cobros.some(function(c){return c.d===ayerStr;});
+  var tieneCorte=ayerEsDomingo||cobros.some(function(c){return c.d===ayerStr;});
 
   // ¿Hay clientes con seguimiento programado para hoy o futuro (es decir, ya programó)?
   var followups=RAW.followups||{};
@@ -1383,9 +1379,6 @@ function computeMetrics(){
   var histCartera=RAW.historico_cartera||[];
   histCartera=histCartera.slice().sort(function(a,b){return a.d>b.d?1:-1;});
 
-  // Guardar snapshot del día si clients tiene datos
-  if(clients.length>0) guardarSnapshotClientesMora(clients, histCartera);
-
   var totalCartera=clients.reduce(function(a,c){return a+(c.tot||0);},0);
   var totalClientes=clients.length;
   var today=todayStr();
@@ -1620,9 +1613,6 @@ function renderVencida(){
   } else {
     showEmpty('wrap-daily','📂','Sin cobros registrados en el período seleccionado.<br>El gestor debe subir el <strong>corte diario de cobranza</strong> de Microsip.');
   }
-
-  // ── GRÁFICA: Clientes en mora histórico ──
-  renderGraficaClientesMora();
 
   // ── GRÁFICA: Distribución de mora ──
   destroyChart('chart-mora');
@@ -2822,17 +2812,20 @@ function renderAforosKF(contratos){
 
   var totalPendiente=pendientes.reduce(function(a,c){return a+(c.aforo||0);},0);
   var totalDevuelto=devueltos.reduce(function(a,c){return a+(c.aforo||0);},0);
+  var hoyMs=new Date().setHours(0,0,0,0);
+  var DIAS_DEV=15;
+  function diasDesde(f){if(!f)return -1;return Math.floor((hoyMs-new Date(f+'T00:00:00').getTime())/86400000);}
+  var listos=pendientes.filter(function(c){return diasDesde(c.fechaPagoReal)>=DIAS_DEV;});
+  var enEspera=pendientes.filter(function(c){return diasDesde(c.fechaPagoReal)<DIAS_DEV;});
+  var totalListos=listos.reduce(function(a,c){return a+(c.aforo||0);},0);
+  var totalEnEspera=enEspera.reduce(function(a,c){return a+(c.aforo||0);},0);
 
   function rowAforo(c,esPendiente){
     var safeId=c.id.replace(/'/g,"\\'");
-    var estadoBadge=esPendiente
-      ?'<span class="badge badge-amber">⏳ Pendiente</span>'
-      :'<span class="badge badge-green">✓ Devuelto</span>';
-    var accion=esPendiente
-      ?'<button onclick="marcarAforoDevuelto(\''+safeId+'\')" style="background:var(--green-bg);color:var(--green);border:1px solid #a7d9a7;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">✓ Marcar devuelto</button>'
-      :'<span style="font-size:11px;color:var(--text3)">'+esc(c.fechaDevolucionAforo?dmyFromISO(c.fechaDevolucionAforo):'—')+'</span>';
-    return '<tr>'+
-      '<td>'+estadoBadge+'</td>'+
+    var diasD=diasDesde(c.fechaPagoReal),diasR=DIAS_DEV-diasD;
+    var esListo=esPendiente&&diasD>=DIAS_DEV;
+    var estadoBadge=!esPendiente?'<span class="badge badge-green">u2713 Devuelto</span>':esListo?'<span class="badge badge-green">ud83dudd14 Reclamar</span>':'<span class="badge badge-amber">u23f3 En espera</span>';
+    var accion=!esPendiente?'<span style="font-size:11px;color:var(--text3)">'+esc(c.fechaDevolucionAforo?dmyFromISO(c.fechaDevolucionAforo):'u2014')+'</span>':esListo?'<button onclick="marcarAforoDevuelto(\''+safeId+'\')" style="background:var(--green-bg);color:var(--green);border:1px solid #a7d9a7;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Marcar devuelto</button>':'<span style="font-size:11px;color:var(--text3)">Faltan '+diasR+' du00eda'+(diasR===1?'':'s')+'</span>';
       '<td><div style="font-weight:600">'+esc(c.deudor)+'</div><div style="font-size:11px;color:var(--text3)">Op. '+esc((c.operacionId||'').substring(0,16))+'…</div></td>'+
       '<td style="text-align:right">'+fmx(c.valorNominal)+'</td>'+
       '<td style="font-size:12px">'+esc(c.fechaEmision||'—')+'</td>'+
@@ -5583,9 +5576,13 @@ async function renderProyeccion(){
     var off=Math.max(1,diff),base=proyectarMes(off);
     // Semana del mes por día (1-7=sem1, 8-14=sem2, 15-21=sem3, 22+=sem4)
     var dia=iniDate.getDate();
-    var sem=dia<=7?1:dia<=14?2:dia<=21?3:4;
-    // Sem 5+ (día 29+) usa mismo peso que sem4
-    return dist[Math.min(sem,4)]*base;
+    if(dia<=7) return dist[1]*base;
+    if(dia<=14) return dist[2]*base;
+    if(dia<=21) return dist[3]*base;
+    if(dia<=28) return dist[4]*base;
+    var diasMes=new Date(iniDate.getFullYear(),iniDate.getMonth()+1,0).getDate();
+    var diasSem5=diasMes-28;
+    return dist[4]*base*(diasSem5/7);
   }
 
   // Semanas fijas del mes: 1-7, 8-14, 15-21, 22-28, 29-fin
@@ -5880,92 +5877,6 @@ function guardarCarteraFirebase(){
   DB_MC.ref('cobranza/cartera_global').set(payload)
     .then(function(){showToast('☁ Cartera guardada en Firebase — visible en Estados Financieros');})
     .catch(function(e){console.warn('Error guardando cartera:',e);});
-}
-
-// ══ HISTÓRICO CLIENTES EN MORA ═══════════════════════════════════
-
-// Guarda snapshot diario. Se llama desde renderVencida() cuando clients ya tiene datos.
-function guardarSnapshotClientesMora(clients, histCartera){
-  if(!DB_MC) return;
-  var hoy=new Date().toISOString().split('T')[0];
-  // No guardar si ya existe el de hoy
-  if(histCartera.some(function(s){return s.d===hoy;})) return;
-  // Contar clientes con días de mora > 0
-  var clientesMora=clients.filter(function(c){return(c.mx||0)>0;}).length;
-  var totalVencido=clients.reduce(function(a,c){return a+(c.tot||0);},0);
-  if(!clientesMora&&!totalVencido) return; // sin datos reales aún
-  var hist=histCartera.slice();
-  hist.push({d:hoy, t:totalVencido, clientes:clientesMora});
-  if(hist.length>180) hist=hist.slice(-180);
-  // Actualizar RAW local para que la gráfica lo vea inmediatamente
-  RAW.historico_cartera=hist;
-  DB_MC.ref('cobranza/data/historico_cartera').set(hist)
-    .catch(function(e){console.warn('Error guardando snapshot mora:',e);});
-}
-
-// Renderiza la gráfica de clientes en mora histórico
-function renderGraficaClientesMora(){
-  destroyChart('chart-clientes-mora');
-  restoreCanvas('wrap-clientes-mora','chart-clientes-mora','tall');
-  var el=document.getElementById('chart-clientes-mora');
-  if(!el) return;
-  var hist=(RAW&&RAW.historico_cartera||[]).slice().sort(function(a,b){return a.d>b.d?1:-1;});
-  var conClientes=hist.filter(function(s){return s.clientes!=null;});
-  if(conClientes.length<2){
-    showEmpty('wrap-clientes-mora','📊','El historial se construye día a día.<br>Aparecerá aquí desde mañana conforme se carguen reportes diarios.');
-    return;
-  }
-  var sub=document.getElementById('chart-clientes-mora-sub');
-  if(sub){
-    var ult=conClientes[conClientes.length-1];
-    var pen=conClientes.length>=2?conClientes[conClientes.length-2]:null;
-    var tendDir=pen?(ult.clientes<pen.clientes?'↓ bajando':ult.clientes>pen.clientes?'↑ subiendo':'= sin cambio'):'';
-    sub.textContent=conClientes.length+' días de historial · Hoy: '+ult.clientes+' clientes en mora '+tendDir;
-  }
-  var pointColors=conClientes.map(function(s,i){
-    if(i===0) return '#64748b';
-    return s.clientes<=conClientes[i-1].clientes?'#3B6D11':'#A32D2D';
-  });
-  CHARTS['chart-clientes-mora']=new Chart(el,{
-    type:'line',
-    data:{
-      labels:conClientes.map(function(s){return fmtD(s.d);}),
-      datasets:[{
-        label:'Clientes en mora',
-        data:conClientes.map(function(s){return s.clientes;}),
-        borderColor:'#1d4ed8',
-        backgroundColor:'rgba(29,78,216,0.08)',
-        borderWidth:2.5,
-        pointBackgroundColor:pointColors,
-        pointRadius:4,
-        pointHoverRadius:6,
-        fill:true,
-        tension:0.3
-      }]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{
-        legend:{display:false},
-        tooltip:{
-          callbacks:{
-            label:function(ctx){
-              var s=conClientes[ctx.dataIndex];
-              return [' '+ctx.parsed.y+' clientes en mora',' Cartera: $'+Math.round(s.t).toLocaleString('es-MX')];
-            }
-          }
-        }
-      },
-      scales:{
-        x:{grid:{display:false},ticks:{maxTicksLimit:12,font:{size:11}}},
-        y:{
-          beginAtZero:true,
-          ticks:{stepSize:1,font:{size:11},callback:function(v){return Number.isInteger(v)?v:'';}},
-          grid:{color:'rgba(0,0,0,0.06)'}
-        }
-      }
-    }
-  });
 }
 
 </script>
