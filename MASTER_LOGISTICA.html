@@ -1179,12 +1179,14 @@ function last14Days() {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('fuel-fecha').value = hoy();
+  const fuelFecha = document.getElementById('fuel-fecha');
+  if (fuelFecha) fuelFecha.value = hoy();
   const today = hoy();
   const monthAgo = new Date(); monthAgo.setDate(monthAgo.getDate() - 30);
-  document.getElementById('rng-desde').value = monthAgo.toISOString().split('T')[0];
-  document.getElementById('rng-hasta').value = today;
-  _filtDesde = document.getElementById('rng-desde').value;
+  const rngDesde = document.getElementById('rng-desde');
+  const rngHasta = document.getElementById('rng-hasta');
+  if (rngDesde) { rngDesde.value = monthAgo.toISOString().split('T')[0]; _filtDesde = rngDesde.value; }
+  if (rngHasta) { rngHasta.value = today; }
   _filtHasta = today;
 });
 
