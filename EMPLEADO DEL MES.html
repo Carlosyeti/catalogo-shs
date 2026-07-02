@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Empleado del Mes – SHS</title>
+<style>
+  :root {
+    --primary: #1a56a4;
+    --primary-dark: #0f3d7a;
+    --primary-light: #e8f0fb;
+    --accent: #f59e0b;
+    --accent-light: #fef3c7;
+    --green: #10b981;
+    --green-light: #d1fae5;
+    --red: #ef4444;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --shadow: 0 4px 20px rgba(0,0,0,0.08);
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--gray-50); color: var(--gray-800); min-height: 100vh; }
+
+  /* HEADER */
+  .header { background: var(--primary); color: white; padding: 20px 24px; display: flex; align-items: center; gap: 16px; }
+  .header-logo { width: 44px; height: 44px; background: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  .header h1 { font-size: 20px; font-weight: 700; }
+  .header p { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+
+  /* STEPS BAR */
+  .steps { background: white; border-bottom: 1px solid var(--gray-200); padding: 0 24px; display: flex; gap: 0; overflow-x: auto; }
+  .step { display: flex; align-items: center; gap: 8px; padding: 14px 20px; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; color: var(--gray-400); font-size: 14px; font-weight: 500; transition: all 0.2s; }
+  .step.active { color: var(--primary); border-bottom-color: var(--primary); }
+  .step.done { color: var(--green); }
+  .step-num { width: 22px; height: 22px; border-radius: 50%; background: var(--gray-200); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+  .step.active .step-num { background: var(--primary); color: white; }
+  .step.done .step-num { background: var(--green); color: white; }
+
+  /* MAIN */
+  .main { max-width: 860px; margin: 0 auto; padding: 28px 20px; }
+
+  /* CARDS */
+  .card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; margin-bottom: 20px; }
+  .card-title { font-size: 17px; font-weight: 700; color: var(--gray-800); margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+  .card-sub { font-size: 13px; color: var(--gray-400); margin-bottom: 20px; }
+
+  /* INPUTS */
+  label { font-size: 13px; font-weight: 600; color: var(--gray-700); display: block; margin-bottom: 5px; }
+  input, select { width: 100%; padding: 10px 14px; border: 1.5px solid var(--gray-200); border-radius: 8px; font-size: 14px; color: var(--gray-800); background: white; outline: none; transition: border 0.2s; }
+  input:focus, select:focus { border-color: var(--primary); }
+  .input-row { display: flex; gap: 10px; align-items: flex-end; }
+  .input-row input { flex: 1; }
+
+  /* BUTTONS */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-accent { background: var(--accent); color: white; }
+  .btn-accent:hover { background: #d97706; }
+  .btn-outline { background: white; color: var(--primary); border: 1.5px solid var(--primary); }
+  .btn-outline:hover { background: var(--primary-light); }
+  .btn-danger { background: #fee2e2; color: var(--red); }
+  .btn-danger:hover { background: #fecaca; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn-lg { padding: 13px 28px; font-size: 15px; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* TAGS */
+  .tag { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+  .tag-ventas { background: var(--primary-light); color: var(--primary); }
+  .tag-almacen { background: var(--accent-light); color: #92400e; }
+
+  /* EMPLOYEE LIST */
+  .emp-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .emp-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--gray-50); border-radius: 8px; border: 1px solid var(--gray-200); }
+  .emp-name { font-size: 14px; font-weight: 600; }
+  .emp-actions { display: flex; gap: 6px; }
+
+  /* SECTION DIVIDER */
+  .divider { border: none; border-top: 1px solid var(--gray-200); margin: 20px 0; }
+
+  /* STAR RATING */
+  .values-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  .values-table th { font-size: 12px; color: var(--gray-400); font-weight: 600; text-align: left; padding: 8px 10px; background: var(--gray-50); }
+  .values-table td { padding: 10px; border-top: 1px solid var(--gray-100); vertical-align: middle; }
+  .values-table td:first-child { font-size: 14px; font-weight: 600; }
+  .stars { display: flex; gap: 4px; }
+  .star { font-size: 22px; cursor: pointer; color: var(--gray-300); transition: color 0.15s; user-select: none; }
+  .star.on { color: var(--accent); }
+  .star:hover { color: var(--accent); }
+
+  /* VOTER SELECTOR */
+  .voter-card { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 2px solid var(--gray-200); border-radius: 10px; cursor: pointer; transition: all 0.2s; margin-bottom: 8px; }
+  .voter-card:hover { border-color: var(--primary); background: var(--primary-light); }
+  .voter-card.selected { border-color: var(--primary); background: var(--primary-light); }
+  .voter-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; }
+  .voter-name { font-weight: 600; font-size: 14px; }
+  .voter-dept { font-size: 12px; color: var(--gray-400); margin-top: 1px; }
+
+  /* CANDIDATE TABS */
+  .candidate-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .cand-tab { padding: 7px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border: 2px solid var(--gray-200); color: var(--gray-600); transition: all 0.2s; }
+  .cand-tab:hover { border-color: var(--primary); color: var(--primary); }
+  .cand-tab.done { border-color: var(--green); color: var(--green); background: var(--green-light); }
+  .cand-tab.active { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+
+  /* RESULTS */
+  .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px; }
+  @media(max-width:600px) { .results-grid { grid-template-columns: 1fr; } }
+  .result-dept { border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .result-dept-header { padding: 14px 20px; color: white; font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  .ventas-header { background: var(--primary); }
+  .almacen-header { background: #b45309; }
+  .result-rows { background: white; }
+  .result-row { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--gray-100); gap: 12px; }
+  .result-rank { width: 26px; height: 26px; border-radius: 50%; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .rank-1 { background: var(--accent); color: white; }
+  .rank-2 { background: var(--gray-300); color: var(--gray-700); }
+  .rank-3 { background: #cd7f32; color: white; }
+  .rank-n { background: var(--gray-100); color: var(--gray-400); }
+  .result-name { flex: 1; font-weight: 600; font-size: 14px; }
+  .result-score { font-size: 18px; font-weight: 800; color: var(--primary); }
+  .result-breakdown { font-size: 11px; color: var(--gray-400); margin-top: 1px; }
+  .winner-badge { background: var(--accent-light); color: #92400e; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+
+  /* ALERT */
+  .alert { padding: 12px 16px; border-radius: 8px; font-size: 13px; display: flex; gap: 10px; align-items: flex-start; margin-bottom: 16px; }
+  .alert-info { background: var(--primary-light); color: var(--primary-dark); border-left: 4px solid var(--primary); }
+  .alert-success { background: var(--green-light); color: #065f46; border-left: 4px solid var(--green); }
+  .alert-warn { background: var(--accent-light); color: #92400e; border-left: 4px solid var(--accent); }
+
+  /* PROGRESS */
+  .progress-wrap { background: var(--gray-200); border-radius: 99px; height: 6px; margin-top: 6px; }
+  .progress-bar { background: var(--primary); border-radius: 99px; height: 6px; transition: width 0.3s; }
+
+  /* MONTH BADGE */
+  .month-badge { background: var(--primary-light); color: var(--primary); font-size: 13px; font-weight: 600; padding: 4px 14px; border-radius: 20px; display: inline-block; margin-bottom: 12px; }
+
+  /* HIDDEN */
+  .hidden { display: none !important; }
+
+  /* FOOTER NAV */
+  .footer-nav { display: flex; justify-content: space-between; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--gray-200); }
+
+  /* SCORE LABELS */
+  .score-label { font-size: 11px; color: var(--gray-400); display: block; margin-top: 2px; }
+
+  .section-sep { display: flex; align-items: center; gap: 10px; margin: 22px 0; }
+  .section-sep span { font-size: 12px; color: var(--gray-400); font-weight: 600; white-space: nowrap; }
+  .section-sep::before, .section-sep::after { content: ''; flex: 1; height: 1px; background: var(--gray-200); }
+</style>
+<!-- Firebase compat SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">🏆</div>
+  <div>
+    <h1>Empleado del Mes – SHS</h1>
+    <p>Sistema digital de evaluación por valores</p>
+  </div>
+</div>
+
+<div class="steps">
+  <div class="step active" id="step1-btn" onclick="goStep(1)">
+    <div class="step-num">1</div> Configuración
+  </div>
+  <div class="step" id="step2-btn" onclick="goStep(2)">
+    <div class="step-num">2</div> Votación del Equipo
+  </div>
+  <div class="step" id="step3-btn" onclick="goStep(3)">
+    <div class="step-num">3</div> Evaluación del Jefe
+  </div>
+  <div class="step" id="step4-btn" onclick="goStep(4)">
+    <div class="step-num">4</div> Resultados
+  </div>
+  <div class="step" id="step5-btn" onclick="goStep(5)">
+    <div class="step-num">5</div> Histórico Anual
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ============ STEP 1: SETUP ============ -->
+  <div id="step1">
+
+    <!-- Mes y año -->
+    <div class="card">
+      <div class="card-title">⚙️ Configuración del mes</div>
+      <div class="card-sub">Selecciona el mes, activa los participantes y cuando todo esté listo inicia la votación.</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <div>
+          <label>Mes de evaluación</label>
+          <select id="sel-mes">
+            <option value="">— Selecciona —</option>
+            <option>Enero</option><option>Febrero</option><option>Marzo</option>
+            <option>Abril</option><option>Mayo</option><option>Junio</option>
+            <option>Julio</option><option>Agosto</option><option>Septiembre</option>
+            <option>Octubre</option><option>Noviembre</option><option>Diciembre</option>
+          </select>
+        </div>
+        <div>
+          <label>Año</label>
+          <input type="number" id="inp-anio" value="2026" min="2025" max="2040">
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista maestra de empleados -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+        <div>
+          <div class="card-title" style="margin-bottom:2px;">👥 Participantes</div>
+          <div style="font-size:13px;color:var(--gray-400);">Activa con ✓ a quienes participan este mes. Administra la lista maestra abajo.</div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="toggleAdminPanel()">⚙️ Administrar lista</button>
+      </div>
+
+      <!-- Checkboxes por depto -->
+      <div id="participantes-ventas" style="margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--primary);letter-spacing:.4px;margin-bottom:8px;">💼 Ventas</div>
+        <div id="checks-ventas" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
+      <div id="participantes-almacen">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#92400e;letter-spacing:.4px;margin-bottom:8px;">📦 Almacén</div>
+        <div id="checks-almacen" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
+      <div id="emp-empty" class="alert alert-info" style="margin-top:12px;display:none;">
+        📋 Sin empleados en la lista maestra. Usa "Administrar lista" para agregarlos.
+      </div>
+    </div>
+
+    <!-- Panel admin (oculto por defecto) -->
+    <div id="admin-panel" class="card" style="display:none;border:2px solid var(--primary);">
+      <div class="card-title" style="margin-bottom:4px;">⚙️ Lista Maestra de Empleados</div>
+      <div style="font-size:13px;color:var(--gray-400);margin-bottom:14px;">Agrega o elimina empleados permanentes. Se guardan en Firebase y estarán disponibles todos los meses.</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:flex-end;margin-bottom:16px;">
+        <div>
+          <label>Nombre</label>
+          <input type="text" id="inp-nombre" placeholder="Ej. Ana García" onkeydown="if(event.key==='Enter') agregarEmpleadoMaestro()">
+        </div>
+        <div>
+          <label>Departamento</label>
+          <select id="inp-dept">
+            <option value="Ventas">Ventas</option>
+            <option value="Almacén">Almacén</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="agregarEmpleadoMaestro()" style="white-space:nowrap;">+ Agregar</button>
+      </div>
+
+      <div id="lista-maestra"></div>
+    </div>
+
+    <!-- Resumen -->
+    <div id="setup-summary" class="card hidden">
+      <div class="card-title">📊 Resumen</div>
+      <div id="summary-text" style="font-size:14px; color:var(--gray-600); line-height:1.8;"></div>
+    </div>
+
+    <div class="footer-nav">
+      <div></div>
+      <button class="btn btn-primary btn-lg" onclick="startVoting()" id="btn-start">Iniciar votación →</button>
+    </div>
+  </div>
+
+  <!-- ============ STEP 2: TEAM VOTING ============ -->
+  <div id="step2" class="hidden">
+    <div class="card">
+      <div class="card-title">👥 Votación entre compañeros</div>
+      <div class="card-sub">Cada colaborador califica a sus compañeros del mismo departamento. Peso: 50% de la nota final.</div>
+      <div class="alert alert-info">ℹ️ Selecciona quién está votando, luego califica a cada compañero de departamento (excepto a ti mismo).</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px;">¿Quién está votando?</div>
+      <div id="voter-list"></div>
+    </div>
+
+    <div id="voting-panel" class="card hidden">
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+        <div>
+          <div class="card-title">Calificando como: <span id="voter-name-label" style="color:var(--primary)"></span></div>
+          <div style="font-size:13px; color:var(--gray-400); margin-top:2px;" id="voter-dept-label"></div>
+        </div>
+        <div id="vote-progress-wrap" style="text-align:right;">
+          <div style="font-size:12px; color:var(--gray-400);">Candidatos evaluados</div>
+          <div id="vote-progress-text" style="font-size:13px; font-weight:700; color:var(--primary);"></div>
+          <div class="progress-wrap" style="width:160px; margin-top:4px;">
+            <div class="progress-bar" id="vote-progress-bar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="candidate-tabs" id="candidate-tabs"></div>
+      <div id="candidate-form"></div>
+
+      <div class="footer-nav">
+        <button class="btn btn-outline" onclick="goStep(1)">← Volver</button>
+        <button class="btn btn-primary" id="btn-save-vote" onclick="saveCurrentVoterVotes()">Guardar mis votos ✓</button>
+      </div>
+    </div>
+
+    <div id="team-vote-summary" class="card hidden" style="margin-top:0;">
+      <div class="card-title" style="margin-bottom:12px;">📋 Estado de votaciones</div>
+      <div id="vote-status-list"></div>
+      <div class="footer-nav">
+        <button class="btn btn-outline" onclick="goStep(1)">← Volver</button>
+        <button class="btn btn-accent btn-lg" onclick="goStep(3)" id="btn-to-manager">Continuar: Evaluación del jefe →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ STEP 3: MANAGER ============ -->
+  <div id="step3" class="hidden">
+    <div class="card">
+      <div class="card-title">👔 Evaluación del Jefe</div>
+      <div class="card-sub">El jefe directo califica a cada colaborador. Peso: 50% de la nota final.</div>
+    </div>
+
+    <div id="mgr-tabs-wrap" class="card">
+      <div class="card-title" style="margin-bottom:12px;">Selecciona el colaborador a evaluar:</div>
+      <div class="candidate-tabs" id="mgr-candidate-tabs"></div>
+      <div id="mgr-candidate-form"></div>
+      <div class="footer-nav">
+        <button class="btn btn-outline" onclick="goStep(2)">← Volver</button>
+        <button class="btn btn-accent btn-lg" onclick="calcResults()">Ver Resultados 🏆</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ STEP 4: RESULTS ============ -->
+  <div id="step4" class="hidden">
+    <div class="card">
+      <div class="card-title">🏆 Resultados finales</div>
+      <div id="results-month-badge"></div>
+      <div class="alert alert-success" id="winner-announce"></div>
+      <div class="results-grid" id="results-grid"></div>
+    </div>
+
+    <div class="card" id="detail-card">
+      <div class="card-title" style="margin-bottom:12px;">📊 Detalle de puntuaciones</div>
+      <div id="detail-table"></div>
+    </div>
+
+    <div style="margin-top:16px;padding:14px 16px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+      <div style="font-size:13px;color:#166534;font-weight:600;">💾 ¿Listo? Guarda el resultado oficial en Firebase para el histórico anual.</div>
+      <button class="btn btn-primary" onclick="guardarResultadoFirebase()" id="btn-guardar-fb" style="background:#16a34a;">💾 Guardar resultado oficial</button>
+    </div>
+    <div class="footer-nav">
+      <button class="btn btn-outline" onclick="goStep(3)">← Ajustar evaluaciones</button>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-primary" onclick="exportCSV()">⬇ Exportar CSV</button>
+        <button class="btn btn-outline" onclick="goStep(5)">📅 Ver Histórico →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ STEP 5: HISTÓRICO ANUAL ============ -->
+  <div id="step5" class="hidden">
+
+    <div class="card">
+      <div class="card-title">📅 Histórico Anual – Empleado del Mes</div>
+      <div class="card-sub">Registro de todos los meses del año. Al finalizar diciembre, quien acumule más victorias gana el premio anual.</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap;">
+        <label style="margin:0;font-size:13px;">Año a consultar:</label>
+        <input type="number" id="hist-anio" value="2026" min="2025" max="2040" style="width:100px;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:14px;" onchange="renderHistorico()">
+      </div>
+    </div>
+
+    <!-- Podio acumulado -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:16px;">🏆 Marcador Acumulado del Año</div>
+      <div id="hist-podio" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;"></div>
+    </div>
+
+    <!-- Tabla mes a mes -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:14px;">📋 Resultados Mes a Mes</div>
+      <div id="hist-tabla"></div>
+    </div>
+
+    <div class="footer-nav">
+      <button class="btn btn-outline" onclick="goStep(4)">← Resultados</button>
+      <div></div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+// ===================== FIREBASE =====================
+const firebaseConfig = {
+  apiKey: "AIzaSyDGBgicmvOge196PiSgmIHhseQUGMiko-E",
+  authDomain: "surtidora-de-higienicos.firebaseapp.com",
+  databaseURL: "https://surtidora-de-higienicos-default-rtdb.firebaseio.com",
+  projectId: "surtidora-de-higienicos",
+  storageBucket: "surtidora-de-higienicos.firebasestorage.app",
+  messagingSenderId: "232648877023",
+  appId: "1:232648877023:web:9e8a4a743b68f4e16d9a6a"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ===================== STATE =====================
+let employees = [];       // participantes activos del mes {id, name, dept}
+let empleadosMaestro = []; // lista maestra de Firebase {id, name, dept}
+let teamVotes = {};
+let mgrVotes = {};
+let currentVoterId = null;
+let currentMgrCandId = null;
+let activeCandTab = {};
+let currentStep = 1;
+
+const VALUES = ['Compromiso','Responsabilidad','Trabajo en equipo','Respeto','Calidad','Actitud positiva'];
+const VALUE_KEYS = ['compromiso','responsabilidad','equipo','respeto','calidad','actitud'];
+
+// ── Lista maestra Firebase listener ──────────────────────────
+db.ref('empleado_mes/config/empleados').on('value', snap => {
+  const data = snap.val() || {};
+  empleadosMaestro = Object.entries(data).map(([key, e]) => ({fbKey: key, ...e}))
+    .sort((a,b) => a.dept > b.dept ? 1 : a.dept < b.dept ? -1 : a.name > b.name ? 1 : -1);
+  renderListaMaestra();
+  renderParticipantesChecks();
+});
+
+// ===================== NAVIGATION =====================
+function goStep(n) {
+  if (n > 1 && n < 5 && employees.length < 2) { alert('Agrega al menos 2 colaboradores para continuar.'); return; }
+  [1,2,3,4,5].forEach(i => {
+    document.getElementById('step'+i).classList.toggle('hidden', i !== n);
+    const btn = document.getElementById('step'+i+'-btn');
+    btn.classList.remove('active','done');
+    if (i === n) btn.classList.add('active');
+    else if (i < n) btn.classList.add('done');
+  });
+  currentStep = n;
+  if (n === 2) renderVoterList();
+  if (n === 3) renderManagerPanel();
+  if (n === 5) renderHistorico();
+}
+
+// ===================== STEP 1: LISTA MAESTRA =====================
+
+function toggleAdminPanel() {
+  const p = document.getElementById('admin-panel');
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+}
+
+function agregarEmpleadoMaestro() {
+  const name = document.getElementById('inp-nombre').value.trim();
+  const dept = document.getElementById('inp-dept').value;
+  if (!name) { alert('Escribe el nombre.'); return; }
+  if (empleadosMaestro.find(e => e.name.toLowerCase() === name.toLowerCase())) {
+    alert('Ya existe un empleado con ese nombre.'); return;
+  }
+  const newRef = db.ref('empleado_mes/config/empleados').push();
+  newRef.set({ name, dept, activo: true })
+    .then(() => { document.getElementById('inp-nombre').value = ''; })
+    .catch(e => alert('Error: ' + e.message));
+}
+
+function eliminarEmpleadoMaestro(fbKey, nombre) {
+  if (!confirm('¿Eliminar a ' + nombre + ' de la lista permanente?')) return;
+  db.ref('empleado_mes/config/empleados/' + fbKey).remove()
+    .catch(e => alert('Error: ' + e.message));
+}
+
+function renderListaMaestra() {
+  const cont = document.getElementById('lista-maestra');
+  if (!cont) return;
+  if (!empleadosMaestro.length) {
+    cont.innerHTML = '<p style="font-size:13px;color:var(--gray-400);">Sin empleados aún. Agrega el primero arriba.</p>';
+    return;
+  }
+  cont.innerHTML = empleadosMaestro.map(e =>
+    '<div class="emp-item" style="margin-bottom:6px;">' +
+    '<div style="display:flex;align-items:center;gap:10px;">' +
+    '<div style="width:32px;height:32px;border-radius:50%;background:' + (e.dept==='Ventas'?'var(--primary)':'#b45309') + ';color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;">' + e.name[0].toUpperCase() + '</div>' +
+    '<div><div class="emp-name">' + e.name + '</div>' +
+    '<span class="tag ' + (e.dept==='Ventas'?'tag-ventas':'tag-almacen') + '" style="font-size:11px;padding:2px 8px;">' + e.dept + '</span></div></div>' +
+    '<button class="btn btn-danger btn-sm" onclick="eliminarEmpleadoMaestro('' + e.fbKey + '','' + e.name.replace(/'/g,"\'") + '')">✕ Eliminar</button>' +
+    '</div>'
+  ).join('');
+}
+
+function renderParticipantesChecks() {
+  const checksV = document.getElementById('checks-ventas');
+  const checksA = document.getElementById('checks-almacen');
+  const empty   = document.getElementById('emp-empty');
+  if (!checksV || !checksA) return;
+
+  const ventas  = empleadosMaestro.filter(e => e.dept === 'Ventas');
+  const almacen = empleadosMaestro.filter(e => e.dept === 'Almacén');
+
+  if (!empleadosMaestro.length) {
+    empty.style.display = 'block';
+    checksV.innerHTML = ''; checksA.innerHTML = '';
+    return;
+  }
+  empty.style.display = 'none';
+
+  const makeCheck = e =>
+    '<label style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:8px;cursor:pointer;transition:all .15s;" ' +
+    'onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor=this.querySelector('input').checked?'var(--primary)':'var(--gray-200)'">' +
+    '<input type="checkbox" id="chk_' + e.fbKey + '" checked style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer;" onchange="syncEmployeesFromChecks()">' +
+    '<div style="width:30px;height:30px;border-radius:50%;background:' + (e.dept==='Ventas'?'var(--primary)':'#b45309') + ';color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;">' + e.name[0].toUpperCase() + '</div>' +
+    '<span style="font-weight:600;font-size:14px;">' + e.name + '</span>' +
+    '</label>';
+
+  checksV.innerHTML = ventas.length  ? ventas.map(makeCheck).join('')  : '<p style="font-size:13px;color:var(--gray-400);">Sin empleados en Ventas.</p>';
+  checksA.innerHTML = almacen.length ? almacen.map(makeCheck).join('') : '<p style="font-size:13px;color:var(--gray-400);">Sin empleados en Almacén.</p>';
+
+  syncEmployeesFromChecks();
+}
+
+function syncEmployeesFromChecks() {
+  employees = empleadosMaestro
+    .filter(e => {
+      const chk = document.getElementById('chk_' + e.fbKey);
+      return chk && chk.checked;
+    })
+    .map(e => ({ id: e.fbKey, name: e.name, dept: e.dept }));
+  renderSetupSummary();
+}
+
+function renderSetupSummary() {
+  const summary = document.getElementById('setup-summary');
+  const text    = document.getElementById('summary-text');
+  if (!summary || !text) return;
+  if (!employees.length) { summary.classList.add('hidden'); return; }
+  summary.classList.remove('hidden');
+  const ventas  = employees.filter(e => e.dept === 'Ventas').length;
+  const almacen = employees.filter(e => e.dept === 'Almacén').length;
+  text.innerHTML = `👔 <b>${ventas}</b> colaborador(es) en <b>Ventas</b><br>📦 <b>${almacen}</b> colaborador(es) en <b>Almacén</b><br>👥 <b>${employees.length}</b> total de participantes`;
+}
+
+function startVoting() {
+  const mes = document.getElementById('sel-mes').value;
+  if (!mes) { alert('Selecciona el mes de evaluación.'); return; }
+  if (employees.length < 2) { alert('Agrega al menos 2 colaboradores.'); return; }
+  goStep(2);
+}
+
+// ===================== STEP 2: VOTER LIST =====================
+function renderVoterList() {
+  const list = document.getElementById('voter-list');
+  list.innerHTML = '';
+  employees.forEach(e => {
+    const voted = teamVotes[e.id];
+    const peers = employees.filter(p => p.dept === e.dept && p.id !== e.id);
+    const doneCount = voted ? Object.keys(voted).length : 0;
+    const total = peers.length;
+    const complete = doneCount >= total && total > 0;
+    const div = document.createElement('div');
+    div.className = 'voter-card' + (currentVoterId === e.id ? ' selected' : '');
+    div.onclick = () => selectVoter(e.id);
+    div.innerHTML = `
+      <div class="voter-avatar" style="background:${e.dept==='Ventas'?'var(--primary)':'#b45309'}">${e.name[0].toUpperCase()}</div>
+      <div style="flex:1;">
+        <div class="voter-name">${e.name}</div>
+        <div class="voter-dept">${e.dept}</div>
+        <div class="progress-wrap" style="width:120px;margin-top:5px;"><div class="progress-bar" style="width:${total>0?Math.round(doneCount/total*100):0}%"></div></div>
+      </div>
+      <div style="text-align:right;">
+        ${complete ? '<span style="color:var(--green);font-size:18px;">✓</span>' : `<span style="font-size:12px;color:var(--gray-400);">${doneCount}/${total}</span>`}
+      </div>
+    `;
+    list.appendChild(div);
+  });
+
+  // summary status
+  const allDone = employees.every(e => {
+    const peers = employees.filter(p => p.dept === e.dept && p.id !== e.id);
+    return peers.length === 0 || (teamVotes[e.id] && Object.keys(teamVotes[e.id]).length >= peers.length);
+  });
+
+  const summaryDiv = document.getElementById('team-vote-summary');
+  if (allDone) {
+    summaryDiv.classList.remove('hidden');
+    const statusList = document.getElementById('vote-status-list');
+    statusList.innerHTML = '<div class="alert alert-success">✅ Todos los colaboradores han completado su votación. Puedes continuar con la evaluación del jefe.</div>';
+  }
+}
+
+function selectVoter(voterId) {
+  currentVoterId = voterId;
+  activeCandTab[voterId] = activeCandTab[voterId] || null;
+  const voter = employees.find(e => e.id === voterId);
+  const peers = employees.filter(e => e.dept === voter.dept && e.id !== voterId);
+
+  document.getElementById('voter-name-label').textContent = voter.name;
+  document.getElementById('voter-dept-label').textContent = 'Departamento: ' + voter.dept;
+  document.getElementById('voting-panel').classList.remove('hidden');
+
+  // render candidate tabs
+  renderCandidateTabs(voterId, peers);
+  if (peers.length > 0) {
+    const firstCand = activeCandTab[voterId] || peers[0].id;
+    activeCandTab[voterId] = firstCand;
+    renderCandidateForm(voterId, firstCand);
+  }
+  updateVoteProgress(voterId, peers);
+  renderVoterList();
+}
+
+function renderCandidateTabs(voterId, peers) {
+  const tabs = document.getElementById('candidate-tabs');
+  tabs.innerHTML = '';
+  peers.forEach(p => {
+    const voted = teamVotes[voterId] && teamVotes[voterId][p.id];
+    const isActive = activeCandTab[voterId] === p.id;
+    const div = document.createElement('div');
+    div.className = 'cand-tab' + (voted ? ' done' : '') + (isActive ? ' active' : '');
+    div.textContent = p.name;
+    div.onclick = () => { activeCandTab[voterId] = p.id; renderCandidateTabs(voterId, peers); renderCandidateForm(voterId, p.id); };
+    tabs.appendChild(div);
+  });
+}
+
+function renderCandidateForm(voterId, candidateId) {
+  const cand = employees.find(e => e.id === candidateId);
+  const existing = (teamVotes[voterId] && teamVotes[voterId][candidateId]) || {};
+  const form = document.getElementById('candidate-form');
+  form.innerHTML = `
+    <div style="margin-bottom:14px;">
+      <div style="font-size:15px;font-weight:700;">Evaluando a: <span style="color:var(--primary);">${cand.name}</span></div>
+      <div style="font-size:12px;color:var(--gray-400);">Califica cada valor del 1 (Deficiente) al 5 (Excelente)</div>
+    </div>
+    <table class="values-table">
+      <thead><tr><th>Valor</th><th>Calificación</th><th style="font-size:11px;color:var(--gray-400);">1=Def · 2=Reg · 3=Bue · 4=MuyB · 5=Exc</th></tr></thead>
+      <tbody>
+        ${VALUES.map((v,i) => `
+          <tr>
+            <td><span style="font-size:16px;">${['🎯','📋','🤝','🙏','✨','😊'][i]}</span> ${v}</td>
+            <td><div class="stars" id="stars_${i}">
+              ${[1,2,3,4,5].map(s => `<span class="star ${(existing[VALUE_KEYS[i]]||0)>=s?'on':''}" onclick="setStar('${voterId}','${candidateId}',${i},${s})" data-v="${i}" data-s="${s}">★</span>`).join('')}
+            </div></td>
+            <td><span id="lbl_${i}" class="score-label">${scoreLabel(existing[VALUE_KEYS[i]]||0)}</span></td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+    <div style="margin-top:14px;padding:12px;background:var(--gray-50);border-radius:8px;font-size:13px;color:var(--gray-600);">
+      Promedio actual: <b id="cur-avg" style="color:var(--primary);font-size:16px;">${calcAvg(existing)}</b> / 5
+    </div>
+  `;
+  // ensure temp storage
+  if (!teamVotes[voterId]) teamVotes[voterId] = {};
+  if (!teamVotes[voterId][candidateId]) teamVotes[voterId][candidateId] = {};
+}
+
+function setStar(voterId, candidateId, valIdx, score) {
+  if (!teamVotes[voterId]) teamVotes[voterId] = {};
+  if (!teamVotes[voterId][candidateId]) teamVotes[voterId][candidateId] = {};
+  teamVotes[voterId][candidateId][VALUE_KEYS[valIdx]] = score;
+  // Update stars visual
+  const starsDiv = document.getElementById('stars_'+valIdx);
+  starsDiv.querySelectorAll('.star').forEach(s => {
+    s.classList.toggle('on', parseInt(s.dataset.s) <= score);
+  });
+  document.getElementById('lbl_'+valIdx).textContent = scoreLabel(score);
+  document.getElementById('cur-avg').textContent = calcAvg(teamVotes[voterId][candidateId]);
+}
+
+function scoreLabel(s) {
+  return ['','Deficiente','Regular','Bueno','Muy bueno','Excelente'][s]||'';
+}
+
+function calcAvg(scores) {
+  const vals = VALUE_KEYS.map(k => scores[k]||0).filter(v=>v>0);
+  if (!vals.length) return '—';
+  return (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2);
+}
+
+function saveCurrentVoterVotes() {
+  const voter = employees.find(e => e.id === currentVoterId);
+  const peers = employees.filter(e => e.dept === voter.dept && e.id !== currentVoterId);
+  const incomplete = peers.filter(p => {
+    const v = teamVotes[currentVoterId] && teamVotes[currentVoterId][p.id];
+    return !v || VALUE_KEYS.some(k => !v[k]);
+  });
+  if (incomplete.length > 0) {
+    alert(`Faltan calificaciones para: ${incomplete.map(p=>p.name).join(', ')}\n\nPor favor completa todos los valores (1-5) para cada compañero.`);
+    return;
+  }
+  alert('✅ Votos de ' + voter.name + ' guardados correctamente.');
+  currentVoterId = null;
+  document.getElementById('voting-panel').classList.add('hidden');
+  renderVoterList();
+}
+
+function updateVoteProgress(voterId, peers) {
+  const done = peers.filter(p => {
+    const v = teamVotes[voterId] && teamVotes[voterId][p.id];
+    return v && VALUE_KEYS.every(k => v[k]);
+  }).length;
+  const pct = peers.length > 0 ? Math.round(done/peers.length*100) : 0;
+  document.getElementById('vote-progress-text').textContent = `${done} de ${peers.length}`;
+  document.getElementById('vote-progress-bar').style.width = pct + '%';
+}
+
+// ===================== STEP 3: MANAGER =====================
+function renderManagerPanel() {
+  const tabs = document.getElementById('mgr-candidate-tabs');
+  tabs.innerHTML = '';
+  employees.forEach(e => {
+    const done = mgrVotes[e.id] && VALUE_KEYS.every(k => mgrVotes[e.id][k]);
+    const isActive = currentMgrCandId === e.id;
+    const div = document.createElement('div');
+    div.className = 'cand-tab' + (done ? ' done' : '') + (isActive ? ' active' : '');
+    div.textContent = e.name + ' (' + e.dept + ')';
+    div.onclick = () => { currentMgrCandId = e.id; renderManagerPanel(); renderMgrForm(e.id); };
+    tabs.appendChild(div);
+  });
+  if (!currentMgrCandId && employees.length > 0) {
+    currentMgrCandId = employees[0].id;
+    renderManagerPanel();
+  }
+  renderMgrForm(currentMgrCandId);
+}
+
+function renderMgrForm(candidateId) {
+  const cand = employees.find(e => e.id === candidateId);
+  if (!cand) return;
+  const existing = mgrVotes[candidateId] || {};
+  const form = document.getElementById('mgr-candidate-form');
+  form.innerHTML = `
+    <hr class="divider">
+    <div style="margin-bottom:14px;">
+      <div style="font-size:15px;font-weight:700;">Evaluando a: <span style="color:var(--primary);">${cand.name}</span></div>
+      <span class="tag ${cand.dept==='Ventas'?'tag-ventas':'tag-almacen'}">${cand.dept}</span>
+    </div>
+    <table class="values-table">
+      <thead><tr><th>Valor</th><th>Calificación del jefe</th><th style="font-size:11px;color:var(--gray-400);">1=Def · 2=Reg · 3=Bue · 4=MuyB · 5=Exc</th></tr></thead>
+      <tbody>
+        ${VALUES.map((v,i) => `
+          <tr>
+            <td><span style="font-size:16px;">${['🎯','📋','🤝','🙏','✨','😊'][i]}</span> ${v}</td>
+            <td><div class="stars" id="mgr_stars_${i}">
+              ${[1,2,3,4,5].map(s => `<span class="star ${(existing[VALUE_KEYS[i]]||0)>=s?'on':''}" onclick="setMgrStar('${candidateId}',${i},${s})">★</span>`).join('')}
+            </div></td>
+            <td><span id="mgr_lbl_${i}" class="score-label">${scoreLabel(existing[VALUE_KEYS[i]]||0)}</span></td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+    <div style="margin-top:14px;padding:12px;background:var(--gray-50);border-radius:8px;font-size:13px;color:var(--gray-600);">
+      Promedio jefe: <b id="mgr-avg" style="color:var(--primary);font-size:16px;">${calcAvg(existing)}</b> / 5
+    </div>
+  `;
+}
+
+function setMgrStar(candidateId, valIdx, score) {
+  if (!mgrVotes[candidateId]) mgrVotes[candidateId] = {};
+  mgrVotes[candidateId][VALUE_KEYS[valIdx]] = score;
+  const starsDiv = document.getElementById('mgr_stars_'+valIdx);
+  starsDiv.querySelectorAll('.star').forEach(s => s.classList.toggle('on', parseInt(s.dataset.s||s.textContent.length) <= score));
+  // re-render stars properly
+  starsDiv.innerHTML = [1,2,3,4,5].map(s => `<span class="star ${score>=s?'on':''}" onclick="setMgrStar('${candidateId}',${valIdx},${s})">★</span>`).join('');
+  document.getElementById('mgr_lbl_'+valIdx).textContent = scoreLabel(score);
+  document.getElementById('mgr-avg').textContent = calcAvg(mgrVotes[candidateId]);
+  renderManagerPanel();
+}
+
+// ===================== STEP 4: RESULTS =====================
+function calcResults() {
+  const incomplete = employees.filter(e => !mgrVotes[e.id] || !VALUE_KEYS.every(k => mgrVotes[e.id][k]));
+  if (incomplete.length > 0) {
+    alert('El jefe aún no ha evaluado a: ' + incomplete.map(e=>e.name).join(', '));
+    return;
+  }
+  goStep(4);
+  renderResults();
+}
+
+function getScore(empId) {
+  // Manager score
+  const mgr = mgrVotes[empId] || {};
+  const mgrAvg = VALUE_KEYS.reduce((s,k)=>s+(mgr[k]||0),0) / VALUE_KEYS.length;
+
+  // Team score — average of all peer votes for this employee
+  const emp = employees.find(e=>e.id===empId);
+  const peers = employees.filter(e=>e.dept===emp.dept && e.id!==empId);
+  let teamTotal = 0, teamCount = 0;
+  peers.forEach(p => {
+    const vote = teamVotes[p.id] && teamVotes[p.id][empId];
+    if (vote) {
+      const avg = VALUE_KEYS.reduce((s,k)=>s+(vote[k]||0),0)/VALUE_KEYS.length;
+      teamTotal += avg; teamCount++;
+    }
+  });
+  const teamAvg = teamCount > 0 ? teamTotal / teamCount : mgrAvg; // fallback to mgr if no peers
+
+  const final = (mgrAvg * 0.5) + (teamAvg * 0.5);
+  return { final: final.toFixed(2), mgrAvg: mgrAvg.toFixed(2), teamAvg: teamAvg.toFixed(2) };
+}
+
+function renderResults() {
+  const mes = document.getElementById('sel-mes').value;
+  const anio = document.getElementById('inp-anio').value;
+  document.getElementById('results-month-badge').innerHTML = `<div class="month-badge">📅 ${mes} ${anio}</div>`;
+
+  const depts = ['Ventas','Almacén'];
+  const grid = document.getElementById('results-grid');
+  grid.innerHTML = '';
+  let winners = [];
+
+  depts.forEach(dept => {
+    const emps = employees.filter(e=>e.dept===dept);
+    if (!emps.length) return;
+    const ranked = emps.map(e=>({...e, ...getScore(e.id)})).sort((a,b)=>parseFloat(b.final)-parseFloat(a.final));
+    winners.push({dept, winner: ranked[0]});
+
+    const col = document.createElement('div');
+    col.className = 'result-dept';
+    col.innerHTML = `
+      <div class="result-dept-header ${dept==='Ventas'?'ventas-header':'almacen-header'}">
+        ${dept==='Ventas'?'💼':'📦'} ${dept}
+      </div>
+      <div class="result-rows">
+        ${ranked.map((e,i)=>`
+          <div class="result-row">
+            <div class="result-rank ${i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-n'}">${i+1}</div>
+            <div style="flex:1;">
+              <div class="result-name">${e.name} ${i===0?'<span class="winner-badge">🏆 Ganador</span>':''}</div>
+              <div class="result-breakdown">Jefe: ${e.mgrAvg} · Equipo: ${e.teamAvg}</div>
+            </div>
+            <div class="result-score">${e.final}</div>
+          </div>`).join('')}
+      </div>
+    `;
+    grid.appendChild(col);
+  });
+
+  document.getElementById('winner-announce').innerHTML = '🎉 <b>Ganadores de ' + mes + ' ' + anio + ':</b> ' +
+    winners.map(w=>`<b>${w.winner.name}</b> (${w.dept})`).join(' y ');
+
+  // Detail table
+  const detailDiv = document.getElementById('detail-table');
+  detailDiv.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="background:var(--gray-50);">
+          <th style="text-align:left;padding:10px;font-weight:700;color:var(--gray-600);">Colaborador</th>
+          <th style="text-align:left;padding:10px;color:var(--gray-600);">Depto</th>
+          <th style="text-align:center;padding:10px;color:var(--gray-600);">Jefe (50%)</th>
+          <th style="text-align:center;padding:10px;color:var(--gray-600);">Equipo (50%)</th>
+          <th style="text-align:center;padding:10px;color:var(--primary);font-weight:700;">Final</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${employees.map(e=>{
+          const s = getScore(e.id);
+          return `<tr style="border-top:1px solid var(--gray-100);">
+            <td style="padding:10px;font-weight:600;">${e.name}</td>
+            <td style="padding:10px;"><span class="tag ${e.dept==='Ventas'?'tag-ventas':'tag-almacen'}" style="font-size:11px;padding:2px 8px;">${e.dept}</span></td>
+            <td style="text-align:center;padding:10px;">${s.mgrAvg}</td>
+            <td style="text-align:center;padding:10px;">${s.teamAvg}</td>
+            <td style="text-align:center;padding:10px;font-weight:800;color:var(--primary);font-size:15px;">${s.final}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function exportCSV() {
+  const mes = document.getElementById('sel-mes').value;
+  const anio = document.getElementById('inp-anio').value;
+  let csv = 'Mes,Año,Nombre,Departamento,Promedio Jefe,Promedio Equipo,Calificacion Final\n';
+  employees.forEach(e => {
+    const s = getScore(e.id);
+    csv += `${mes},${anio},"${e.name}","${e.dept}",${s.mgrAvg},${s.teamAvg},${s.final}\n`;
+  });
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `EmpleadoDelMes_${mes}_${anio}.csv`;
+  a.click();
+}
+
+// ===================== FIREBASE: GUARDAR RESULTADO =====================
+const MESES_NUM = {Enero:'01',Febrero:'02',Marzo:'03',Abril:'04',Mayo:'05',Junio:'06',
+  Julio:'07',Agosto:'08',Septiembre:'09',Octubre:'10',Noviembre:'11',Diciembre:'12'};
+
+function guardarResultadoFirebase() {
+  const mes  = document.getElementById('sel-mes').value;
+  const anio = document.getElementById('inp-anio').value;
+  if (!mes || !anio) { alert('Selecciona mes y año antes de guardar.'); return; }
+
+  const mesKey = anio + '-' + (MESES_NUM[mes] || '00'); // "2026-06"
+
+  // Calcular ganadores por depto
+  const depts = ['Ventas','Almacén'];
+  const ganadores = {};
+  const todosScores = [];
+
+  depts.forEach(dept => {
+    const emps = employees.filter(e => e.dept === dept);
+    if (!emps.length) return;
+    const ranked = emps.map(e => ({...e, ...getScore(e.id)}))
+      .sort((a,b) => parseFloat(b.final) - parseFloat(a.final));
+    ganadores[dept] = {
+      nombre: ranked[0].name,
+      score:  parseFloat(ranked[0].final),
+      mgrAvg: parseFloat(ranked[0].mgrAvg),
+      teamAvg: parseFloat(ranked[0].teamAvg)
+    };
+    ranked.forEach(e => todosScores.push({
+      nombre: e.name, dept: e.dept,
+      final: parseFloat(e.final), mgrAvg: parseFloat(e.mgrAvg), teamAvg: parseFloat(e.teamAvg)
+    }));
+  });
+
+  // Guardar votaciones completas
+  const votaciones = {
+    teamVotes: JSON.parse(JSON.stringify(teamVotes)),
+    mgrVotes:  JSON.parse(JSON.stringify(mgrVotes)),
+    employees: employees.map(e => ({...e})),
+    scores:    todosScores,
+    mes, anio, mesKey,
+    timestamp: Date.now()
+  };
+
+  const btn = document.getElementById('btn-guardar-fb');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+
+  const ref = db.ref('empleado_mes/' + mesKey);
+  ref.set({ ganadores, votaciones })
+    .then(() => {
+      btn.textContent = '✅ Guardado';
+      btn.style.background = '#16a34a';
+      setTimeout(() => { btn.disabled = false; btn.textContent = '💾 Guardar resultado oficial'; }, 3000);
+      alert('✅ Resultado de ' + mes + ' ' + anio + ' guardado correctamente.
+
+' +
+        Object.entries(ganadores).map(([d,g]) => d + ': ' + g.nombre + ' (' + g.score.toFixed(2) + ')').join('\n'));
+    })
+    .catch(e => {
+      btn.disabled = false; btn.textContent = '💾 Guardar resultado oficial';
+      alert('Error al guardar: ' + e.message);
+    });
+}
+
+// ===================== FIREBASE: HISTÓRICO =====================
+function renderHistorico() {
+  const anio = (document.getElementById('hist-anio') || {}).value || new Date().getFullYear();
+  const podioEl = document.getElementById('hist-podio');
+  const tablaEl = document.getElementById('hist-tabla');
+  if (!podioEl || !tablaEl) return;
+
+  podioEl.innerHTML = '<div style="font-size:13px;color:var(--gray-400);padding:8px 0;">Cargando...</div>';
+  tablaEl.innerHTML = '';
+
+  // Traer todos los meses del año seleccionado
+  db.ref('empleado_mes').orderByKey()
+    .startAt(anio + '-01').endAt(anio + '-12')
+    .once('value', snap => {
+      const data = snap.val() || {};
+      const meses = Object.entries(data).sort((a,b) => a[0] > b[0] ? 1 : -1);
+
+      if (!meses.length) {
+        podioEl.innerHTML = '<div style="font-size:13px;color:var(--gray-400);">Sin resultados guardados para ' + anio + '.</div>';
+        tablaEl.innerHTML = '';
+        return;
+      }
+
+      // Acumular victorias por persona y depto
+      const victorias = {}; // {nombre: {dept, wins, meses:[]}}
+      const MESES_NOMBRE = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio',
+        'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+      meses.forEach(([key, val]) => {
+        const g = val.ganadores || {};
+        Object.entries(g).forEach(([dept, info]) => {
+          if (!victorias[info.nombre]) victorias[info.nombre] = {dept, wins: 0, meses: [], scores: []};
+          victorias[info.nombre].wins++;
+          victorias[info.nombre].meses.push(MESES_NOMBRE[parseInt(key.split('-')[1])] || key);
+          victorias[info.nombre].scores.push(info.score);
+        });
+      });
+
+      // ── Podio acumulado ────────────────────────────────────────
+      const sorted = Object.entries(victorias).sort((a,b) => b[1].wins - a[1].wins);
+      const medals = ['🥇','🥈','🥉'];
+      const podioColors = ['#f59e0b','#9ca3af','#b45309'];
+
+      podioEl.innerHTML = sorted.length ? sorted.map(([nombre, v], i) => {
+        const avgScore = v.scores.length ? (v.scores.reduce((a,b)=>a+b,0)/v.scores.length).toFixed(2) : '—';
+        const isLider = i === 0;
+        return '<div style="background:' + (isLider ? '#fef3c7' : 'var(--gray-50)') + ';border:2px solid ' +
+          (isLider ? '#f59e0b' : 'var(--gray-200)') + ';border-radius:12px;padding:16px 18px;text-align:center;">' +
+          '<div style="font-size:28px;margin-bottom:4px;">' + (medals[i] || '🏅') + '</div>' +
+          '<div style="font-weight:800;font-size:15px;color:var(--gray-800);">' + nombre + '</div>' +
+          '<div style="font-size:12px;color:var(--gray-400);margin:2px 0;">' + v.dept + '</div>' +
+          '<div style="font-family:monospace;font-size:26px;font-weight:800;color:' + (podioColors[i]||'var(--primary)') + ';margin:6px 0;">' + v.wins + '</div>' +
+          '<div style="font-size:11px;color:var(--gray-400);">victoria' + (v.wins!==1?'s':'') + ' · prom ' + avgScore + '</div>' +
+          '<div style="margin-top:8px;font-size:11px;color:var(--gray-600);">' + v.meses.join(' · ') + '</div>' +
+          (isLider ? '<div style="margin-top:8px;background:#f59e0b;color:white;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700;display:inline-block;">⭐ LÍDER ANUAL</div>' : '') +
+          '</div>';
+      }).join('') : '<div style="font-size:13px;color:var(--gray-400);">Sin datos.</div>';
+
+      // ── Tabla mes a mes ────────────────────────────────────────
+      const NOMBRES_MESES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio',
+        'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+      let rows = meses.map(([key, val]) => {
+        const mesNum = parseInt(key.split('-')[1]);
+        const mesNombre = NOMBRES_MESES[mesNum] || key;
+        const g = val.ganadores || {};
+        const ventas  = g['Ventas']  ? g['Ventas'].nombre  + ' <span style="font-size:11px;color:var(--gray-400);">(' + g['Ventas'].score.toFixed(2) + ')</span>'  : '—';
+        const almacen = g['Almacén'] ? g['Almacén'].nombre + ' <span style="font-size:11px;color:var(--gray-400);">(' + g['Almacén'].score.toFixed(2) + ')</span>' : '—';
+        return '<tr>' +
+          '<td style="padding:10px 12px;font-weight:700;color:var(--primary);">' + mesNombre + '</td>' +
+          '<td style="padding:10px 12px;"><span style="font-size:14px;">💼</span> ' + ventas + '</td>' +
+          '<td style="padding:10px 12px;"><span style="font-size:14px;">📦</span> ' + almacen + '</td>' +
+          '<td style="padding:10px 12px;">' +
+            '<button onclick="cargarMesFirebase('' + key + '')" style="background:var(--primary-light);color:var(--primary);border:none;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;">Ver detalle</button>' +
+          '</td>' +
+          '</tr>';
+      }).join('');
+
+      // Rellenar meses faltantes
+      for (let m = 1; m <= 12; m++) {
+        const k = anio + '-' + String(m).padStart(2,'0');
+        if (!data[k]) {
+          rows += '<tr style="opacity:.45;">' +
+            '<td style="padding:10px 12px;font-weight:700;color:var(--gray-400);">' + NOMBRES_MESES[m] + '</td>' +
+            '<td style="padding:10px 12px;color:var(--gray-400);">Pendiente</td>' +
+            '<td style="padding:10px 12px;color:var(--gray-400);">Pendiente</td>' +
+            '<td></td></tr>';
+        }
+      }
+
+      tablaEl.innerHTML = '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">' +
+        '<thead><tr style="background:var(--gray-50);"><th style="text-align:left;padding:10px 12px;color:var(--gray-600);">Mes</th>' +
+        '<th style="text-align:left;padding:10px 12px;color:var(--gray-600);">💼 Ganador Ventas</th>' +
+        '<th style="text-align:left;padding:10px 12px;color:var(--gray-600);">📦 Ganador Almacén</th>' +
+        '<th style="padding:10px 12px;"></th></tr></thead>' +
+        '<tbody>' + rows + '</tbody></table></div>';
+    });
+}
+
+function cargarMesFirebase(mesKey) {
+  db.ref('empleado_mes/' + mesKey).once('value', snap => {
+    const val = snap.val();
+    if (!val || !val.votaciones) { alert('Sin detalle de votaciones para ' + mesKey); return; }
+    const v = val.votaciones;
+    // Restore state
+    employees  = v.employees  || [];
+    teamVotes  = v.teamVotes  || {};
+    mgrVotes   = v.mgrVotes   || {};
+    document.getElementById('sel-mes').value  = v.mes  || '';
+    document.getElementById('inp-anio').value = v.anio || '';
+    goStep(4);
+    renderResults();
+  });
+}
+
+// ── Init: cargar histórico al abrir si hay datos ──────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const histAnio = document.getElementById('hist-anio');
+  if (histAnio) histAnio.value = new Date().getFullYear();
+});
+</script>
+</body>
+</html>
