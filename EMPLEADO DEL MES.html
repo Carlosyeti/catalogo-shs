@@ -470,10 +470,13 @@ function agregarEmpleadoMaestro() {
     .catch(e => alert('Error: ' + e.message));
 }
 
-function eliminarEmpleadoMaestro(fbKey, nombre) {
+function eliminarEmpleadoMaestro(btn) {
+  const fbKey = btn.getAttribute('data-key');
+  const nombre = btn.getAttribute('data-name');
   if (!confirm('¿Eliminar a ' + nombre + ' de la lista permanente?')) return;
   db.ref('empleado_mes/config/empleados/' + fbKey).remove()
-    .catch(e => alert('Error: ' + e.message));
+    .then(function() {})
+    .catch(function(e) { alert('Error: ' + e.message); });
 }
 
 function renderListaMaestra() {
@@ -489,7 +492,7 @@ function renderListaMaestra() {
     '<div style="width:32px;height:32px;border-radius:50%;background:' + (e.dept==='Ventas'?'var(--primary)':'#b45309') + ';color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;">' + e.name[0].toUpperCase() + '</div>' +
     '<div><div class="emp-name">' + e.name + '</div>' +
     '<span class="tag ' + (e.dept==='Ventas'?'tag-ventas':'tag-almacen') + '" style="font-size:11px;padding:2px 8px;">' + e.dept + '</span></div></div>' +
-    '<button class="btn btn-danger btn-sm" onclick="eliminarEmpleadoMaestro('' + e.fbKey + '','' + e.name.replace(/'/g,"\'") + '')">✕ Eliminar</button>' +
+    '<button class="btn btn-danger btn-sm" onclick="eliminarEmpleadoMaestro(this)" data-key="' + e.fbKey + '" data-name="' + e.name.replace(/"/g,'&quot;') + '">✕ Eliminar</button>' +
     '</div>'
   ).join('');
 }
@@ -511,10 +514,15 @@ function renderParticipantesChecks() {
   empty.style.display = 'none';
 
   const makeCheck = e =>
-    '<label style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:8px;cursor:pointer;transition:all .15s;" ' +
-    'onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor=this.querySelector('input').checked?'var(--primary)':'var(--gray-200)'">' +
-    '<input type="checkbox" id="chk_' + e.fbKey + '" checked style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer;" onchange="syncEmployeesFromChecks()">' +
-    '<div style="width:30px;height:30px;border-radius:50%;background:' + (e.dept==='Ventas'?'var(--primary)':'#b45309') + ';color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;">' + e.name[0].toUpperCase() + '</div>' +
+    '<label style="display:flex;align-items:center;gap:10px;padding:9px 12px;' +
+    'background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:8px;cursor:pointer;">' +
+    '<input type="checkbox" id="chk_' + e.fbKey + '" checked ' +
+    'style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer;" ' +
+    'onchange="syncEmployeesFromChecks()">' +
+    '<div style="width:30px;height:30px;border-radius:50%;' +
+    'background:' + (e.dept==='Ventas' ? 'var(--primary)' : '#b45309') + ';' +
+    'color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;">' +
+    e.name[0].toUpperCase() + '</div>' +
     '<span style="font-weight:600;font-size:14px;">' + e.name + '</span>' +
     '</label>';
 
@@ -659,6 +667,58 @@ function renderCandidateForm(voterId, candidateId) {
   if (!teamVotes[voterId][candidateId]) teamVotes[voterId][candidateId] = {};
 }
 
+// ===================== AUTOSAVE EN FIREBASE =====================
+function getSessionKey() {
+  const mes  = (document.getElementById('sel-mes')  || {}).value || 'sin-mes';
+  const anio = (document.getElementById('inp-anio') || {}).value || '0000';
+  const MESES_NUM2 = {Enero:'01',Febrero:'02',Marzo:'03',Abril:'04',Mayo:'05',Junio:'06',
+    Julio:'07',Agosto:'08',Septiembre:'09',Octubre:'10',Noviembre:'11',Diciembre:'12'};
+  return anio + '-' + (MESES_NUM2[mes] || '00');
+}
+
+let _saveTimer = null;
+function autoSaveSession() {
+  // Debounce: espera 800ms tras el último voto para no saturar Firebase
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => {
+    const key = getSessionKey();
+    if (!key || key === '0000-00') return;
+    const session = {
+      employees:  employees,
+      teamVotes:  teamVotes,
+      mgrVotes:   mgrVotes,
+      mes:   (document.getElementById('sel-mes')  || {}).value || '',
+      anio:  (document.getElementById('inp-anio') || {}).value || '',
+      savedAt: Date.now(),
+      complete: false
+    };
+    db.ref('empleado_mes/' + key + '/sesion_borrador').set(session)
+      .catch(e => console.warn('Autosave error:', e));
+  }, 800);
+}
+
+// ── Recuperar sesión guardada ─────────────────────────────────
+function checkSesionBorrador(key) {
+  db.ref('empleado_mes/' + key + '/sesion_borrador').once('value', snap => {
+    const s = snap.val();
+    if (!s || s.complete) return;
+    const mins = Math.round((Date.now() - s.savedAt) / 60000);
+    if (mins > 1440) return; // Ignorar si tiene más de 24 hrs
+    const msg = '📋 Hay una evaluación en progreso guardada de hace ' + mins + ' min (' + s.mes + ' ' + s.anio + ').\n\n¿Quieres continuar donde se quedó?';
+    if (!confirm(msg)) return;
+    // Restaurar estado
+    employees = s.employees || [];
+    teamVotes = s.teamVotes || {};
+    mgrVotes  = s.mgrVotes  || {};
+    if (document.getElementById('sel-mes'))  document.getElementById('sel-mes').value  = s.mes  || '';
+    if (document.getElementById('inp-anio')) document.getElementById('inp-anio').value = s.anio || '';
+    // Re-render step 1 checks
+    renderParticipantesChecks();
+    goStep(2);
+    alert('✅ Sesión recuperada. Continúa desde donde se quedó.');
+  });
+}
+
 function setStar(voterId, candidateId, valIdx, score) {
   if (!teamVotes[voterId]) teamVotes[voterId] = {};
   if (!teamVotes[voterId][candidateId]) teamVotes[voterId][candidateId] = {};
@@ -670,6 +730,7 @@ function setStar(voterId, candidateId, valIdx, score) {
   });
   document.getElementById('lbl_'+valIdx).textContent = scoreLabel(score);
   document.getElementById('cur-avg').textContent = calcAvg(teamVotes[voterId][candidateId]);
+  autoSaveSession();
 }
 
 function scoreLabel(s) {
@@ -769,6 +830,7 @@ function setMgrStar(candidateId, valIdx, score) {
   document.getElementById('mgr_lbl_'+valIdx).textContent = scoreLabel(score);
   document.getElementById('mgr-avg').textContent = calcAvg(mgrVotes[candidateId]);
   renderManagerPanel();
+  autoSaveSession();
 }
 
 // ===================== STEP 4: RESULTS =====================
@@ -938,13 +1000,12 @@ function guardarResultadoFirebase() {
   const ref = db.ref('empleado_mes/' + mesKey);
   ref.set({ ganadores, votaciones })
     .then(() => {
+      // Marcar borrador como completo para que no se vuelva a ofrecer restaurar
+      db.ref('empleado_mes/' + mesKey + '/sesion_borrador/complete').set(true);
       btn.textContent = '✅ Guardado';
       btn.style.background = '#16a34a';
       setTimeout(() => { btn.disabled = false; btn.textContent = '💾 Guardar resultado oficial'; }, 3000);
-      alert('✅ Resultado de ' + mes + ' ' + anio + ' guardado correctamente.
-
-' +
-        Object.entries(ganadores).map(([d,g]) => d + ': ' + g.nombre + ' (' + g.score.toFixed(2) + ')').join('\n'));
+      alert('✅ Resultado guardado: ' + mes + ' ' + anio + '\n' + Object.entries(ganadores).map(([d,g]) => d + ': ' + g.nombre + ' (' + g.score.toFixed(2) + ')').join('\n'));
     })
     .catch(e => {
       btn.disabled = false; btn.textContent = '💾 Guardar resultado oficial';
@@ -1025,7 +1086,7 @@ function renderHistorico() {
           '<td style="padding:10px 12px;"><span style="font-size:14px;">💼</span> ' + ventas + '</td>' +
           '<td style="padding:10px 12px;"><span style="font-size:14px;">📦</span> ' + almacen + '</td>' +
           '<td style="padding:10px 12px;">' +
-            '<button onclick="cargarMesFirebase('' + key + '')" style="background:var(--primary-light);color:var(--primary);border:none;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;">Ver detalle</button>' +
+            '<button onclick="cargarMesFirebase(this)" data-key="' + key + '" style="background:var(--primary-light);color:var(--primary);border:none;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;">Ver detalle</button>' +
           '</td>' +
           '</tr>';
       }).join('');
@@ -1051,7 +1112,8 @@ function renderHistorico() {
     });
 }
 
-function cargarMesFirebase(mesKey) {
+function cargarMesFirebase(btn) {
+  const mesKey = btn.getAttribute('data-key');
   db.ref('empleado_mes/' + mesKey).once('value', snap => {
     const val = snap.val();
     if (!val || !val.votaciones) { alert('Sin detalle de votaciones para ' + mesKey); return; }
@@ -1071,6 +1133,12 @@ function cargarMesFirebase(mesKey) {
 document.addEventListener('DOMContentLoaded', () => {
   const histAnio = document.getElementById('hist-anio');
   if (histAnio) histAnio.value = new Date().getFullYear();
+
+  // Revisar si hay sesión en borrador del mes actual
+  const hoy = new Date();
+  const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+  const key = hoy.getFullYear() + '-' + mm;
+  setTimeout(() => checkSesionBorrador(key), 1500); // esperar a que Firebase conecte
 });
 </script>
 </body>
