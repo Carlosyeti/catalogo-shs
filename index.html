@@ -80,6 +80,9 @@ html{background:#ffffff}body{font-family:'Nunito',sans-serif;background:#ffffff;
 .btn-agregar{background:var(--verde);color:white;border:none;border-radius:8px;padding:8px 14px;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;transition:background 0.15s;white-space:nowrap}
 .btn-agregar:hover{background:var(--verde-dark)}
 .cantidad-display{font-weight:900;font-size:16px;color:var(--texto);min-width:20px;text-align:center}
+.cantidad-input{font-weight:900;font-size:16px;color:var(--texto);width:44px;text-align:center;border:2px solid transparent;border-radius:6px;background:transparent;font-family:'Nunito',sans-serif;padding:4px 2px;-moz-appearance:textfield}
+.cantidad-input:focus{border-color:var(--azul);outline:none;background:var(--azul-light)}
+.cantidad-input::-webkit-outer-spin-button,.cantidad-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .loading{text-align:center;padding:40px;color:var(--texto-suave)}
 .spinner{width:36px;height:36px;border:3px solid var(--azul-light);border-top-color:var(--azul);border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 12px}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -564,7 +567,7 @@ function cardHTML(nombre, precios, unidad, index, tipo, frecuente, clave) {
     <div class="producto-controles" id="ctrl-${tipo}-${index}">
       ${cant > 0 ? `
         <button class="btn-cantidad" onclick="cambiarCant('${esc(nombre)}','${tipo}',${index},-1)">−</button>
-        <span class="cantidad-display">${cant}</span>
+        <input type="number" class="cantidad-input" value="${cant}" min="1" step="1" inputmode="numeric" pattern="[0-9]*" onclick="this.select()" onchange="setCant('${esc(nombre)}','${tipo}',${index},this.value)" onkeydown="if(event.key==='Enter'){this.blur()}">
         <button class="btn-cantidad" onclick="cambiarCant('${esc(nombre)}','${tipo}',${index},1)">+</button>
       ` : `<button class="btn-agregar" onclick="agregar('${esc(nombre)}','${tipo}',${index})">Agregar</button>`}
     </div>
@@ -590,12 +593,24 @@ function cambiarCant(nombre, tipo, index, delta) {
   actualizarCarritoUI();
 }
 
+function setCant(nombre, tipo, index, valor) {
+  if (!carrito[nombre]) return;
+  const n = Math.floor(Number(valor));
+  if (!isFinite(n) || n <= 0) {
+    delete carrito[nombre];
+  } else {
+    carrito[nombre].cantidad = n;
+  }
+  actualizarCtrl(nombre, tipo, index);
+  actualizarCarritoUI();
+}
+
 function actualizarCtrl(nombre, tipo, index) {
   const ctrl = document.getElementById(`ctrl-${tipo}-${index}`);
   if (!ctrl) return;
   const cant = carrito[nombre]?.cantidad || 0;
   ctrl.innerHTML = cant > 0
-    ? `<button class="btn-cantidad" onclick="cambiarCant('${esc(nombre)}','${tipo}',${index},-1)">−</button><span class="cantidad-display">${cant}</span><button class="btn-cantidad" onclick="cambiarCant('${esc(nombre)}','${tipo}',${index},1)">+</button>`
+    ? `<button class="btn-cantidad" onclick="cambiarCant('${esc(nombre)}','${tipo}',${index},-1)">−</button><input type="number" class="cantidad-input" value="${cant}" min="1" step="1" inputmode="numeric" pattern="[0-9]*" onclick="this.select()" onchange="setCant('${esc(nombre)}','${tipo}',${index},this.value)" onkeydown="if(event.key==='Enter'){this.blur()}"><button class="btn-cantidad" onclick="cambiarCant('${esc(nombre)}','${tipo}',${index},1)">+</button>`
     : `<button class="btn-agregar" onclick="agregar('${esc(nombre)}','${tipo}',${index})">Agregar</button>`;
 }
 
