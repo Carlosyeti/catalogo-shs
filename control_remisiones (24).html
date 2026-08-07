@@ -1,0 +1,1982 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Control de Remisiones · SHS</title>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+:root{
+  --teal-900:#0b2e2c;
+  --teal-800:#0f3d3a;
+  --teal-700:#146c63;
+  --teal-600:#1a8577;
+  --teal-500:#22a191;
+  --teal-100:#e3f4f1;
+  --amber-500:#d98c2b;
+  --amber-100:#fbedd7;
+  --purple-600:#6c4bb6;
+  --purple-100:#ece5f9;
+  --red-600:#c0392b;
+  --red-100:#fbe4e1;
+  --slate-900:#1b2430;
+  --slate-700:#41505f;
+  --slate-500:#6b7a89;
+  --slate-300:#c6d0d8;
+  --slate-100:#eef2f4;
+  --paper:#f7f8f6;
+  --card:#ffffff;
+  --radius:10px;
+  font-family:'Segoe UI',Roboto,Arial,sans-serif;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--paper);color:var(--slate-900);font-size:14px;}
+header.app{background:linear-gradient(120deg,var(--teal-900),var(--teal-700));color:#fff;padding:18px 22px 14px;}
+header.app h1{margin:0;font-size:19px;font-weight:700;letter-spacing:.2px;}
+header.app p{margin:2px 0 0;font-size:12px;opacity:.8;}
+.chips{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;}
+.aviso-diario{margin-top:12px;background:#c0392b;border:1px solid rgba(255,255,255,.3);color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;display:none;align-items:center;gap:8px;}
+.aviso-bitacora{margin-top:10px;background:#c0392b;border:1px solid rgba(255,255,255,.3);color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:700;display:none;align-items:center;gap:8px;cursor:pointer;}
+.aviso-bitacora:hover{background:#a93226;}
+.aviso-bitacora .chev{margin-left:auto;transition:.2s;}
+.aviso-bitacora.open .chev{transform:rotate(180deg);}
+.panel-bitacora{margin-top:8px;background:#fff;border:1px solid var(--red-600);border-radius:8px;padding:10px 14px;max-height:280px;overflow-y:auto;display:none;}
+.panel-bitacora table{width:100%;font-size:12.5px;border-collapse:collapse;}
+.panel-bitacora th{text-align:left;padding:6px 8px;font-size:10.5px;text-transform:uppercase;color:var(--slate-500);border-bottom:1px solid var(--slate-300);}
+.panel-bitacora td{padding:6px 8px;border-bottom:1px solid var(--slate-100);color:var(--slate-900);}
+.nota-inconclusa{font-size:12px;color:var(--slate-700);background:var(--amber-100);padding:4px 8px;border-radius:6px;display:inline-block;max-width:220px;}
+.ultima-carga{display:inline-block;padding:9px 16px;border-radius:8px;font-size:14.5px;font-weight:700;margin-bottom:14px;}
+.ultima-carga.ok{background:#e2f3e6;color:#1f7a3d;}
+.ultima-carga.warn{background:var(--amber-100);color:#8a5a12;}
+.ultima-carga.danger{background:var(--red-100);color:var(--red-600);}
+.chip{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:6px 13px;font-size:12px;display:flex;gap:6px;align-items:center;}
+.chip b{font-size:13px;}
+.chip.alert{background:rgba(217,140,43,.25);border-color:rgba(217,140,43,.5);}
+.chip.danger{background:rgba(192,57,43,.3);border-color:rgba(192,57,43,.55);}
+
+nav.tabs{display:flex;background:var(--teal-800);overflow-x:auto;position:sticky;top:0;z-index:20;}
+nav.tabs button{flex:1;min-width:130px;background:transparent;border:none;color:rgba(255,255,255,.65);padding:12px 10px;font-size:12.5px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;}
+nav.tabs button.active{color:#fff;border-bottom-color:var(--amber-500);background:rgba(255,255,255,.06);}
+nav.tabs button:hover{color:#fff;}
+
+main{max-width:1180px;margin:0 auto;padding:18px 16px 60px;}
+section.tab{display:none;}
+section.tab.active{display:block;}
+
+.card{background:var(--card);border:1px solid var(--slate-300);border-radius:var(--radius);padding:16px;margin-bottom:16px;}
+.card h2{margin:0 0 4px;font-size:15px;color:var(--teal-800);}
+.card .sub{color:var(--slate-500);font-size:12px;margin-bottom:12px;}
+
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.field{display:flex;flex-direction:column;gap:4px;}
+.field label{font-size:11px;font-weight:700;color:var(--slate-700);text-transform:uppercase;letter-spacing:.3px;}
+input,select,textarea{border:1px solid var(--slate-300);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;background:#fff;color:var(--slate-900);}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--teal-500);outline-offset:1px;}
+
+button.btn{background:var(--teal-700);color:#fff;border:none;border-radius:7px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;}
+button.btn:hover{background:var(--teal-600);}
+button.btn.ghost{background:#fff;color:var(--teal-700);border:1px solid var(--teal-600);}
+button.btn.ghost:hover{background:var(--teal-100);}
+button.btn.amber{background:var(--amber-500);}
+button.btn.amber:hover{background:#c17c1f;}
+button.btn.red{background:var(--red-600);}
+button.btn.purple{background:var(--purple-600);}
+button.btn.purple:hover{background:#5a3d99;}
+button.btn.small{padding:5px 10px;font-size:11.5px;border-radius:6px;}
+button.btn:disabled{opacity:.5;cursor:not-allowed;}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+th{background:var(--slate-100);color:var(--slate-700);text-align:left;padding:8px 9px;font-size:11px;text-transform:uppercase;letter-spacing:.3px;position:sticky;top:0;}
+td{padding:8px 9px;border-bottom:1px solid var(--slate-100);vertical-align:middle;}
+tr:hover td{background:var(--teal-100);}
+.table-wrap{overflow-x:auto;max-height:70vh;overflow-y:auto;border:1px solid var(--slate-300);border-radius:8px;}
+
+.badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;}
+.badge.pend{background:var(--slate-100);color:var(--slate-700);}
+.badge.credito{background:var(--amber-100);color:#8a5a12;}
+.badge.contado{background:var(--teal-100);color:var(--teal-800);}
+.badge.pagada{background:#e2f3e6;color:#1f7a3d;}
+.badge.vencida{background:var(--red-100);color:var(--red-600);}
+.badge.porvencer{background:var(--amber-100);color:#8a5a12;}
+.badge.danger{background:var(--red-100);color:var(--red-600);}
+.badge.confirmada{background:var(--purple-100);color:var(--purple-600);}
+
+.drop{border:2px dashed var(--slate-300);border-radius:10px;padding:30px;text-align:center;color:var(--slate-500);cursor:pointer;transition:.15s;}
+.drop.hover{border-color:var(--teal-500);background:var(--teal-100);}
+.drop input{display:none;}
+
+.pill-tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+.pill-tabs button{border:1px solid var(--slate-300);background:#fff;border-radius:999px;padding:6px 14px;font-size:12px;cursor:pointer;color:var(--slate-700);}
+.pill-tabs button.active{background:var(--teal-700);color:#fff;border-color:var(--teal-700);}
+
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--slate-900);color:#fff;padding:11px 20px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:999;box-shadow:0 6px 18px rgba(0,0,0,.25);}
+#toast.show{opacity:1;transform:translate(-50%,-6px);}
+
+.modal-bg{position:fixed;inset:0;background:rgba(15,25,30,.55);display:none;align-items:center;justify-content:center;z-index:100;padding:16px;}
+.modal-bg.show{display:flex;}
+.modal{background:#fff;border-radius:12px;max-width:480px;width:100%;padding:20px;max-height:90vh;overflow-y:auto;}
+.modal h3{margin:0 0 12px;color:var(--teal-800);font-size:16px;}
+.modal .row{margin-bottom:10px;}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;}
+
+.muted{color:var(--slate-500);}
+.right{text-align:right;}
+.center{text-align:center;}
+.mono{font-variant-numeric:tabular-nums;}
+.empty{padding:30px;text-align:center;color:var(--slate-500);}
+.small-note{font-size:11.5px;color:var(--slate-500);margin-top:6px;}
+.total-strip{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px dashed var(--slate-300);}
+.total-strip div{font-size:12.5px;}
+.total-strip b{display:block;font-size:16px;color:var(--teal-800);}
+
+.sig-row{display:flex;gap:24px;margin-top:40px;}
+.sig-box{flex:1;text-align:center;}
+.sig-line{border-top:1px solid #000;margin-top:46px;padding-top:6px;font-size:12px;}
+
+@media print{
+  nav.tabs, header.app .chips, .no-print{display:none !important;}
+  header.app{background:#fff !important;color:#000 !important;padding:0 0 10px;}
+  body{background:#fff;}
+  .card{border:none;box-shadow:none;padding:0;}
+  main{max-width:100%;padding:0;}
+  th{position:static !important;}
+  table{page-break-inside:auto;}
+  tr{page-break-inside:avoid;page-break-after:auto;}
+  thead{display:table-header-group;}
+}
+@media (max-width:640px){
+  .row{flex-direction:column;align-items:stretch;}
+  .total-strip{flex-direction:column;gap:8px;}
+}
+</style>
+</head>
+<body>
+
+<header class="app">
+  <h1>Control de Remisiones · SHS</h1>
+  <p>Cobranza, crédito y caja — Surtidora de Higiénicos y Servicios</p>
+  <div class="chips" id="chips"></div>
+  <div class="aviso-diario no-print" id="avisoDiario"></div>
+  <div class="aviso-bitacora no-print" id="avisoBitacora" onclick="togglePanelBitacora()"></div>
+  <div class="panel-bitacora no-print" id="panelBitacoraLista"></div>
+</header>
+
+<nav class="tabs">
+  <button data-tab="cargar" class="active">📥 Cargar diario</button>
+  <button data-tab="remisiones">🧾 Remisiones</button>
+  <button data-tab="cobranza">🗓️ Programación de Factura</button>
+  <button data-tab="credito">📇 Crédito</button>
+  <button data-tab="caja">💰 Caja</button>
+  <button data-tab="reportes">📊 Reportes</button>
+</nav>
+
+<main>
+
+  <!-- ================= TAB CARGAR ================= -->
+  <section class="tab active" id="tab-cargar">
+    <div class="card">
+      <h2>Cargar diario de ventas (Excel Microsip)</h2>
+      <div class="sub">Sube el reporte "Diario de ventas" exportado de Microsip. Solo se agregan remisiones nuevas (folios que aún no existen); las que ya están en el sistema no se tocan.</div>
+      <div class="ultima-carga" id="ultimaCargaBadge"></div>
+      <div class="row" style="margin-bottom:14px;background:var(--slate-100);padding:10px 14px;border-radius:8px;">
+        <div class="field">
+          <label>Fecha mínima aceptada</label>
+          <input type="date" id="fechaMinimaCarga">
+        </div>
+        <div class="field"><label>&nbsp;</label><button class="btn ghost small" id="btnGuardarFechaMinima">Guardar</button></div>
+        <div class="small-note" style="flex:1;align-self:center;">Cualquier remisión con fecha anterior a esta se ignora automáticamente al cargar — protege contra subir por error un reporte viejo.</div>
+      </div>
+      <label class="drop" id="dropZone">
+        <input type="file" id="fileInput" accept=".xlsx,.xls">
+        <div id="dropText">📄 Arrastra el Excel aquí o haz clic para seleccionarlo</div>
+      </label>
+      <div id="cargaResumen"></div>
+    </div>
+
+    <div class="card" style="border-left:4px solid var(--purple-600);">
+      <h2>🔌 Conexión automática con Microsip (API)</h2>
+      <div class="sub">Si está activa, el sistema consulta la API cada 5 minutos y agrega las remisiones nuevas solo — no necesitas subir el Excel manualmente.</div>
+      <div class="row">
+        <div class="field" style="flex:1;min-width:260px;"><label>URL base de la API</label><input type="text" id="apiUrl" placeholder="http://38.58.46.142:9095"></div>
+        <div class="field" style="flex:1;min-width:260px;"><label>Token Bearer</label><input type="password" id="apiToken" placeholder="Token de acceso"></div>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <div class="field">
+          <label>Sincronización automática</label>
+          <select id="apiActivo">
+            <option value="no">Desactivada</option>
+            <option value="si">Activada (cada 5 min)</option>
+          </select>
+        </div>
+        <div class="field"><label>&nbsp;</label><button class="btn ghost small" id="btnGuardarApiConfig">Guardar configuración</button></div>
+        <div class="field"><label>&nbsp;</label><button class="btn purple small" id="btnSincronizarAhora">🔄 Sincronizar ahora</button></div>
+      </div>
+      <div class="small-note" id="apiSyncStatus" style="margin-top:8px;"></div>
+    </div>
+
+    <div class="card" id="previewCard" style="display:none;">
+      <h2>Vista previa antes de guardar</h2>
+      <div class="sub" id="previewSub"></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Fecha</th><th>Folio</th><th>Cliente</th><th class="right">Total</th><th>Estado</th></tr></thead>
+          <tbody id="previewBody"></tbody>
+        </table>
+      </div>
+      <div class="row" style="margin-top:12px;">
+        <button class="btn" id="btnConfirmarCarga">Guardar remisiones nuevas en el sistema</button>
+        <button class="btn ghost" id="btnCancelarCarga">Cancelar</button>
+      </div>
+    </div>
+
+    <div class="card" id="corregirCard" style="display:none;border-left:4px solid var(--amber-500);">
+      <h2>⚠️ Montos desactualizados detectados</h2>
+      <div class="sub" id="corregirSub"></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Folio</th><th>Cliente</th><th class="right">Monto guardado (mal)</th><th class="right">Monto correcto (del Excel)</th></tr></thead>
+          <tbody id="corregirBody"></tbody>
+        </table>
+      </div>
+      <div class="small-note">Esto solo actualiza Importe neto, Impuesto y Total de esos folios. No toca clasificación, pagos, fecha de factura ni ningún otro dato ya capturado.</div>
+      <div class="row" style="margin-top:12px;">
+        <button class="btn amber" id="btnCorregirMontos">Corregir montos de estos folios</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TAB REMISIONES ================= -->
+  <section class="tab" id="tab-remisiones">
+    <div class="card">
+      <h2>Remisiones</h2>
+      <div class="sub">Clasifica cada remisión como crédito o contado y registra el pago cuando el chofer/gestora lo cobre.</div>
+      <div class="row">
+        <div class="field">
+          <label>Buscar</label>
+          <input type="text" id="fRemBusca" placeholder="Folio o cliente...">
+        </div>
+        <div class="field">
+          <label>Tipo</label>
+          <select id="fRemTipo">
+            <option value="">Todos</option>
+            <option value="sin_clasificar">Sin clasificar</option>
+            <option value="credito">Crédito</option>
+            <option value="contado">Contado</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Estado de pago</label>
+          <select id="fRemPago">
+            <option value="">Todos</option>
+            <option value="pendiente">Pendiente de pago</option>
+            <option value="pagada">Pagada</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Concluidas (Microsip)</label>
+          <select id="fRemConcluidas">
+            <option value="ocultar">Ocultar concluidas</option>
+            <option value="solo">Solo concluidas</option>
+            <option value="todas">Mostrar todas</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Desde</label>
+          <input type="date" id="fRemDesde">
+        </div>
+        <div class="field">
+          <label>Hasta</label>
+          <input type="date" id="fRemHasta">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Fecha</th><th>Folio</th><th>Cliente</th><th class="right">Total</th>
+            <th>Tipo</th><th>Estado</th><th>Fecha de factura</th><th>Fecha pago</th><th>Chofer</th><th>Cargada</th><th>Bitácora concluida</th><th>Inconclusa por motivo</th><th></th>
+          </tr></thead>
+          <tbody id="remisionesBody"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="remisionesEmpty" style="display:none;">No hay remisiones con estos filtros.</div>
+    </div>
+  </section>
+
+  <!-- ================= TAB PROGRAMACIÓN DE FACTURA (calendario de facturación) ================= -->
+  <section class="tab" id="tab-cobranza">
+    <div class="card">
+      <h2>Programación de facturación</h2>
+      <div class="sub">Remisiones a crédito con fecha de facturación programada por las vendedoras, organizadas por cuándo toca facturarlas.</div>
+      <div class="total-strip" id="cobranzaResumen" style="border-top:none;padding-top:0;"></div>
+    </div>
+    <div id="cobranzaListas"></div>
+  </section>
+
+  <!-- ================= TAB CREDITO (control físico de documentos) ================= -->
+  <section class="tab" id="tab-credito">
+    <div class="card">
+      <h2>Remisiones/facturas a crédito — control físico</h2>
+      <div class="sub">Confirma cuáles remisiones a crédito ya tienes localizadas en tu archivo. Las que no confirmes pueden estar extraviadas en almacén.</div>
+      <div class="field" style="max-width:340px;">
+        <label>Buscar folio o cliente</label>
+        <input type="text" id="fCredBusca" placeholder="Folio o nombre del cliente...">
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="color:var(--red-600);">⚠️ Sin confirmar (posiblemente extraviadas)</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Fecha</th><th>Folio</th><th>Cliente</th><th class="right">Total</th><th></th></tr></thead>
+          <tbody id="creditoSinConfirmarBody"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="creditoSinConfirmarEmpty" style="display:none;">No hay remisiones a crédito pendientes de confirmar. 🎉</div>
+    </div>
+
+    <div class="card">
+      <h2 class="muted">✔ Confirmadas (ya están en tu archivo)</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Fecha</th><th>Folio</th><th>Cliente</th><th class="right">Total</th><th>Confirmada el</th></tr></thead>
+          <tbody id="creditoConfirmadaBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TAB CAJA ================= -->
+  <section class="tab" id="tab-caja">
+    <div class="card">
+      <h2>Dinero pendiente por entregar a gerencia — Efectivo</h2>
+      <div class="sub">Remisiones de contado cobradas en efectivo que aún no se han entregado a gerencia (esto es lo que la gestora sí tiene físicamente en caja ahora mismo).</div>
+      <div class="table-wrap" style="margin-top:12px;">
+        <table>
+          <thead><tr><th>Fecha pago</th><th>Folio</th><th>Cliente</th><th class="right">Total</th></tr></thead>
+          <tbody id="cajaContadoBody"></tbody>
+        </table>
+      </div>
+      <div class="total-strip">
+        <div>Total cobrado en efectivo<b id="cajaTotalContado">$0.00</b></div>
+        <div>Total gastos / retiros<b id="cajaTotalGastos">$0.00</b></div>
+        <div>Efectivo neto a entregar<b id="cajaNeto">$0.00</b></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="muted">🏦 Cobrado por transferencia (histórico)</h2>
+      <div class="sub">Remisiones de contado que el cliente terminó pagando por transferencia. Ya está en el banco — <b>no</b> se suma al efectivo que la gestora entrega.</div>
+      <div class="table-wrap" style="margin-top:12px;">
+        <table>
+          <thead><tr><th>Fecha pago</th><th>Folio</th><th>Cliente</th><th class="right">Total</th></tr></thead>
+          <tbody id="cajaTransferenciaBody"></tbody>
+        </table>
+      </div>
+      <div class="total-strip">
+        <div>Total por transferencia<b id="cajaTotalTransferencia">$0.00</b></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Registrar retiro de caja / gasto</h2>
+      <div class="row">
+        <div class="field" style="flex:1;min-width:180px;">
+          <label>Concepto</label>
+          <input type="text" id="gastoConcepto" placeholder="Ej. Gasolina, papelería...">
+        </div>
+        <div class="field">
+          <label>Monto</label>
+          <input type="number" id="gastoMonto" step="0.01" min="0" placeholder="0.00">
+        </div>
+        <div class="field">
+          <label>Fecha</label>
+          <input type="date" id="gastoFecha">
+        </div>
+        <div class="field">
+          <label>Entregado por</label>
+          <input type="text" id="gastoEntrego" placeholder="Nombre">
+        </div>
+        <div class="field">
+          <label>Recibido por</label>
+          <input type="text" id="gastoRecibio" placeholder="Nombre">
+        </div>
+        <div class="field"><label>&nbsp;</label><button class="btn amber" id="btnAgregarGasto">Registrar</button></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Gastos / retiros registrados</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Folio</th><th>Fecha</th><th>Concepto</th><th class="right">Monto</th><th>Entregó</th><th>Recibió</th><th></th></tr></thead>
+          <tbody id="gastosBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card no-print">
+      <h2>Entrega de efectivo a gerencia</h2>
+      <div class="sub">Registra la entrega del efectivo cobrado a contado (dentro del rango seleccionado arriba) e imprime la relación con firmas. Una vez registrada, esas remisiones y gastos <b>ya no se vuelven a contar</b> — la próxima vez que abras Caja solo verás lo nuevo, pendiente de entregar.</div>
+      <button class="btn" id="btnImprimirCorte">✅ Registrar entrega e imprimir</button>
+    </div>
+
+    <div class="card">
+      <h2>Historial de entregas a gerencia</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Folio</th><th>Fecha</th><th class="right">Efectivo</th><th class="right">Gastos</th><th class="right">Neto entregado</th><th></th></tr></thead>
+          <tbody id="entregasBody"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="entregasEmpty" style="display:none;">Aún no se ha registrado ninguna entrega a gerencia.</div>
+    </div>
+
+    <!-- Printable weekly report -->
+    <div id="corteImprimible" style="display:none;">
+      <div class="card">
+        <h2>Corte de caja — Cobranza a contado (Efectivo)</h2>
+        <div class="sub" id="corteRango"></div>
+        <table>
+          <thead><tr><th>Fecha pago</th><th>Folio</th><th>Cliente</th><th class="right">Total</th></tr></thead>
+          <tbody id="corteContadoBody"></tbody>
+        </table>
+        <h2 style="margin-top:20px;">Gastos y retiros de caja</h2>
+        <table>
+          <thead><tr><th>Folio</th><th>Fecha</th><th>Concepto</th><th class="right">Monto</th><th>Entregó</th><th>Recibió</th></tr></thead>
+          <tbody id="corteGastosBody"></tbody>
+        </table>
+        <div class="total-strip">
+          <div>Total cobrado en efectivo<b id="corteTotalContado">$0.00</b></div>
+          <div>Total gastos / retiros<b id="corteTotalGastos">$0.00</b></div>
+          <div>Efectivo neto a entregar<b id="corteNeto">$0.00</b></div>
+        </div>
+        <h2 style="margin-top:20px;" class="muted">🏦 Cobrado por transferencia (informativo, no incluido arriba)</h2>
+        <table>
+          <thead><tr><th>Fecha pago</th><th>Folio</th><th>Cliente</th><th class="right">Total</th></tr></thead>
+          <tbody id="corteTransferenciaBody"></tbody>
+        </table>
+        <div class="total-strip">
+          <div>Total por transferencia<b id="corteTotalTransferencia">$0.00</b></div>
+        </div>
+        <div style="margin-top:22px;padding-top:14px;border-top:2px solid var(--teal-800);display:flex;justify-content:flex-end;">
+          <div style="text-align:right;">
+            <div class="small-note" style="font-size:12px;">Total cobrado (efectivo + transferencias)</div>
+            <div style="font-size:22px;font-weight:800;color:var(--teal-800);" id="corteTotalGeneral">$0.00</div>
+          </div>
+        </div>
+        <div class="sig-row">
+          <div class="sig-box"><div class="sig-line">Entregado por</div></div>
+          <div class="sig-box"><div class="sig-line">Recibido por (Gerencia)</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Printable expense voucher -->
+    <div id="valeImprimible" style="display:none;">
+      <div class="card">
+        <h2>Vale de Caja / Gasto</h2>
+        <div class="sub" id="valeSub"></div>
+        <div class="row" style="margin-top:10px;">
+          <div class="field" style="flex:1;"><label>Concepto</label><div id="valeConcepto" style="font-size:16px;font-weight:600;"></div></div>
+        </div>
+        <div class="row" style="margin-top:14px;">
+          <div class="field"><label>Monto</label><div id="valeMonto" style="font-size:20px;font-weight:700;color:var(--teal-800);"></div></div>
+          <div class="field"><label>Fecha</label><div id="valeFecha" style="font-size:16px;"></div></div>
+        </div>
+        <div class="sig-row">
+          <div class="sig-box"><div class="sig-line" id="valeEntrego">Entregado por (Cobranza)</div></div>
+          <div class="sig-box"><div class="sig-line" id="valeRecibio">Recibido por</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TAB REPORTES ================= -->
+  <section class="tab" id="tab-reportes">
+    <div class="card no-print">
+      <h2>Diario de ventas — remisiones (global)</h2>
+      <div class="sub">Reporte de todas las remisiones cargadas al sistema, con su clasificación y estado de pago.</div>
+      <div class="row">
+        <div class="field"><label>Desde</label><input type="date" id="repDesde"></div>
+        <div class="field"><label>Hasta</label><input type="date" id="repHasta"></div>
+        <div class="field"><label>Tipo</label>
+          <select id="repTipo">
+            <option value="">Todos</option>
+            <option value="credito">Crédito</option>
+            <option value="contado">Contado</option>
+            <option value="sin_clasificar">Sin clasificar</option>
+          </select>
+        </div>
+        <div class="field"><label>&nbsp;</label><button class="btn ghost" id="btnGenerarReporte">Generar</button></div>
+        <div class="field"><label>&nbsp;</label><button class="btn" id="btnImprimirReporte">🖨️ Imprimir</button></div>
+      </div>
+    </div>
+
+    <div class="card" id="reporteCard">
+      <h2>Diario de ventas</h2>
+      <div class="sub" id="repRangoTxt"></div>
+      <table>
+        <thead><tr><th>Fecha</th><th>Folio</th><th>Cliente</th><th class="right">Neto</th><th class="right">Impuesto</th><th class="right">Total</th><th>Tipo</th><th>Estado</th></tr></thead>
+        <tbody id="reporteBody"></tbody>
+      </table>
+      <div class="total-strip">
+        <div>Documentos<b id="repDocs">0</b></div>
+        <div>Total neto<b id="repNeto">$0.00</b></div>
+        <div>Total impuesto<b id="repImp">$0.00</b></div>
+        <div>Total general<b id="repTotal">$0.00</b></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div id="toast"></div>
+
+<!-- ===== Modal: clasificar remisión ===== -->
+<div class="modal-bg" id="modalClasificar">
+  <div class="modal">
+    <h3>Clasificar remisión</h3>
+    <div class="row"><div class="field" style="flex:1;"><label>Folio</label><input type="text" id="mClasFolio" disabled></div></div>
+    <div class="row">
+      <div class="field" style="flex:1;">
+        <label>Tipo</label>
+        <select id="mClasTipo">
+          <option value="contado">Contado (se cobra al entregar)</option>
+          <option value="credito">Crédito</option>
+        </select>
+      </div>
+    </div>
+    <div class="row" id="mClasMotivoWrap">
+      <div class="field" style="flex:1;">
+        <label>Motivo del crédito</label>
+        <select id="mClasMotivo">
+          <option value="precio">Precio</option>
+          <option value="faltante">Faltante</option>
+          <option value="factura_mensual">1 factura mensual</option>
+          <option value="muestra">Muestra</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="mClasCancelar">Cancelar</button>
+      <button class="btn" id="mClasGuardar">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Modal: registrar pago ===== -->
+<div class="modal-bg" id="modalPago">
+  <div class="modal">
+    <h3 id="mPagoTitulo">Registrar pago de remisión</h3>
+    <div class="row"><div class="field" style="flex:1;"><label>Folio</label><input type="text" id="mPagoFolio" disabled></div></div>
+    <div class="row">
+      <div class="field" style="flex:1;">
+        <label>Forma de cobro</label>
+        <select id="mPagoForma">
+          <option value="efectivo">Efectivo (entra a caja)</option>
+          <option value="transferencia">Transferencia (va directo a banco, no en caja)</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field" style="flex:1;">
+        <label>Fecha de pago</label>
+        <input type="date" id="mPagoFecha">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field" style="flex:1;">
+        <label>Bitácora de logística relacionada (opcional)</label>
+        <select id="mPagoBitacora">
+          <option value="">— Sin bitácora / no aplica —</option>
+        </select>
+        <div class="small-note" id="mPagoBitacoraInfo"></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field" style="flex:1;">
+        <label>Chofer que cobró</label>
+        <input type="text" id="mPagoChofer" placeholder="Nombre del chofer">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="mPagoCancelar">Cancelar</button>
+      <button class="btn" id="mPagoGuardar">Registrar pago</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Modal: fecha de facturación / reprogramar ===== -->
+<div class="modal-bg" id="modalCompromiso">
+  <div class="modal">
+    <h3 id="mCompTitulo">Fecha de facturación</h3>
+    <div class="row"><div class="field" style="flex:1;"><label>Folio</label><input type="text" id="mCompFolio" disabled></div></div>
+    <div class="row" id="mCompActualWrap" style="display:none;">
+      <div class="field" style="flex:1;"><label>Fecha de facturación actual</label><input type="text" id="mCompActual" disabled></div>
+    </div>
+    <div class="row">
+      <div class="field" style="flex:1;">
+        <label>Nueva fecha de facturación</label>
+        <input type="date" id="mCompFecha">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field" style="flex:1;">
+        <label>Nota (opcional, ej. motivo de reprogramación)</label>
+        <input type="text" id="mCompNota" placeholder="Ej. cliente pidió 7 días más">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="mCompCancelar">Cancelar</button>
+      <button class="btn" id="mCompGuardar">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalVincularTransferencia">
+  <div class="modal">
+    <h3>Vincular transferencia a la entrega</h3>
+    <div class="row"><div class="field" style="flex:1;"><label>Entrega</label><input type="text" id="mVincTransEntregaFolio" disabled></div></div>
+    <div class="row">
+      <div class="field" style="flex:1;">
+        <label>Transferencia a vincular</label>
+        <select id="mVincTransSelect"></select>
+      </div>
+    </div>
+    <div class="small-note">Solo se agrega como referencia informativa en la relación impresa — no cambia el efectivo neto entregado.</div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="mVincTransCancelar">Cancelar</button>
+      <button class="btn" id="mVincTransGuardar">Vincular</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalNota">
+  <div class="modal">
+    <h3>Motivo por el que sigue inconclusa</h3>
+    <div class="row"><div class="field" style="flex:1;"><label>Folio</label><input type="text" id="mNotaFolio" disabled></div></div>
+    <div class="row">
+      <div class="field" style="flex:1;">
+        <label>Nota</label>
+        <textarea id="mNotaTexto" placeholder="Ej. Hubo una devolución, se está esperando nota de crédito..." style="min-height:70px;resize:vertical;"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="mNotaCancelar">Cancelar</button>
+      <button class="btn amber" id="mNotaQuitar">Quitar nota</button>
+      <button class="btn" id="mNotaGuardar">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   FIREBASE
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyDGBgicmvOge196PiSgmIHhseQUGMiko-E",
+  databaseURL: "https://surtidora-de-higienicos-default-rtdb.firebaseio.com",
+  projectId: "surtidora-de-higienicos",
+  appId: "1:232648877023:web:9e8a4a743b68f4e16d9a6a"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const refRemisiones = db.ref('control_remisiones/remisiones');
+const refClientes   = db.ref('control_remisiones/clientes');
+const refGastos     = db.ref('control_remisiones/caja_movimientos');
+const refMeta       = db.ref('control_remisiones/meta/cargasDiarias');
+const refBitacoras  = db.ref('bitacoras'); // mismo proyecto que Logística de Choferes y Unidades
+const refFolioGasto   = db.ref('control_remisiones/meta/folioGastoCounter');
+const refFolioEntrega = db.ref('control_remisiones/meta/folioEntregaCounter');
+const refEntregas     = db.ref('control_remisiones/entregas_caja');
+const refFechaMinima  = db.ref('control_remisiones/meta/fechaMinimaCarga');
+const refApiConfig    = db.ref('control_remisiones/meta/apiConfig');
+const refApiSyncEstado = db.ref('control_remisiones/meta/apiSyncEstado');
+
+/* ============================================================
+   UTILS
+   ============================================================ */
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+function sanitizeKey(str){
+  return String(str||'').trim().replace(/[.#$\[\]\/]/g,'_').replace(/\s+/g,' ').toUpperCase();
+}
+async function siguienteFolio(refCounter, prefijo){
+  const result = await refCounter.transaction(curr => (curr||0)+1);
+  const n = result.snapshot.val();
+  return prefijo + '-' + String(n).padStart(4,'0');
+}
+function localISO(d){
+  // Evita bug de zona horaria: usa componentes locales, no UTC.
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function todayISO(){ return localISO(new Date()); }
+function parseMonto(v){
+  // Soporta valores ya numéricos y strings formateados tipo "3,542.45" o "$3,542.45".
+  if(v==null || v==='') return 0;
+  if(typeof v === 'number') return v;
+  const limpio = String(v).replace(/[^0-9.\-]/g, ''); // quita $, comas de miles y espacios
+  const n = parseFloat(limpio);
+  return isNaN(n) ? 0 : n;
+}
+function fmtMoney(n){
+  n = Number(n)||0;
+  return n.toLocaleString('es-MX', {style:'currency', currency:'MXN'});
+}
+function fmtDate(iso){
+  if(!iso) return '—';
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+function fmtHoraCarga(ts){
+  if(!ts) return '<span class="muted">—</span>';
+  const d = new Date(ts);
+  const fecha = d.toLocaleDateString('es-MX', {day:'2-digit', month:'2-digit'});
+  const hora = d.toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
+  return `${fecha} <span class="small-note">${hora}</span>`;
+}
+function daysBetween(isoA, isoB){
+  const a = new Date(isoA+'T00:00:00');
+  const b = new Date(isoB+'T00:00:00');
+  return Math.round((b-a)/86400000);
+}
+
+/* ============================================================
+   STATE (cache local alimentado por listeners en tiempo real)
+   ============================================================ */
+let REMISIONES = {};   // folio -> data
+let CLIENTES   = {};   // clienteKey -> data
+let GASTOS     = {};   // id -> data
+let CARGAS_DIARIAS = {}; // fechaISO -> {timestamp, cantidadNuevas}
+let BITACORAS  = {};   // id -> data (viene del sistema de Logística)
+let ENTREGAS   = {};   // id -> data (entregas de efectivo a gerencia)
+
+refRemisiones.on('value', snap=>{
+  REMISIONES = snap.val() || {};
+  renderChips();
+  renderRemisiones();
+  renderCobranza();
+  renderCreditoDoc();
+  renderCajaContado();
+  renderAvisoBitacora();
+});
+refClientes.on('value', snap=>{
+  CLIENTES = snap.val() || {};
+});
+refGastos.on('value', snap=>{
+  GASTOS = snap.val() || {};
+  renderGastos();
+  renderCajaContado();
+});
+refMeta.on('value', snap=>{
+  CARGAS_DIARIAS = snap.val() || {};
+  checkAvisoDiario();
+  renderUltimaCarga();
+});
+refBitacoras.on('value', snap=>{
+  BITACORAS = snap.val() || {};
+  renderRemisiones();
+  renderAvisoBitacora();
+});
+refEntregas.on('value', snap=>{
+  ENTREGAS = snap.val() || {};
+  renderEntregasHist();
+});
+
+/* ============================================================
+   FECHA MÍNIMA ACEPTADA (protección contra cargar reportes viejos)
+   ============================================================ */
+let FECHA_MINIMA_CARGA = '2026-07-22'; // valor por defecto hasta que cargue el guardado en Firebase
+refFechaMinima.on('value', snap=>{
+  const val = snap.val();
+  if(val) FECHA_MINIMA_CARGA = val;
+  const input = document.getElementById('fechaMinimaCarga');
+  if(input) input.value = FECHA_MINIMA_CARGA;
+});
+document.getElementById('btnGuardarFechaMinima').addEventListener('click', async ()=>{
+  const val = document.getElementById('fechaMinimaCarga').value;
+  if(!val){ toast('Selecciona una fecha.'); return; }
+  try{
+    await refFechaMinima.set(val);
+    toast('Fecha mínima actualizada a '+fmtDate(val)+'.');
+  }catch(err){ toast('Error: '+err.message); }
+});
+
+/* ============================================================
+   CONEXIÓN AUTOMÁTICA CON LA API DE MICROSIP (remisiones)
+   ============================================================ */
+let API_CONFIG = {baseUrl:'', token:'', activo:false};
+let apiSyncTimer = null;
+
+refApiConfig.on('value', snap=>{
+  API_CONFIG = snap.val() || {baseUrl:'', token:'', activo:false};
+  document.getElementById('apiUrl').value = API_CONFIG.baseUrl || '';
+  document.getElementById('apiToken').value = API_CONFIG.token || '';
+  document.getElementById('apiActivo').value = API_CONFIG.activo ? 'si' : 'no';
+  reprogramarSincronizacion();
+});
+refApiSyncEstado.on('value', snap=>{
+  renderApiSyncStatus(snap.val());
+});
+
+function renderApiSyncStatus(estado){
+  const el = document.getElementById('apiSyncStatus');
+  if(!estado){ el.textContent = 'Aún no se ha sincronizado con la API.'; return; }
+  const hora = new Date(estado.ultimo).toLocaleString('es-MX');
+  if(estado.ok){
+    el.innerHTML = `✅ Última sincronización: ${hora} — ${estado.nuevas} remisión(es) nueva(s) agregada(s).`;
+  } else {
+    el.innerHTML = `<span style="color:var(--red-600);">⚠️ Falló la última sincronización (${hora}): ${estado.error} — revisa URL, token o CORS con el equipo de sistemas.</span>`;
+  }
+}
+
+document.getElementById('btnGuardarApiConfig').addEventListener('click', async ()=>{
+  const baseUrl = document.getElementById('apiUrl').value.trim().replace(/\/$/,'');
+  const token = document.getElementById('apiToken').value.trim();
+  const activo = document.getElementById('apiActivo').value === 'si';
+  try{
+    await refApiConfig.set({baseUrl, token, activo});
+    toast('Configuración de API guardada.');
+  }catch(err){ toast('Error: '+err.message); }
+});
+
+document.getElementById('btnSincronizarAhora').addEventListener('click', ()=>{
+  sincronizarConMicrosip(false);
+});
+
+function reprogramarSincronizacion(){
+  if(apiSyncTimer) clearInterval(apiSyncTimer);
+  if(API_CONFIG.activo && API_CONFIG.baseUrl && API_CONFIG.token){
+    sincronizarConMicrosip(true); // primera corrida al activar/entrar
+    apiSyncTimer = setInterval(()=>sincronizarConMicrosip(true), 5*60*1000);
+  }
+}
+
+async function sincronizarConMicrosip(silencioso){
+  if(!API_CONFIG.baseUrl || !API_CONFIG.token){
+    if(!silencioso) toast('Configura la URL y el token de la API primero.');
+    return;
+  }
+  const fechaFin = todayISO();
+  const url = `${API_CONFIG.baseUrl}/api/v1/remisiones?fecha_ini=${FECHA_MINIMA_CARGA}&fecha_fin=${fechaFin}`;
+  try{
+    const resp = await fetch(url, {headers:{'Authorization':'Bearer '+API_CONFIG.token}});
+    if(!resp.ok) throw new Error('HTTP '+resp.status+' — revisa el token o el rango de fechas');
+    const data = await resp.json();
+    const items = data.items || [];
+    const updates = {};
+    let nuevas = 0;
+    items.forEach(it=>{
+      const folio = String(it.folio||'').trim();
+      if(!folio) return;
+      if(REMISIONES[folio]) return; // ya existe, no se toca (misma regla que la carga por Excel)
+      const fecha = it.fecha || todayISO();
+      if(fecha < FECHA_MINIMA_CARGA) return;
+      const importeNeto = Number(it.importe_neto)||0;
+      const impuesto = Number(it.total_impuestos)||0;
+      updates[folio] = {
+        folio, fecha,
+        cliente: String(it.cliente||'').trim(),
+        importeNeto, impuesto, total: importeNeto+impuesto,
+        tipo: null, pagada: false, fechaPago: null, chofer: null,
+        origenCarga: 'api',
+        fechaCarga: firebase.database.ServerValue.TIMESTAMP
+      };
+      nuevas++;
+    });
+    if(nuevas>0) await refRemisiones.update(updates);
+    await refApiSyncEstado.set({ultimo: Date.now(), ok:true, nuevas});
+    if(!silencioso) toast(`Sincronización OK — ${nuevas} remisión(es) nueva(s).`);
+  }catch(err){
+    await refApiSyncEstado.set({ultimo: Date.now(), ok:false, error: err.message});
+    if(!silencioso) toast('Error al sincronizar: '+err.message);
+    console.error('Error sincronizando con Microsip:', err);
+  }
+}
+
+/* ============================================================
+   AVISO: carga diaria del reporte de ventas antes de las 11:00
+   ============================================================ */
+function checkAvisoDiario(){
+  const el = document.getElementById('avisoDiario');
+  const hoy = todayISO();
+  const yaSubio = !!CARGAS_DIARIAS[hoy];
+  const ahora = new Date();
+  const pasoLaHora = ahora.getHours() >= 11;
+  if(!yaSubio && pasoLaHora){
+    const hh = String(ahora.getHours()).padStart(2,'0');
+    const mm = String(ahora.getMinutes()).padStart(2,'0');
+    el.style.display = 'flex';
+    el.innerHTML = `⚠️ <span>Aún no se ha subido el diario de ventas de hoy. Ya son las ${hh}:${mm} — súbelo cuanto antes en "Cargar diario".</span>`;
+  } else {
+    el.style.display = 'none';
+  }
+}
+checkAvisoDiario();
+setInterval(checkAvisoDiario, 60000);
+
+function renderUltimaCarga(){
+  const el = document.getElementById('ultimaCargaBadge');
+  if(!el) return;
+  const fechas = Object.keys(CARGAS_DIARIAS).sort();
+  if(fechas.length===0){
+    el.className = 'ultima-carga danger';
+    el.innerHTML = '⚠️ Aún no se ha subido ningún reporte a este sistema.';
+    return;
+  }
+  const ultima = fechas[fechas.length-1];
+  const diffDias = Math.round((new Date(todayISO()+'T00:00:00') - new Date(ultima+'T00:00:00'))/86400000);
+  let cls, icon;
+  if(diffDias<=0){ cls='ok'; icon='✅'; }
+  else if(diffDias===1){ cls='warn'; icon='⏰'; }
+  else { cls='danger'; icon='⚠️'; }
+  el.className = 'ultima-carga '+cls;
+  el.innerHTML = `${icon} Último reporte subido: <b>${fmtDate(ultima)}</b>` + (diffDias>0 ? ` — hace ${diffDias} día${diffDias===1?'':'s'}` : ' — hoy');
+}
+
+/* ============================================================
+   TABS
+   ============================================================ */
+document.querySelectorAll('nav.tabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('section.tab').forEach(s=>s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ============================================================
+   CHIPS RESUMEN
+   ============================================================ */
+function renderChips(){
+  const list = Object.values(REMISIONES);
+  const sinClasificar = list.filter(r=>!r.tipo && !r.concluida).length;
+  const contadoSinRetirar = list.filter(r=>r.tipo==='contado' && r.pagada).length;
+  const sinFechaCompromiso = list.filter(r=>r.tipo==='credito' && !r.pagada && !r.fechaCompromiso && !r.concluida).length;
+  const creditoSinConfirmar = list.filter(r=>r.tipo==='credito' && !r.confirmada && !r.concluida).length;
+
+  let vencidas = 0, porVencer = 0;
+  list.forEach(r=>{
+    const ce = creditoEstado(r);
+    if(ce?.estado==='vencida') vencidas++;
+    else if(ce?.estado==='porvencer') porVencer++;
+  });
+
+  const chips = document.getElementById('chips');
+  chips.innerHTML = `
+    <div class="chip">Remisiones cargadas <b>${list.length}</b></div>
+    <div class="chip ${sinClasificar? 'alert':''}">Sin clasificar <b>${sinClasificar}</b></div>
+    <div class="chip ${sinFechaCompromiso? 'alert':''}">Crédito sin fecha de facturación (vendedoras) <b>${sinFechaCompromiso}</b></div>
+    <div class="chip ${porVencer? 'alert':''}">Facturación por vencer <b>${porVencer}</b></div>
+    <div class="chip ${vencidas? 'danger':''}">Facturación atrasada <b>${vencidas}</b></div>
+    <div class="chip ${creditoSinConfirmar? 'alert':''}">Crédito sin confirmar <b>${creditoSinConfirmar}</b></div>
+    <div class="chip">Contado cobrado (caja) <b>${contadoSinRetirar}</b></div>
+  `;
+}
+
+/* ============================================================
+   1) CARGAR DIARIO DE VENTAS (Excel)
+   ============================================================ */
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+let pendingRows = [];
+
+['dragover','dragenter'].forEach(ev=>dropZone.addEventListener(ev, e=>{e.preventDefault();dropZone.classList.add('hover');}));
+['dragleave','drop'].forEach(ev=>dropZone.addEventListener(ev, e=>{e.preventDefault();dropZone.classList.remove('hover');}));
+dropZone.addEventListener('drop', e=>{
+  const f = e.dataTransfer.files[0];
+  if(f) handleFile(f);
+});
+fileInput.addEventListener('change', e=>{
+  const f = e.target.files[0];
+  if(f) handleFile(f);
+});
+
+function handleFile(file){
+  document.getElementById('dropText').textContent = '⏳ Leyendo '+file.name+'...';
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:'array', cellDates:true});
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, {header:1, raw:false, defval:null});
+      parseDiario(rows);
+      document.getElementById('dropText').textContent = '📄 Arrastra el Excel aquí o haz clic para seleccionarlo';
+    }catch(err){
+      console.error(err);
+      toast('No se pudo leer el archivo: '+err.message);
+      document.getElementById('dropText').textContent = '📄 Arrastra el Excel aquí o haz clic para seleccionarlo';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function normCell(v){ return String(v==null?'':v).trim().toLowerCase(); }
+
+function parseDiario(rows){
+  // 1. localizar fila de encabezados buscando "folio"
+  let headerIdx = -1, cols = {};
+  for(let i=0;i<rows.length;i++){
+    const row = rows[i] || [];
+    const idxFolio = row.findIndex(c=>normCell(c)==='folio');
+    if(idxFolio>=0){
+      headerIdx = i;
+      row.forEach((c,ci)=>{
+        const n = normCell(c);
+        if(n==='fecha') cols.fecha=ci;
+        else if(n==='folio') cols.folio=ci;
+        else if(n==='cliente') cols.cliente=ci;
+        else if(n==='importe neto') cols.neto=ci;
+        else if(n==='impuesto') cols.impuesto=ci;
+        else if(n==='total') cols.total=ci;
+      });
+      break;
+    }
+  }
+  if(headerIdx<0 || cols.folio==null){
+    toast('No se encontró el encabezado "Folio" en el archivo. Verifica que sea el reporte de Microsip.');
+    return;
+  }
+
+  const parsed = [];
+  for(let i=headerIdx+1;i<rows.length;i++){
+    const row = rows[i] || [];
+    const folioRaw = row[cols.folio];
+    const clienteRaw = row[cols.cliente];
+    if(folioRaw==null || String(folioRaw).trim()===''){
+      // fila vacía: puede seguir habiendo datos, continuamos buscando
+      continue;
+    }
+    if(String(folioRaw).toLowerCase().startsWith('total')) break;
+    let fechaVal = row[cols.fecha];
+    let fechaISO = null;
+    if(fechaVal instanceof Date) fechaISO = localISO(fechaVal);
+    else if(typeof fechaVal === 'string' && fechaVal.trim()){
+      const d = new Date(fechaVal);
+      if(!isNaN(d)) fechaISO = localISO(d);
+    }
+    const neto = parseMonto(row[cols.neto]);
+    const impuesto = parseMonto(row[cols.impuesto]);
+    const total = parseMonto(row[cols.total]);
+    if(!fechaISO && neto===0 && total===0) continue;
+    parsed.push({
+      folio: String(folioRaw).trim(),
+      fecha: fechaISO || todayISO(),
+      cliente: String(clienteRaw||'').trim(),
+      importeNeto: neto,
+      impuesto: impuesto,
+      total: total
+    });
+  }
+
+  if(parsed.length===0){
+    toast('No se encontraron remisiones en el archivo.');
+    return;
+  }
+  pendingRows = parsed;
+  showPreview(parsed);
+}
+
+function showPreview(parsed){
+  const nuevas = parsed.filter(r=>!REMISIONES[r.folio]);
+  const existentes = parsed.filter(r=>REMISIONES[r.folio]);
+  const foliosArchivo = new Set(parsed.map(r=>r.folio));
+  const aConcluir = Object.values(REMISIONES).filter(r=>!r.concluida && !foliosArchivo.has(r.folio));
+  document.getElementById('previewSub').innerHTML =
+    `${parsed.length} remisiones leídas del archivo · <b>${nuevas.length} nuevas</b> se agregarán · ${existentes.length} ya existían y no se modifican.` +
+    (aConcluir.length ? `<br>🧹 <b>${aConcluir.length} remisión(es) ya no aparecen en el archivo</b> — se marcarán como <b>concluidas</b> (liquidadas o facturadas en Microsip) y dejarán de mostrarse en la lista normal.` : '');
+  const body = document.getElementById('previewBody');
+  body.innerHTML = parsed.map(r=>{
+    const esNueva = !REMISIONES[r.folio];
+    return `<tr>
+      <td>${fmtDate(r.fecha)}</td>
+      <td>${r.folio}</td>
+      <td>${r.cliente}</td>
+      <td class="right mono">${fmtMoney(r.total)}</td>
+      <td>${esNueva ? '<span class="badge contado">Nueva</span>' : '<span class="badge pend">Ya existe</span>'}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('previewCard').style.display='block';
+  document.getElementById('previewCard').scrollIntoView({behavior:'smooth'});
+
+  // Detecta folios que YA existen en el sistema pero con un monto distinto al del Excel
+  // (por ejemplo, los que se guardaron mal por el bug de la coma de miles).
+  const conDiferencia = existentes.filter(r=>{
+    const cur = REMISIONES[r.folio];
+    return Math.abs((Number(cur.total)||0) - r.total) > 0.01;
+  });
+  const corregirCard = document.getElementById('corregirCard');
+  if(conDiferencia.length){
+    document.getElementById('corregirSub').textContent =
+      `${conDiferencia.length} remisión(es) ya guardadas tienen un monto distinto al del Excel. Corrígelas para dejar el importe correcto.`;
+    document.getElementById('corregirBody').innerHTML = conDiferencia.map(r=>{
+      const cur = REMISIONES[r.folio];
+      return `<tr>
+        <td>${r.folio}</td><td>${r.cliente}</td>
+        <td class="right mono" style="color:var(--red-600);">${fmtMoney(cur.total)}</td>
+        <td class="right mono" style="color:var(--teal-700);font-weight:700;">${fmtMoney(r.total)}</td>
+      </tr>`;
+    }).join('');
+    corregirCard.dataset.datos = JSON.stringify(conDiferencia.map(r=>({folio:r.folio, importeNeto:r.importeNeto, impuesto:r.impuesto, total:r.total})));
+    corregirCard.style.display = 'block';
+  } else {
+    corregirCard.style.display = 'none';
+  }
+}
+
+document.getElementById('btnCorregirMontos').addEventListener('click', async ()=>{
+  const datos = JSON.parse(document.getElementById('corregirCard').dataset.datos || '[]');
+  if(!datos.length) return;
+  const updates = {};
+  datos.forEach(r=>{
+    updates[r.folio+'/importeNeto'] = r.importeNeto;
+    updates[r.folio+'/impuesto'] = r.impuesto;
+    updates[r.folio+'/total'] = r.total;
+  });
+  try{
+    await refRemisiones.update(updates);
+    toast(`${datos.length} folio(s) corregidos correctamente.`);
+    document.getElementById('corregirCard').style.display='none';
+  }catch(err){
+    toast('Error al corregir: '+err.message);
+  }
+});
+
+document.getElementById('btnCancelarCarga').addEventListener('click', ()=>{
+  pendingRows = [];
+  document.getElementById('previewCard').style.display='none';
+  document.getElementById('corregirCard').style.display='none';
+});
+
+async function marcarConcluidas(){
+  // Remisiones del sistema que ya no vienen en el archivo => concluidas en Microsip
+  const foliosArchivo = new Set(pendingRows.map(r=>r.folio));
+  const aConcluir = Object.values(REMISIONES).filter(r=>!r.concluida && !foliosArchivo.has(r.folio));
+  if(aConcluir.length===0) return 0;
+  const updates = {};
+  aConcluir.forEach(r=>{
+    updates[r.folio+'/concluida'] = true;
+    updates[r.folio+'/fechaConclusion'] = todayISO();
+  });
+  await refRemisiones.update(updates);
+  return aConcluir.length;
+}
+
+document.getElementById('btnConfirmarCarga').addEventListener('click', async ()=>{
+  const nuevas = pendingRows.filter(r=>!REMISIONES[r.folio]);
+  try{
+    if(nuevas.length>0){
+      const updates = {};
+      nuevas.forEach(r=>{
+        updates[r.folio] = {
+          folio: r.folio,
+          fecha: r.fecha,
+          cliente: r.cliente,
+          importeNeto: r.importeNeto,
+          impuesto: r.impuesto,
+          total: r.total,
+          tipo: null,
+          motivoCredito: null,
+          pagada: false,
+          fechaPago: null,
+          chofer: null,
+          fechaCarga: firebase.database.ServerValue.TIMESTAMP
+        };
+      });
+      await refRemisiones.update(updates);
+    }
+    const concluidas = await marcarConcluidas();
+    await refMeta.child(todayISO()).set({timestamp: firebase.database.ServerValue.TIMESTAMP, cantidadNuevas: nuevas.length, concluidas});
+    toast(`${nuevas.length} nuevas guardadas · ${concluidas} marcadas como concluidas.`);
+    document.getElementById('previewCard').style.display='none';
+    document.getElementById('cargaResumen').innerHTML =
+      `<div class="small-note">Última carga: ${nuevas.length} nuevas, ${concluidas} concluidas — ${new Date().toLocaleString('es-MX')}.</div>`;
+    pendingRows = [];
+    fileInput.value='';
+  }catch(err){
+    console.error(err);
+    toast('Error al guardar en Firebase: '+err.message);
+  }
+});
+
+/* ============================================================
+   2) REMISIONES — tabla, clasificación y pago
+   ============================================================ */
+['fRemBusca','fRemTipo','fRemPago','fRemConcluidas','fRemDesde','fRemHasta'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', renderRemisiones);
+  document.getElementById(id).addEventListener('change', renderRemisiones);
+});
+
+function creditoEstado(r){
+  if(r.tipo!=='credito' || r.pagada || r.concluida) return null;
+  if(!r.fechaCompromiso) return {estado:'sin_fecha'};
+  const diff = daysBetween(todayISO(), r.fechaCompromiso);
+  if(diff<0) return {estado:'vencida', dias:Math.abs(diff)};
+  if(diff<=2) return {estado:'porvencer', dias:diff};
+  return {estado:'en_plazo', dias:diff};
+}
+
+function renderRemisiones(){
+  const busca = document.getElementById('fRemBusca').value.trim().toLowerCase();
+  const tipoF = document.getElementById('fRemTipo').value;
+  const pagoF = document.getElementById('fRemPago').value;
+  const conclF = document.getElementById('fRemConcluidas').value;
+  const desde = document.getElementById('fRemDesde').value;
+  const hasta = document.getElementById('fRemHasta').value;
+
+  let list = Object.values(REMISIONES);
+  if(conclF==='ocultar') list = list.filter(r=>!r.concluida);
+  else if(conclF==='solo') list = list.filter(r=>r.concluida);
+  if(busca) list = list.filter(r=>r.folio.toLowerCase().includes(busca) || r.cliente.toLowerCase().includes(busca));
+  if(tipoF==='sin_clasificar') list = list.filter(r=>!r.tipo);
+  else if(tipoF) list = list.filter(r=>r.tipo===tipoF);
+  if(pagoF==='pagada') list = list.filter(r=>r.pagada);
+  else if(pagoF==='pendiente') list = list.filter(r=>!r.pagada);
+  if(desde) list = list.filter(r=>r.fecha>=desde);
+  if(hasta) list = list.filter(r=>r.fecha<=hasta);
+
+  list.sort((a,b)=> b.fecha.localeCompare(a.fecha) || b.folio.localeCompare(a.folio));
+
+  const body = document.getElementById('remisionesBody');
+  document.getElementById('remisionesEmpty').style.display = list.length? 'none':'block';
+
+  body.innerHTML = list.map(r=>{
+    let tipoBadge = '<span class="badge pend">Sin clasificar</span>';
+    if(r.tipo==='credito') tipoBadge = '<span class="badge credito">Crédito · '+motivoLabel(r.motivoCredito)+'</span>';
+    if(r.tipo==='contado') tipoBadge = '<span class="badge contado">Contado</span>';
+
+    let estadoBadge = r.pagada ? '<span class="badge pagada">Pagada</span>' + (r.formaCobro==='transferencia' ? ' <span class="badge pend">🏦 Transferencia</span>' : '') : '<span class="badge pend">Pendiente</span>';
+    if(r.concluida) estadoBadge += ` <span class="badge pend">✔ Concluida ${r.fechaConclusion? fmtDate(r.fechaConclusion):''}</span>`;
+    const ce = creditoEstado(r);
+    if(ce && ce.estado==='vencida') estadoBadge += ` <span class="badge vencida">Vencida ${ce.dias}d</span>`;
+    else if(ce && ce.estado==='porvencer') estadoBadge += ` <span class="badge porvencer">Por vencer</span>`;
+    else if(ce && ce.estado==='sin_fecha') estadoBadge += ` <span class="badge pend">Falta fecha factura (vendedora)</span>`;
+
+    let compromisoCel = '<span class="muted">—</span>';
+    if(r.tipo==='credito'){
+      if(r.fechaCompromiso){
+        compromisoCel = fmtDate(r.fechaCompromiso) + (r.vendedoraAsigno ? ` <span class="small-note">(${r.vendedoraAsigno})</span>` : '');
+      } else {
+        compromisoCel = '<span class="muted small-note">Sin asignar</span>';
+      }
+    }
+
+    return `<tr>
+      <td>${fmtDate(r.fecha)}</td>
+      <td>${r.folio}</td>
+      <td>${r.cliente}</td>
+      <td class="right mono">${fmtMoney(r.total)}</td>
+      <td>${tipoBadge}</td>
+      <td>${estadoBadge}</td>
+      <td>${compromisoCel}</td>
+      <td>${r.fechaPago? fmtDate(r.fechaPago) : '—'}</td>
+      <td>${r.chofer ? r.chofer + (r.bitacoraFolio ? ' <span class="small-note">('+r.bitacoraFolio+')</span>' : '') : '<span class="muted">—</span>'}</td>
+      <td>${fmtHoraCarga(r.fechaCarga)}</td>
+      <td>${celdaBitacoraConcluida(r.folio, !!r.tipo)}</td>
+      <td>${r.notaInconclusa
+          ? `<span class="nota-inconclusa" title="${r.notaInconclusa.replace(/"/g,'&quot;')}">${r.notaInconclusa.length>40? r.notaInconclusa.slice(0,40)+'…' : r.notaInconclusa}</span><br><button class="btn ghost small" style="margin-top:4px;" onclick="abrirNota('${r.folio}')">✏️ Editar</button>`
+          : `<button class="btn ghost small" onclick="abrirNota('${r.folio}')">+ Nota</button>`}</td>
+      <td>
+        ${r.concluida ? `<button class="btn ghost small" onclick="reactivarRemision('${r.folio}')">Reactivar</button>` : `
+        <button class="btn ghost small" onclick="abrirClasificar('${r.folio}')">Clasificar</button>
+        ${!r.pagada && r.tipo==='credito' ? `<button class="btn ghost small" onclick="abrirCompromiso('${r.folio}')">${r.fechaCompromiso ? 'Reprogramar' : 'Fijar fecha'}</button>` : ''}
+        ${!r.pagada ? `<button class="btn amber small" onclick="abrirPago('${r.folio}','efectivo')">Pagar</button>
+        <button class="btn ghost small" onclick="abrirPago('${r.folio}','transferencia')">Transferencia</button>` : ''}`}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function reactivarRemision(folio){
+  if(confirm('¿Reactivar la remisión '+folio+'? Volverá a aparecer en la lista de pendientes.')){
+    refRemisiones.child(folio).update({concluida:null, fechaConclusion:null});
+    toast('Remisión '+folio+' reactivada.');
+  }
+}
+
+function motivoLabel(m){
+  return {precio:'Precio', faltante:'Faltante', factura_mensual:'1 factura mensual', muestra:'Muestra'}[m] || '';
+}
+
+/* ============================================================
+   PROGRAMACIÓN DE FACTURA — calendario de facturación por crédito
+   ============================================================ */
+function renderCobranza(){
+  const hoy = todayISO();
+  const en7 = localISO(new Date(Date.now()+7*86400000));
+
+  const pendientesCredito = Object.values(REMISIONES).filter(r=>r.tipo==='credito' && !r.pagada && !r.concluida);
+  const conFecha = pendientesCredito.filter(r=>r.fechaCompromiso);
+  const sinFecha = pendientesCredito.filter(r=>!r.fechaCompromiso);
+
+  const vencidas   = conFecha.filter(r=>r.fechaCompromiso < hoy).sort((a,b)=>a.fechaCompromiso.localeCompare(b.fechaCompromiso));
+  const hoyList     = conFecha.filter(r=>r.fechaCompromiso === hoy);
+  const semana      = conFecha.filter(r=>r.fechaCompromiso > hoy && r.fechaCompromiso <= en7).sort((a,b)=>a.fechaCompromiso.localeCompare(b.fechaCompromiso));
+  const masAdelante = conFecha.filter(r=>r.fechaCompromiso > en7).sort((a,b)=>a.fechaCompromiso.localeCompare(b.fechaCompromiso));
+
+  const sum = arr=>arr.reduce((s,r)=>s+r.total,0);
+
+  document.getElementById('cobranzaResumen').innerHTML = `
+    <div>Facturación atrasada<b style="color:var(--red-600)">${fmtMoney(sum(vencidas))}</b></div>
+    <div>Se factura hoy<b style="color:var(--amber-500)">${fmtMoney(sum(hoyList))}</b></div>
+    <div>Por facturar en 7 días<b>${fmtMoney(sum(semana))}</b></div>
+    <div>Sin fecha asignada aún<b class="muted">${sinFecha.length} remisión(es)</b></div>
+  `;
+
+  function grupoHTML(titulo, colorVar, arr, tono){
+    if(arr.length===0) return '';
+    const filas = arr.map(r=>{
+      const diff = daysBetween(hoy, r.fechaCompromiso);
+      let etiquetaDias = '';
+      if(diff<0) etiquetaDias = `<span class="badge vencida">${Math.abs(diff)} día(s) de atraso</span>`;
+      else if(diff===0) etiquetaDias = `<span class="badge porvencer">Hoy</span>`;
+      else etiquetaDias = `<span class="badge pend">En ${diff} día(s)</span>`;
+      return `<tr>
+        <td>${fmtDate(r.fechaCompromiso)}</td>
+        <td>${r.cliente}</td>
+        <td>${r.folio}</td>
+        <td>${motivoLabel(r.motivoCredito)}</td>
+        <td class="right mono">${fmtMoney(r.total)}</td>
+        <td>${etiquetaDias}</td>
+        <td>${r.vendedoraAsigno ? r.vendedoraAsigno : '<span class="muted">—</span>'}</td>
+        <td>
+          <button class="btn ghost small" onclick="abrirCompromiso('${r.folio}')">Reprogramar</button>
+        </td>
+      </tr>`;
+    }).join('');
+    return `<div class="card">
+      <h2 style="color:${colorVar};">${titulo} <span class="muted" style="font-size:12px;font-weight:400;">(${arr.length})</span></h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Fecha factura</th><th>Cliente</th><th>Folio</th><th>Motivo</th><th class="right">Total</th><th>Días</th><th>Vendedora</th><th></th></tr></thead>
+          <tbody>${filas}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }
+
+  function sinFechaHTML(){
+    if(sinFecha.length===0) return '';
+    const filas = sinFecha.map(r=>`<tr>
+        <td>${fmtDate(r.fecha)}</td><td>${r.cliente}</td><td>${r.folio}</td>
+        <td class="right mono">${fmtMoney(r.total)}</td>
+        <td><button class="btn ghost small" onclick="abrirCompromiso('${r.folio}')">Fijar fecha</button></td>
+      </tr>`).join('');
+    return `<div class="card">
+      <h2 class="muted">Sin fecha de facturación asignada por la vendedora <span style="font-size:12px;font-weight:400;">(${sinFecha.length})</span></h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Remisión</th><th>Cliente</th><th>Folio</th><th class="right">Total</th><th></th></tr></thead>
+          <tbody>${filas}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }
+
+  const html =
+    grupoHTML('🔴 Atrasadas — facturar de inmediato', 'var(--red-600)', vencidas) +
+    grupoHTML('🟠 Se facturan hoy', 'var(--amber-500)', hoyList) +
+    grupoHTML('🟢 Próximas a facturar (7 días)', 'var(--teal-700)', semana) +
+    grupoHTML('Más adelante', 'var(--slate-700)', masAdelante) +
+    sinFechaHTML();
+
+  document.getElementById('cobranzaListas').innerHTML = html ||
+    '<div class="card empty">No hay remisiones a crédito pendientes de facturar.</div>';
+}
+
+/* ============================================================
+   CRÉDITO — control físico de documentos (evitar extravío)
+   ============================================================ */
+document.getElementById('fCredBusca').addEventListener('input', renderCreditoDoc);
+
+function renderCreditoDoc(){
+  const busca = document.getElementById('fCredBusca').value.trim().toLowerCase();
+  let list = Object.values(REMISIONES).filter(r=>r.tipo==='credito' && !r.concluida);
+  if(busca) list = list.filter(r=>r.folio.toLowerCase().includes(busca) || r.cliente.toLowerCase().includes(busca));
+  const sinConfirmar = list.filter(r=>!r.confirmada).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const confirmadas = list.filter(r=>r.confirmada).sort((a,b)=>(b.fechaConfirmacion||'').localeCompare(a.fechaConfirmacion||''));
+
+  document.getElementById('creditoSinConfirmarEmpty').style.display = sinConfirmar.length? 'none':'block';
+  document.getElementById('creditoSinConfirmarBody').innerHTML = sinConfirmar.map(r=>`<tr>
+      <td>${fmtDate(r.fecha)}</td><td>${r.folio}</td><td>${r.cliente}</td>
+      <td class="right mono">${fmtMoney(r.total)}</td>
+      <td><button class="btn purple small" onclick="confirmarRemision('${r.folio}')">✔ Ya la tengo en mi archivo</button></td>
+    </tr>`).join('');
+
+  document.getElementById('creditoConfirmadaBody').innerHTML = confirmadas.map(r=>`<tr>
+      <td>${fmtDate(r.fecha)}</td><td>${r.folio}</td><td>${r.cliente}</td>
+      <td class="right mono">${fmtMoney(r.total)}</td>
+      <td>${r.fechaConfirmacion? fmtDate(r.fechaConfirmacion):'—'}</td>
+    </tr>`).join('') || '<tr><td colspan="5" class="empty">Aún no hay remisiones confirmadas.</td></tr>';
+}
+
+async function confirmarRemision(folio){
+  try{
+    await refRemisiones.child(folio).update({confirmada:true, fechaConfirmacion: todayISO()});
+    toast('Remisión '+folio+' confirmada — ya sabes que la tienes.');
+  }catch(err){ toast('Error: '+err.message); }
+}
+
+// --- Modal clasificar ---
+const modalClasificar = document.getElementById('modalClasificar');
+document.getElementById('mClasTipo').addEventListener('change', e=>{
+  document.getElementById('mClasMotivoWrap').style.display = e.target.value==='credito' ? 'flex':'none';
+});
+function abrirClasificar(folio){
+  const r = REMISIONES[folio];
+  document.getElementById('mClasFolio').value = folio;
+  document.getElementById('mClasTipo').value = r.tipo || 'contado';
+  document.getElementById('mClasMotivo').value = r.motivoCredito || 'precio';
+  document.getElementById('mClasMotivoWrap').style.display = (r.tipo==='credito') ? 'flex':'none';
+  modalClasificar.dataset.folio = folio;
+  modalClasificar.classList.add('show');
+}
+document.getElementById('mClasCancelar').addEventListener('click', ()=>modalClasificar.classList.remove('show'));
+document.getElementById('mClasGuardar').addEventListener('click', async ()=>{
+  const folio = modalClasificar.dataset.folio;
+  const tipo = document.getElementById('mClasTipo').value;
+  const motivo = tipo==='credito' ? document.getElementById('mClasMotivo').value : null;
+  try{
+    await refRemisiones.child(folio).update({tipo, motivoCredito: motivo});
+    toast('Remisión '+folio+' clasificada como '+ (tipo==='credito'?'crédito':'contado'));
+    modalClasificar.classList.remove('show');
+  }catch(err){ toast('Error: '+err.message); }
+});
+
+// --- Bitácoras de logística (Firebase compartido) ---
+function normFolio(f){ return String(f||'').trim().toUpperCase(); }
+
+function bitacorasQueCoinciden(folio){
+  const nf = normFolio(folio);
+  const matches = [];
+  Object.entries(BITACORAS).forEach(([id,b])=>{
+    if(!b || !Array.isArray(b.paradas)) return;
+    const coincide = b.paradas.some(p=>{
+      if(p.folio && normFolio(p.folio)===nf) return true;
+      if(Array.isArray(p.folios) && p.folios.some(f=>normFolio(f)===nf)) return true;
+      return false;
+    });
+    if(coincide) matches.push({id, ...b});
+  });
+  return matches;
+}
+
+function fmtTranscurrido(ms){
+  const horas = ms/3600000;
+  if(horas < 1) return `hace ${Math.max(1,Math.round(ms/60000))} min`;
+  if(horas < 24) return `hace ${Math.round(horas)}h`;
+  return `hace ${Math.round(horas/24)}d`;
+}
+
+function celdaBitacoraConcluida(folio, yaClasificada){
+  const matches = bitacorasQueCoinciden(folio);
+  if(matches.length===0) return '<span class="muted">—</span>';
+  // Si hay varias, prioriza la concluida más reciente; si ninguna concluyó, toma la primera.
+  const concluidas = matches.filter(b=>b.estado==='concluido' && b.tsConcluido).sort((a,b)=>b.tsConcluido-a.tsConcluido);
+  if(concluidas.length===0) return '<span class="badge pend">🚚 En ruta</span>';
+  const b = concluidas[0];
+  const d = new Date(b.tsConcluido);
+  const fecha = d.toLocaleDateString('es-MX', {day:'2-digit', month:'2-digit'});
+  const hora = d.toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
+  const transcurrido = Date.now() - b.tsConcluido;
+  const horas = transcurrido/3600000;
+  const txt = `${fecha} ${hora} <span class="small-note">(${fmtTranscurrido(transcurrido)})</span>`;
+  if(yaClasificada) return txt;
+  if(horas>=4) return `<span class="badge vencida">${txt}</span>`;
+  if(horas>=1) return `<span class="badge porvencer">${txt}</span>`;
+  return txt;
+}
+
+function getBitacoraSinCerrar(){
+  const list = Object.values(REMISIONES).filter(r=>!r.concluida);
+  const pendientes = [];
+  list.forEach(r=>{
+    const cicloAbierto = !r.tipo || (r.tipo==='credito' && !r.confirmada);
+    if(!cicloAbierto) return;
+    const matches = bitacorasQueCoinciden(r.folio);
+    const concluidas = matches.filter(b=>b.estado==='concluido' && b.tsConcluido);
+    if(concluidas.length===0) return;
+    const masReciente = concluidas.sort((a,b)=>b.tsConcluido-a.tsConcluido)[0];
+    pendientes.push({folio:r.folio, cliente:r.cliente, total:r.total, tsConcluido:masReciente.tsConcluido, tipo:r.tipo, nota:r.notaInconclusa||null});
+  });
+  return pendientes.sort((a,b)=>a.tsConcluido-b.tsConcluido);
+}
+
+function renderAvisoBitacora(){
+  const pendientes = getBitacoraSinCerrar();
+  const aviso = document.getElementById('avisoBitacora');
+  const panel = document.getElementById('panelBitacoraLista');
+  if(pendientes.length===0){
+    aviso.style.display = 'none';
+    panel.style.display = 'none';
+    return;
+  }
+  aviso.style.display = 'flex';
+  aviso.innerHTML = `⚠️ <span>${pendientes.length} remisión(es) con bitácora concluida sin cerrar su ciclo (clasificar y, si es crédito, confirmar archivo)</span><span class="chev">▾</span>`;
+  panel.innerHTML = `<table>
+    <thead><tr><th>Folio</th><th>Cliente</th><th class="right">Total</th><th>Tipo</th><th>Bitácora concluida</th><th>Motivo</th></tr></thead>
+    <tbody>${pendientes.map(p=>`<tr>
+      <td>${p.folio}</td><td>${p.cliente}</td><td class="right mono">${fmtMoney(p.total)}</td>
+      <td>${p.tipo==='credito' ? 'Crédito (falta confirmar)' : 'Sin clasificar'}</td>
+      <td>${fmtTranscurrido(Date.now()-p.tsConcluido)}</td>
+      <td>${p.nota ? `<span class="nota-inconclusa">${p.nota}</span>` : '<span class="muted">Sin nota</span>'}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+function togglePanelBitacora(){
+  const aviso = document.getElementById('avisoBitacora');
+  const panel = document.getElementById('panelBitacoraLista');
+  const abierto = panel.style.display==='block';
+  panel.style.display = abierto ? 'none' : 'block';
+  aviso.classList.toggle('open', !abierto);
+}
+
+function poblarSelectBitacoras(folio){
+  const sel = document.getElementById('mPagoBitacora');
+  const matches = bitacorasQueCoinciden(folio);
+  const matchIds = new Set(matches.map(m=>m.id));
+  const todas = Object.entries(BITACORAS).map(([id,b])=>({id,...b}))
+    .sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));
+
+  let html = '<option value="">— Sin bitácora / no aplica —</option>';
+  if(matches.length){
+    html += '<optgroup label="Coinciden con este folio">';
+    matches.forEach(b=>{
+      html += `<option value="${b.id}" data-chofer="${(b.repartidor||'').replace(/"/g,'&quot;')}">⭐ ${b.folio||b.id} — ${b.repartidor||'sin chofer'} — ${b.fecha||''}</option>`;
+    });
+    html += '</optgroup>';
+  }
+  const otras = todas.filter(b=>!matchIds.has(b.id)).slice(0,150);
+  if(otras.length){
+    html += '<optgroup label="Todas las bitácoras (más recientes)">';
+    otras.forEach(b=>{
+      html += `<option value="${b.id}" data-chofer="${(b.repartidor||'').replace(/"/g,'&quot;')}">${b.folio||b.id} — ${b.repartidor||'sin chofer'} — ${b.fecha||''}</option>`;
+    });
+    html += '</optgroup>';
+  }
+  sel.innerHTML = html;
+  sel.value = matches.length===1 ? matches[0].id : '';
+  actualizarInfoBitacora();
+}
+
+function actualizarInfoBitacora(){
+  const sel = document.getElementById('mPagoBitacora');
+  const opt = sel.options[sel.selectedIndex];
+  const info = document.getElementById('mPagoBitacoraInfo');
+  if(sel.value && opt){
+    const chofer = opt.dataset.chofer || '';
+    info.textContent = chofer ? 'Chofer de esta bitácora: '+chofer+' (se autocompletó abajo, puedes editarlo)' : 'Esta bitácora no tiene chofer registrado.';
+    if(chofer) document.getElementById('mPagoChofer').value = chofer;
+  } else {
+    info.textContent = '';
+  }
+}
+document.getElementById('mPagoBitacora').addEventListener('change', actualizarInfoBitacora);
+
+// --- Modal pago ---
+const modalPago = document.getElementById('modalPago');
+function abrirPago(folio, formaCobro){
+  formaCobro = formaCobro || 'efectivo';
+  document.getElementById('mPagoTitulo').textContent =
+    formaCobro==='transferencia' ? 'Registrar pago por transferencia' : 'Registrar pago en efectivo';
+  document.getElementById('mPagoFolio').value = folio;
+  document.getElementById('mPagoForma').value = formaCobro;
+  document.getElementById('mPagoFecha').value = todayISO();
+  document.getElementById('mPagoChofer').value = '';
+  poblarSelectBitacoras(folio);
+  modalPago.dataset.folio = folio;
+  modalPago.classList.add('show');
+}
+document.getElementById('mPagoCancelar').addEventListener('click', ()=>modalPago.classList.remove('show'));
+document.getElementById('mPagoGuardar').addEventListener('click', async ()=>{
+  const folio = modalPago.dataset.folio;
+  const fechaPago = document.getElementById('mPagoFecha').value || todayISO();
+  const formaCobro = document.getElementById('mPagoForma').value || 'efectivo';
+  const chofer = document.getElementById('mPagoChofer').value.trim() || null;
+  const bitacoraId = document.getElementById('mPagoBitacora').value || null;
+  const bitacora = bitacoraId ? BITACORAS[bitacoraId] : null;
+  const r = REMISIONES[folio];
+  try{
+    await refRemisiones.child(folio).update({
+      pagada:true, fechaPago, chofer, formaCobro,
+      bitacoraId: bitacoraId,
+      bitacoraFolio: bitacora ? (bitacora.folio || null) : null
+    });
+    // Registrar histórico de días reales de crédito para el cliente
+    if(r.tipo==='credito'){
+      const key = sanitizeKey(r.cliente);
+      const diasReales = daysBetween(r.fecha, fechaPago);
+      const histRef = refClientes.child(key+'/historial').push();
+      await histRef.set({folio, fecha:r.fecha, fechaPago, diasReales});
+    }
+    toast('Pago registrado para '+folio);
+    modalPago.classList.remove('show');
+  }catch(err){ toast('Error: '+err.message); }
+});
+
+// --- Modal fecha de facturación / reprogramar (gestora) ---
+const modalCompromiso = document.getElementById('modalCompromiso');
+function abrirCompromiso(folio){
+  const r = REMISIONES[folio];
+  document.getElementById('mCompFolio').value = folio;
+  document.getElementById('mCompNota').value = '';
+  if(r.fechaCompromiso){
+    document.getElementById('mCompTitulo').textContent = 'Reprogramar fecha de facturación';
+    document.getElementById('mCompActualWrap').style.display = 'flex';
+    document.getElementById('mCompActual').value = fmtDate(r.fechaCompromiso) + (r.vendedoraAsigno ? ' — asignada por '+r.vendedoraAsigno : '');
+    document.getElementById('mCompFecha').value = r.fechaCompromiso;
+  } else {
+    document.getElementById('mCompTitulo').textContent = 'Fijar fecha de facturación';
+    document.getElementById('mCompActualWrap').style.display = 'none';
+    document.getElementById('mCompFecha').value = todayISO();
+  }
+  modalCompromiso.dataset.folio = folio;
+  modalCompromiso.classList.add('show');
+}
+document.getElementById('mCompCancelar').addEventListener('click', ()=>modalCompromiso.classList.remove('show'));
+document.getElementById('mCompGuardar').addEventListener('click', async ()=>{
+  const folio = modalCompromiso.dataset.folio;
+  const nuevaFecha = document.getElementById('mCompFecha').value;
+  const nota = document.getElementById('mCompNota').value.trim() || null;
+  if(!nuevaFecha){ toast('Selecciona una fecha.'); return; }
+  const r = REMISIONES[folio];
+  try{
+    await refRemisiones.child(folio).update({fechaCompromiso: nuevaFecha});
+    const histRef = refRemisiones.child(folio+'/historialFechas').push();
+    await histRef.set({
+      fecha: nuevaFecha,
+      quien: 'gestora',
+      nota,
+      reprogramacion: !!r.fechaCompromiso,
+      timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+    toast('Fecha de facturación guardada para '+folio);
+    modalCompromiso.classList.remove('show');
+  }catch(err){ toast('Error: '+err.message); }
+});
+
+/* ============================================================
+   4) CAJA — contado, gastos y entrega a gerencia
+   ============================================================ */
+function getCajaContadoList(){
+  return Object.values(REMISIONES).filter(r=>
+    r.tipo==='contado' && r.pagada && r.fechaPago
+    && r.formaCobro!=='transferencia' && !r.retiradaCaja
+  ).sort((a,b)=>a.fechaPago.localeCompare(b.fechaPago));
+}
+function getCajaTransferenciaList(){
+  return Object.values(REMISIONES).filter(r=>
+    r.tipo==='contado' && r.pagada && r.fechaPago
+    && r.formaCobro==='transferencia' && !r.transferenciaVinculada
+  ).sort((a,b)=>b.fechaPago.localeCompare(a.fechaPago));
+}
+function getGastosList(){
+  return Object.entries(GASTOS).map(([id,g])=>({id,...g}))
+    .filter(g=>!g.incluidoEnCorte)
+    .sort((a,b)=>a.fecha.localeCompare(b.fecha));
+}
+
+function renderCajaContado(){
+  const list = getCajaContadoList();
+  const transferencias = getCajaTransferenciaList();
+  const gastos = getGastosList();
+
+  const body = document.getElementById('cajaContadoBody');
+  body.innerHTML = list.map(r=>`<tr>
+      <td>${fmtDate(r.fechaPago)}</td><td>${r.folio}</td><td>${r.cliente}</td>
+      <td class="right mono">${fmtMoney(r.total)}</td>
+    </tr>`).join('') || '<tr><td colspan="4" class="empty">No hay dinero pendiente por entregar a gerencia.</td></tr>';
+
+  const transBody = document.getElementById('cajaTransferenciaBody');
+  transBody.innerHTML = transferencias.map(r=>`<tr>
+      <td>${fmtDate(r.fechaPago)}</td><td>${r.folio}</td><td>${r.cliente}</td>
+      <td class="right mono">${fmtMoney(r.total)}</td>
+    </tr>`).join('') || '<tr><td colspan="4" class="empty">Sin cobros por transferencia registrados.</td></tr>';
+
+  const totalContado = list.reduce((s,r)=>s+r.total,0);
+  const totalGastos = gastos.reduce((s,g)=>s+Number(g.monto||0),0);
+  const totalTransferencia = transferencias.reduce((s,r)=>s+r.total,0);
+  document.getElementById('cajaTotalContado').textContent = fmtMoney(totalContado);
+  document.getElementById('cajaTotalGastos').textContent = fmtMoney(totalGastos);
+  document.getElementById('cajaNeto').textContent = fmtMoney(totalContado-totalGastos);
+  document.getElementById('cajaTotalTransferencia').textContent = fmtMoney(totalTransferencia);
+}
+
+document.getElementById('gastoFecha').value = todayISO();
+document.getElementById('btnAgregarGasto').addEventListener('click', async ()=>{
+  const concepto = document.getElementById('gastoConcepto').value.trim();
+  const monto = parseFloat(document.getElementById('gastoMonto').value);
+  const fecha = document.getElementById('gastoFecha').value || todayISO();
+  const entrego = document.getElementById('gastoEntrego').value.trim();
+  const recibio = document.getElementById('gastoRecibio').value.trim();
+  if(!concepto || !monto){ toast('Falta concepto o monto.'); return; }
+  try{
+    const folio = await siguienteFolio(refFolioGasto, 'G');
+    await refGastos.push({folio, concepto, monto, fecha, entrego, recibio, timestamp: firebase.database.ServerValue.TIMESTAMP});
+    toast('Gasto '+folio+' registrado.');
+    document.getElementById('gastoConcepto').value='';
+    document.getElementById('gastoMonto').value='';
+    document.getElementById('gastoEntrego').value='';
+    document.getElementById('gastoRecibio').value='';
+  }catch(err){ toast('Error: '+err.message); }
+});
+
+function renderGastos(){
+  const list = Object.entries(GASTOS).map(([id,g])=>({id,...g})).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  const body = document.getElementById('gastosBody');
+  body.innerHTML = list.map(g=>`<tr>
+      <td>${g.folio||'—'}</td>
+      <td>${fmtDate(g.fecha)}</td><td>${g.concepto}</td>
+      <td class="right mono">${fmtMoney(g.monto)}</td>
+      <td>${g.entrego||'—'}</td><td>${g.recibio||'—'}</td>
+      <td>
+        <button class="btn ghost small" onclick="imprimirVale('${g.id}')">🖨️ Vale</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="7" class="empty">Sin gastos registrados.</td></tr>';
+}
+
+function imprimirVale(id){
+  const g = GASTOS[id];
+  if(!g){ toast('No se encontró el gasto.'); return; }
+  document.getElementById('valeSub').textContent = 'Folio '+(g.folio||'—')+' · Fecha: '+fmtDate(g.fecha);
+  document.getElementById('valeConcepto').textContent = g.concepto;
+  document.getElementById('valeMonto').textContent = fmtMoney(g.monto);
+  document.getElementById('valeFecha').textContent = fmtDate(g.fecha);
+  document.getElementById('valeEntrego').textContent = 'Entregado por (Cobranza)'+(g.entrego? ' — '+g.entrego : '');
+  document.getElementById('valeRecibio').textContent = 'Recibido por'+(g.recibio? ' — '+g.recibio : '');
+
+  document.getElementById('valeImprimible').style.display='block';
+  const wasHidden = [];
+  document.querySelectorAll('#tab-caja > .card').forEach(c=>{
+    if(c.id!=='valeImprimible'){ wasHidden.push(c); c.style.display='none'; }
+  });
+  window.print();
+  wasHidden.forEach(c=>c.style.display='');
+  document.getElementById('valeImprimible').style.display='none';
+}
+
+function imprimirCorte(folio, list, transferencias, gastos, rangoTexto){
+  document.getElementById('corteRango').textContent = 'Folio '+folio+' · '+rangoTexto;
+  document.getElementById('corteContadoBody').innerHTML = list.map(r=>`<tr>
+      <td>${fmtDate(r.fechaPago)}</td><td>${r.folio}</td><td>${r.cliente}</td>
+      <td class="right mono">${fmtMoney(r.total)}</td></tr>`).join('') ||
+      '<tr><td colspan="4" class="center muted">Sin movimientos</td></tr>';
+  document.getElementById('corteGastosBody').innerHTML = gastos.map(g=>`<tr>
+      <td>${g.folio||'—'}</td><td>${fmtDate(g.fecha)}</td><td>${g.concepto}</td>
+      <td class="right mono">${fmtMoney(g.monto)}</td><td>${g.entrego||'—'}</td><td>${g.recibio||'—'}</td></tr>`).join('') ||
+      '<tr><td colspan="6" class="center muted">Sin gastos</td></tr>';
+  document.getElementById('corteTransferenciaBody').innerHTML = transferencias.map(r=>`<tr>
+      <td>${fmtDate(r.fechaPago)}</td><td>${r.folio}</td><td>${r.cliente}</td>
+      <td class="right mono">${fmtMoney(r.total)}</td></tr>`).join('') ||
+      '<tr><td colspan="4" class="center muted">Sin movimientos por transferencia</td></tr>';
+  const totalContado = list.reduce((s,r)=>s+r.total,0);
+  const totalGastos = gastos.reduce((s,g)=>s+Number(g.monto||0),0);
+  const totalTransferencia = transferencias.reduce((s,r)=>s+r.total,0);
+  const netoEfectivo = totalContado-totalGastos;
+  document.getElementById('corteTotalContado').textContent = fmtMoney(totalContado);
+  document.getElementById('corteTotalGastos').textContent = fmtMoney(totalGastos);
+  document.getElementById('corteNeto').textContent = fmtMoney(netoEfectivo);
+  document.getElementById('corteTotalTransferencia').textContent = fmtMoney(totalTransferencia);
+  document.getElementById('corteTotalGeneral').textContent = fmtMoney(totalContado + totalTransferencia);
+
+  document.getElementById('corteImprimible').style.display='block';
+  const wasHidden = [];
+  document.querySelectorAll('#tab-caja > .card').forEach(c=>{
+    if(c.id!=='corteImprimible'){ wasHidden.push(c); c.style.display='none'; }
+  });
+  window.print();
+  wasHidden.forEach(c=>c.style.display='');
+  document.getElementById('corteImprimible').style.display='none';
+}
+
+document.getElementById('btnImprimirCorte').addEventListener('click', async ()=>{
+  const list = getCajaContadoList();
+  const transferencias = getCajaTransferenciaList();
+  const gastos = getGastosList();
+  const rangoTexto = `Fecha de entrega: ${fmtDate(todayISO())}`;
+
+  if(list.length===0 && gastos.length===0){
+    toast('No hay nada pendiente por entregar.');
+    return;
+  }
+  const totalContado = list.reduce((s,r)=>s+r.total,0);
+  const totalGastos = gastos.reduce((s,g)=>s+Number(g.monto||0),0);
+  if(!confirm(`Vas a registrar la entrega de ${fmtMoney(totalContado-totalGastos)} neto a gerencia (${list.length} remisión(es), ${gastos.length} gasto(s)). Esto deja tu caja de contado en $0 hasta la próxima cobranza. ¿Confirmar?`)) return;
+
+  try{
+    const folio = await siguienteFolio(refFolioEntrega, 'ENT');
+    const transferenciasFolios = {};
+    transferencias.forEach(r=>{ transferenciasFolios[r.folio] = true; });
+    await refEntregas.push({
+      folio,
+      fecha: todayISO(),
+      remisionesFolios: list.map(r=>r.folio),
+      gastosIds: gastos.map(g=>g.id),
+      transferenciasFolios,
+      totalContado,
+      totalGastos,
+      totalNeto: totalContado-totalGastos,
+      timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+    const updates = {};
+    list.forEach(r=>{
+      updates['remisiones/'+r.folio+'/retiradaCaja'] = true;
+      updates['remisiones/'+r.folio+'/fechaRetiroCaja'] = todayISO();
+      updates['remisiones/'+r.folio+'/entregaFolio'] = folio;
+    });
+    gastos.forEach(g=>{
+      updates['caja_movimientos/'+g.id+'/incluidoEnCorte'] = true;
+      updates['caja_movimientos/'+g.id+'/entregaFolio'] = folio;
+    });
+    await db.ref('control_remisiones').update(updates);
+    toast('Entrega '+folio+' registrada. Imprimiendo...');
+    setTimeout(()=>imprimirCorte(folio, list, transferencias, gastos, rangoTexto), 300);
+  }catch(err){
+    toast('Error al registrar la entrega: '+err.message);
+  }
+});
+
+function renderEntregasHist(){
+  const list = Object.entries(ENTREGAS).map(([id,e])=>({id,...e})).sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));
+  document.getElementById('entregasEmpty').style.display = list.length? 'none':'block';
+  document.getElementById('entregasBody').innerHTML = list.map(e=>`<tr>
+      <td>${e.folio}</td><td>${fmtDate(e.fecha)}</td>
+      <td class="right mono">${fmtMoney(e.totalContado)}</td>
+      <td class="right mono">${fmtMoney(e.totalGastos)}</td>
+      <td class="right mono" style="font-weight:700;color:var(--teal-800);">${fmtMoney(e.totalNeto)}</td>
+      <td>
+        <button class="btn ghost small" onclick="reimprimirEntrega('${e.id}')">🖨️ Reimprimir</button>
+        <button class="btn ghost small" onclick="abrirVincularTransferencia('${e.id}')">🔗 Vincular transferencia</button>
+      </td>
+    </tr>`).join('');
+}
+
+function reimprimirEntrega(id){
+  const e = ENTREGAS[id];
+  if(!e) return;
+  const list = (e.remisionesFolios||[]).map(folio=>REMISIONES[folio]).filter(Boolean);
+  const gastos = (e.gastosIds||[]).map(gid=>({id:gid, ...(GASTOS[gid]||{})})).filter(g=>g.concepto!=null);
+  const transferencias = Object.keys(e.transferenciasFolios||{}).map(folio=>REMISIONES[folio]).filter(Boolean);
+  const rangoTexto = e.fecha ? `Fecha de entrega: ${fmtDate(e.fecha)}` : `Del ${fmtDate(e.rangoDesde)} al ${fmtDate(e.rangoHasta)}`;
+  imprimirCorte(e.folio, list, transferencias, gastos, rangoTexto);
+}
+
+function abrirVincularTransferencia(entregaId){
+  const disponibles = getCajaTransferenciaList();
+  const sel = document.getElementById('mVincTransSelect');
+  if(disponibles.length===0){
+    sel.innerHTML = '<option value="">No hay transferencias registradas</option>';
+  } else {
+    sel.innerHTML = disponibles.map(r=>
+      `<option value="${r.folio}">${r.folio} — ${r.cliente} — ${fmtMoney(r.total)} (${fmtDate(r.fechaPago)})</option>`
+    ).join('');
+  }
+  const modal = document.getElementById('modalVincularTransferencia');
+  modal.dataset.entregaId = entregaId;
+  document.getElementById('mVincTransEntregaFolio').value = (ENTREGAS[entregaId]||{}).folio || '';
+  modal.classList.add('show');
+}
+document.getElementById('mVincTransCancelar').addEventListener('click', ()=>{
+  document.getElementById('modalVincularTransferencia').classList.remove('show');
+});
+document.getElementById('mVincTransGuardar').addEventListener('click', async ()=>{
+  const modal = document.getElementById('modalVincularTransferencia');
+  const entregaId = modal.dataset.entregaId;
+  const entregaFolio = document.getElementById('mVincTransEntregaFolio').value;
+  const folio = document.getElementById('mVincTransSelect').value;
+  if(!folio){ toast('Selecciona una transferencia.'); return; }
+  try{
+    await refEntregas.child(entregaId+'/transferenciasFolios/'+folio).set(true);
+    await refRemisiones.child(folio).update({transferenciaVinculada: true, entregaFolioTransferencia: entregaFolio});
+    toast('Transferencia '+folio+' vinculada a '+entregaFolio+'.');
+    modal.classList.remove('show');
+  }catch(err){ toast('Error: '+err.message); }
+});
+
+/* ============================================================
+   5) REPORTES — Diario de ventas global
+   ============================================================ */
+document.getElementById('btnGenerarReporte').addEventListener('click', renderReporte);
+document.getElementById('btnImprimirReporte').addEventListener('click', ()=>{ renderReporte(); window.print(); });
+
+function renderReporte(){
+  const desde = document.getElementById('repDesde').value;
+  const hasta = document.getElementById('repHasta').value;
+  const tipoF = document.getElementById('repTipo').value;
+
+  let list = Object.values(REMISIONES);
+  if(desde) list = list.filter(r=>r.fecha>=desde);
+  if(hasta) list = list.filter(r=>r.fecha<=hasta);
+  if(tipoF==='sin_clasificar') list = list.filter(r=>!r.tipo);
+  else if(tipoF) list = list.filter(r=>r.tipo===tipoF);
+  list.sort((a,b)=>a.fecha.localeCompare(b.fecha) || a.folio.localeCompare(b.folio));
+
+  document.getElementById('repRangoTxt').textContent =
+    (desde||hasta) ? `Del ${desde?fmtDate(desde):'inicio'} al ${hasta?fmtDate(hasta):'hoy'}` : 'Todas las remisiones cargadas';
+
+  const body = document.getElementById('reporteBody');
+  body.innerHTML = list.map(r=>{
+    let tipoTxt = r.tipo==='credito' ? 'Crédito' : (r.tipo==='contado' ? 'Contado' : 'Sin clasificar');
+    return `<tr>
+      <td>${fmtDate(r.fecha)}</td><td>${r.folio}</td><td>${r.cliente}</td>
+      <td class="right mono">${fmtMoney(r.importeNeto)}</td>
+      <td class="right mono">${fmtMoney(r.impuesto)}</td>
+      <td class="right mono">${fmtMoney(r.total)}</td>
+      <td>${tipoTxt}</td>
+      <td>${r.pagada ? 'Pagada' : 'Pendiente'}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="8" class="empty">Sin remisiones en este rango.</td></tr>';
+
+  document.getElementById('repDocs').textContent = list.length;
+  document.getElementById('repNeto').textContent = fmtMoney(list.reduce((s,r)=>s+r.importeNeto,0));
+  document.getElementById('repImp').textContent = fmtMoney(list.reduce((s,r)=>s+r.impuesto,0));
+  document.getElementById('repTotal').textContent = fmtMoney(list.reduce((s,r)=>s+r.total,0));
+}
+renderReporte();
+
+function abrirNota(folio){
+  const r = REMISIONES[folio];
+  document.getElementById('mNotaFolio').value = folio;
+  document.getElementById('mNotaTexto').value = (r && r.notaInconclusa) || '';
+  document.getElementById('modalNota').dataset.folio = folio;
+  document.getElementById('modalNota').classList.add('show');
+}
+document.getElementById('mNotaCancelar').addEventListener('click', ()=>{
+  document.getElementById('modalNota').classList.remove('show');
+});
+document.getElementById('mNotaGuardar').addEventListener('click', async ()=>{
+  const folio = document.getElementById('modalNota').dataset.folio;
+  const texto = document.getElementById('mNotaTexto').value.trim();
+  if(!texto){ toast('Escribe el motivo antes de guardar.'); return; }
+  try{
+    await refRemisiones.child(folio).update({notaInconclusa: texto, notaInconclusaFecha: todayISO()});
+    toast('Nota guardada para '+folio+'.');
+    document.getElementById('modalNota').classList.remove('show');
+  }catch(err){ toast('Error: '+err.message); }
+});
+document.getElementById('mNotaQuitar').addEventListener('click', async ()=>{
+  const folio = document.getElementById('modalNota').dataset.folio;
+  try{
+    await refRemisiones.child(folio).update({notaInconclusa: null, notaInconclusaFecha: null});
+    toast('Nota eliminada de '+folio+'.');
+    document.getElementById('modalNota').classList.remove('show');
+  }catch(err){ toast('Error: '+err.message); }
+});
+</script>
+</body>
+</html>
