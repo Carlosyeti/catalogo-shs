@@ -149,10 +149,16 @@ export default async function handler(req, res) {
     var items = [];
     var vistos = {};
     var erroresChunks = [];
+    var detalleChunks = [];
     resultadosChunks.forEach(function (par, i) {
       var dataFact = par[0], dataRemi = par[1];
       if (dataFact._error) erroresChunks.push('facturas ' + chunks[i].ini + '..' + chunks[i].fin + ': ' + dataFact._error);
       if (dataRemi._error) erroresChunks.push('remisiones ' + chunks[i].ini + '..' + chunks[i].fin + ': ' + dataRemi._error);
+      detalleChunks.push({
+        rango: chunks[i].ini + '..' + chunks[i].fin,
+        facturas: (dataFact.items || []).length,
+        remisiones: (dataRemi.items || []).length
+      });
 
       (dataFact.items || []).forEach(function (d) {
         var key = 'F:' + d.folio;
@@ -181,6 +187,7 @@ export default async function handler(req, res) {
       fecha_fin: fechaFin,
       total: items.length,
       chunks_consultados: chunks.length,
+      detalle_chunks: detalleChunks,
       errores: erroresChunks.length ? erroresChunks : undefined,
       items: items
     });
