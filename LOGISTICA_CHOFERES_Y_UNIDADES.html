@@ -5967,6 +5967,7 @@ function abrirEditarRuta(id) {
   document.getElementById('edit-km').value          = b.kmInicio || '';
   document.getElementById('edit-status').style.display = 'none';
   // Render paradas editables
+  prefetchMicrosipDocumentos();
   renderParadasEdit(b.paradas || []);
   document.getElementById('modal-editar').classList.add('open');
 }
@@ -6022,6 +6023,7 @@ function crearFilaParadaEdit(p, i) {
   gCli.appendChild(lCli);
   gCli.appendChild(acWrap);
   setupAC(inpCli, acList);
+  inpCli.addEventListener('input', function() { this.dataset.msAuto = ''; });
 
   // Asunto
   var gAs = document.createElement('div');
@@ -6057,7 +6059,7 @@ function crearFilaParadaEdit(p, i) {
   var folioList = document.createElement('div');
   folioList.className = 'edit-folio-list';
   folioList.style.cssText = 'display:flex;flex-direction:column;gap:5px';
-  btnAF.onclick = function() { agregarFolioEdit(folioList); };
+  btnAF.onclick = function() { agregarFolioEdit(folioList, undefined, function(){ return inpCli; }); };
   folioHdr.appendChild(folioLbl);
   folioHdr.appendChild(btnAF);
   folioSection.appendChild(folioHdr);
@@ -6067,21 +6069,23 @@ function crearFilaParadaEdit(p, i) {
   // Populate existing folios
   var folios = p.folios && p.folios.length ? p.folios : (p.folio ? [p.folio] : ['']);
   folios.forEach(function(f) {
-    agregarFolioEdit(folioList, f);
+    agregarFolioEdit(folioList, f, function(){ return inpCli; });
   });
 
   return wrap;
 }
 
-function agregarFolioEdit(folioList, valorInicial) {
+function agregarFolioEdit(folioList, valorInicial, getClienteInput) {
   var row = document.createElement('div');
-  row.style.cssText = 'display:flex;gap:6px;align-items:center';
+  row.style.cssText = 'display:flex;gap:6px;align-items:flex-start';
+  var colFolio = document.createElement('div');
+  colFolio.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:2px';
   var inp = document.createElement('input');
   inp.type = 'text';
   inp.className = 'edit-inp-folio';
   inp.placeholder = 'Ej. A53283';
   inp.value = valorInicial || '';
-  inp.style.cssText = 'text-transform:uppercase;flex:1;border:1.5px solid #dde3ec;border-radius:6px;padding:6px 10px;font-size:12px;font-family:Barlow,sans-serif';
+  inp.style.cssText = 'text-transform:uppercase;width:100%;border:1.5px solid #dde3ec;border-radius:6px;padding:6px 10px;font-size:12px;font-family:Barlow,sans-serif';
   inp.maxLength = 15;
   inp.addEventListener('input', function() {
     var v = this.value.trim().toUpperCase();
@@ -6090,6 +6094,8 @@ function agregarFolioEdit(folioList, valorInicial) {
     this.style.borderColor = bad ? '#e53935' : '';
     this.style.background  = bad ? '#fff5f5' : '';
   });
+  colFolio.appendChild(inp);
+  conectarFolioMicrosip(inp, getClienteInput);
   var btnDel = document.createElement('button');
   btnDel.type = 'button';
   btnDel.textContent = '✕';
@@ -6098,7 +6104,7 @@ function agregarFolioEdit(folioList, valorInicial) {
     if (folioList.querySelectorAll('.edit-inp-folio').length > 1) row.remove();
     else { inp.value = ''; inp.style.borderColor=''; inp.style.background=''; }
   };
-  row.appendChild(inp);
+  row.appendChild(colFolio);
   row.appendChild(btnDel);
   folioList.appendChild(row);
 }
@@ -7149,6 +7155,7 @@ function guardarEdicionMant() {
 function initApp() {
   document.getElementById('inp-fecha').value = hoy();
   agregarParada();
+  prefetchMicrosipDocumentos();
   if (db) {
     db.ref('.info/connected').on('value', function(snap) {
       var on = snap.val() === true;
@@ -7224,6 +7231,83 @@ function showTab(id, btn) {
   if (btn) btn.classList.add('active');
 }
 
+// ══ MICROSIP: BÚSQUEDA DE FACTURAS/REMISIONES POR FOLIO ═════════
+// El navegador NUNCA llama directo a Microsip (el token quedaría expuesto).
+// Se consulta un endpoint propio (/api/microsip-documentos) alojado en
+// Vercel, que sí conoce el token de forma segura y regresa un rango de
+// documentos. Aquí solo se cachean en memoria y se buscan por folio.
+var _msDocsCache = null;      // { 'A80453': {folio,tipo,cliente,fecha,importe_neto,...}, ... }
+var _msDocsCacheTime = 0;
+var _msDocsPromesa = null;
+var MS_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutos
+
+function prefetchMicrosipDocumentos(forzar) {
+  var ahora = Date.now();
+  if (!forzar && _msDocsCache && (ahora - _msDocsCacheTime) < MS_CACHE_TTL_MS) {
+    return Promise.resolve(_msDocsCache);
+  }
+  if (_msDocsPromesa) return _msDocsPromesa;
+
+  var hoy = new Date();
+  var ini = new Date(hoy); ini.setDate(ini.getDate() - 45);
+  var fin = new Date(hoy); fin.setDate(fin.getDate() + 3);
+  function fmt(d) { return d.toISOString().slice(0, 10); }
+
+  _msDocsPromesa = fetch('/api/microsip-documentos?fecha_ini=' + fmt(ini) + '&fecha_fin=' + fmt(fin))
+    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(data) {
+      var idx = {};
+      (data.items || []).forEach(function(doc) {
+        if (doc && doc.folio) idx[String(doc.folio).trim().toUpperCase()] = doc;
+      });
+      _msDocsCache = idx;
+      _msDocsCacheTime = Date.now();
+      _msDocsPromesa = null;
+      return idx;
+    })
+    .catch(function(err) {
+      console.warn('Microsip: no se pudo precargar documentos —', err.message);
+      _msDocsPromesa = null;
+      return _msDocsCache || {};
+    });
+  return _msDocsPromesa;
+}
+
+// Conecta un input de folio para que, al perder el foco o presionar Enter,
+// busque el folio en Microsip y muestre/autocomplete el cliente.
+// getClienteInput: función que regresa el <input> de cliente de esa parada.
+function conectarFolioMicrosip(inpFolio, getClienteInput) {
+  var info = document.createElement('div');
+  info.className = 'ms-folio-info';
+  info.style.cssText = 'font-size:10.5px;margin-top:3px;line-height:1.4';
+  inpFolio.parentElement.appendChild(info);
+
+  function consultar() {
+    var v = inpFolio.value.trim().toUpperCase();
+    if (v.length < 3) { info.textContent = ''; return; }
+    info.style.color = '#888';
+    info.textContent = 'Buscando en Microsip...';
+    prefetchMicrosipDocumentos().then(function(idx) {
+      var doc = idx[v];
+      if (doc) {
+        info.style.color = '#1b7a3d';
+        var imp = (doc.importe_neto != null) ? ' &middot; $' + Number(doc.importe_neto).toLocaleString('es-MX', {minimumFractionDigits:2}) : '';
+        info.innerHTML = '&#10003; ' + doc.cliente + imp + (doc.fecha ? ' &middot; ' + doc.fecha : '');
+        var inpCliente = getClienteInput && getClienteInput();
+        if (inpCliente && (!inpCliente.value.trim() || inpCliente.dataset.msAuto === '1')) {
+          inpCliente.value = doc.cliente;
+          inpCliente.dataset.msAuto = '1';
+        }
+      } else {
+        info.style.color = '#b26a00';
+        info.innerHTML = '&#9888; Folio no encontrado en Microsip (verifica o captura el cliente manualmente)';
+      }
+    });
+  }
+  inpFolio.addEventListener('blur', consultar);
+  inpFolio.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); consultar(); } });
+}
+
 // ══ PARADAS ═══════════════════════════════════════════════════
 function agregarParada() {
   var n = _paradaCount++;
@@ -7271,6 +7355,7 @@ function agregarParada() {
   awrap.appendChild(acList);
   gCli.appendChild(lCli);
   gCli.appendChild(awrap);
+  inpCli.addEventListener('input', function() { this.dataset.msAuto = ''; });
 
   topGrid.appendChild(gCli);
   wrap.appendChild(topGrid);
@@ -7289,7 +7374,7 @@ function agregarParada() {
   var folioList = document.createElement('div');
   folioList.className = 'folio-list';
   folioList.style.cssText = 'display:flex;flex-direction:column;gap:6px';
-  btnAddFolio.onclick = function(){ agregarFolioAParada(folioList); };
+  btnAddFolio.onclick = function(){ agregarFolioAParada(folioList, undefined, function(){ return inpCli; }); };
   folioHeader.appendChild(folioLbl);
   folioHeader.appendChild(btnAddFolio);
   folioSection.appendChild(folioHeader);
@@ -7298,11 +7383,11 @@ function agregarParada() {
 
   document.getElementById('paradas-container').appendChild(wrap);
   setupAC(inpCli, acList);
-  agregarFolioAParada(folioList);
+  agregarFolioAParada(folioList, undefined, function(){ return inpCli; });
   renumerarParadas();
 }
 
-function agregarFolioAParada(folioList) {
+function agregarFolioAParada(folioList, valorInicial, getClienteInput) {
   var row = document.createElement('div');
   row.style.cssText = 'background:#fff;border:1px solid #dde3ec;border-radius:7px;padding:8px 10px;display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;margin-bottom:4px';
 
@@ -7329,6 +7414,7 @@ function agregarFolioAParada(folioList) {
   inp.type = 'text';
   inp.className = 'inp-folio';
   inp.placeholder = 'Folio: A53283 o R12345 (opcional)';
+  inp.value = valorInicial || '';
   inp.style.cssText = 'text-transform:uppercase;width:100%;border:1.5px solid #dde3ec;border-radius:6px;padding:6px 10px;font-family:Barlow,sans-serif;font-size:12px';
   inp.maxLength = 15;
   var msgErr = document.createElement('div');
@@ -7344,6 +7430,7 @@ function agregarFolioAParada(folioList) {
   });
   colFolio.appendChild(inp);
   colFolio.appendChild(msgErr);
+  conectarFolioMicrosip(inp, getClienteInput);
 
   // Quitar — última columna
   var btnDel = document.createElement('button');
