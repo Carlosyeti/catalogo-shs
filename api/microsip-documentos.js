@@ -71,6 +71,7 @@ function toDateUTC(s) {
   return new Date(Date.UTC(p[0], p[1] - 1, p[2]));
 }
 function fmtUTC(d) { return d.toISOString().slice(0, 10); }
+function sumarDias(fechaStr, n) { return fmtUTC(new Date(toDateUTC(fechaStr).getTime() + n * 86400000)); }
 
 function construirChunks(fechaIni, fechaFin, chunkDias) {
   var chunks = [];
@@ -135,8 +136,14 @@ export default async function handler(req, res) {
 
     var tareas = chunks.map(function (ch) {
       return function () {
-        var urlFacturas   = BASE_URL + '/api/v1/facturas?fecha_ini='   + ch.ini + '&fecha_fin=' + ch.fin;
-        var urlRemisiones = BASE_URL + '/api/v1/remisiones?fecha_ini=' + ch.ini + '&fecha_fin=' + ch.fin;
+        // Se pide un día extra al final (fecha_fin + 1) porque la API de
+        // Microsip parece tratar fecha_fin como "antes de la medianoche"
+        // de ese día, perdiendo casi todos los documentos del último día
+        // del rango. Pedir un día de más y dejar que el deduplicado por
+        // folio se encargue de no duplicar nada compensa ese comportamiento.
+        var finConColchon = sumarDias(ch.fin, 1);
+        var urlFacturas   = BASE_URL + '/api/v1/facturas?fecha_ini='   + ch.ini + '&fecha_fin=' + finConColchon;
+        var urlRemisiones = BASE_URL + '/api/v1/remisiones?fecha_ini=' + ch.ini + '&fecha_fin=' + finConColchon;
         return Promise.all([
           fetchJson(urlFacturas, headers).catch(function (e) { return { items: [], _error: e.message }; }),
           fetchJson(urlRemisiones, headers).catch(function (e) { return { items: [], _error: e.message }; })
