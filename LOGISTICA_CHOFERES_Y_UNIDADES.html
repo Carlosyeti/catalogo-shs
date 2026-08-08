@@ -7239,7 +7239,7 @@ function showTab(id, btn) {
 var _msDocsCache = null;      // { 'A80453': {folio,tipo,cliente,fecha,importe_neto,...}, ... }
 var _msDocsCacheTime = 0;
 var _msDocsPromesa = null;
-var MS_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutos
+var MS_CACHE_TTL_MS = 4 * 60 * 60 * 1000; // 4 horas (las facturas/remisiones viejas casi no cambian)
 
 function prefetchMicrosipDocumentos(forzar) {
   var ahora = Date.now();
@@ -7249,8 +7249,12 @@ function prefetchMicrosipDocumentos(forzar) {
   if (_msDocsPromesa) return _msDocsPromesa;
 
   var hoy = new Date();
-  var ini = new Date(hoy); ini.setDate(ini.getDate() - 45);
-  var fin = new Date(hoy); fin.setDate(fin.getDate() + 3);
+  // El backend (api/microsip-documentos.js) parte este rango en
+  // ventanas chicas para no toparse con el límite de la API de
+  // Microsip, así que aquí sí podemos pedir varios meses de historial
+  // (necesario para cobranza) sin perder documentos.
+  var ini = new Date(hoy); ini.setDate(ini.getDate() - 185); // ~6 meses atrás
+  var fin = new Date(hoy); fin.setDate(fin.getDate() + 2);
   function fmt(d) { return d.toISOString().slice(0, 10); }
 
   _msDocsPromesa = fetch('/api/microsip-documentos?fecha_ini=' + fmt(ini) + '&fecha_fin=' + fmt(fin))
@@ -7263,6 +7267,7 @@ function prefetchMicrosipDocumentos(forzar) {
       _msDocsCache = idx;
       _msDocsCacheTime = Date.now();
       _msDocsPromesa = null;
+      console.log('Microsip: ' + (data.total != null ? data.total : Object.keys(idx).length) + ' documentos recibidos (rango ' + fmt(ini) + ' a ' + fmt(fin) + ')');
       return idx;
     })
     .catch(function(err) {
