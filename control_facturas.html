@@ -309,7 +309,7 @@ tr:hover td{background:var(--teal-100);}
       <h2>Historial de compulsas</h2>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Fecha</th><th>Origen</th><th class="right">Filas leídas</th><th class="right">Limpiadas</th><th class="right">Sin clasificar</th><th class="right">Ya resueltas</th><th class="right">Sin folio</th></tr></thead>
+          <thead><tr><th>Fecha</th><th>Hora</th><th>Origen</th><th class="right">Filas leídas</th><th class="right">Limpiadas</th><th class="right">Sin clasificar</th><th class="right">Ya resueltas</th><th class="right">Sin folio</th></tr></thead>
           <tbody id="compulsaHistBody"></tbody>
         </table>
       </div>
@@ -549,14 +549,6 @@ function bitacorasQueCoinciden(folio){
   });
   return matches;
 }
-function masRecienteBitacora(matches){
-  // La bitácora más reciente por fecha de CREACIÓN (no de conclusión).
-  // Así, si un folio se vuelve a meter en una ruta nueva (p.ej. porque no
-  // se pudo entregar por lluvia y se reprograma), esa ruta nueva manda,
-  // aunque una ruta más vieja con el mismo folio ya esté concluida.
-  if(!matches.length) return null;
-  return matches.slice().sort((a,b)=>(b.timestamp||0)-(a.timestamp||0))[0];
-}
 function fmtTranscurrido(ms){
   const horas = ms/3600000;
   if(horas < 1) return `hace ${Math.max(1,Math.round(ms/60000))} min`;
@@ -566,9 +558,9 @@ function fmtTranscurrido(ms){
 function celdaBitacoraConcluida(folio, yaClasificada){
   const matches = bitacorasQueCoinciden(folio);
   if(matches.length===0) return '<span class="muted">—</span>';
-  const masReciente = masRecienteBitacora(matches);
-  if(masReciente.estado!=='concluido' || !masReciente.tsConcluido) return '<span class="badge pend">🚚 En ruta</span>';
-  const b = masReciente;
+  const concluidas = matches.filter(b=>b.estado==='concluido' && b.tsConcluido).sort((a,b)=>b.tsConcluido-a.tsConcluido);
+  if(concluidas.length===0) return '<span class="badge pend">🚚 En ruta</span>';
+  const b = concluidas[0];
   const d = new Date(b.tsConcluido);
   const fecha = d.toLocaleDateString('es-MX', {day:'2-digit', month:'2-digit'});
   const hora = d.toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
@@ -581,13 +573,12 @@ function celdaBitacoraConcluida(folio, yaClasificada){
   return txt;
 }
 function bitacoraEstaEnRuta(folio){
-  // true = la bitácora MÁS RECIENTE con este folio todavía no concluye
-  //        (el chofer no ha terminado esa ruta, no se puede depositar)
-  // false = o no tiene bitácora, o la más reciente ya concluyó
+  // true = tiene bitácora asociada pero el chofer todavía no concluye la ruta (no se puede depositar)
+  // false = o no tiene bitácora (no aplica el bloqueo) o ya concluyó
   const matches = bitacorasQueCoinciden(folio);
   if(matches.length===0) return false;
-  const masReciente = masRecienteBitacora(matches);
-  return masReciente.estado!=='concluido' || !masReciente.tsConcluido;
+  const concluidas = matches.filter(b=>b.estado==='concluido' && b.tsConcluido);
+  return concluidas.length===0;
 }
 function normCliente(s){
   return String(s||'').trim().toUpperCase().replace(/\s+/g,' ');
@@ -613,9 +604,9 @@ function getBitacoraSinCerrar(){
     const cicloAbierto = !f.tipo || (f.tipo==='credito' && !f.confirmada);
     if(!cicloAbierto) return;
     const matches = bitacorasQueCoinciden(f.folio);
-    if(matches.length===0) return;
-    const masReciente = masRecienteBitacora(matches);
-    if(masReciente.estado!=='concluido' || !masReciente.tsConcluido) return; // la ruta más nueva con este folio sigue en curso
+    const concluidas = matches.filter(b=>b.estado==='concluido' && b.tsConcluido);
+    if(concluidas.length===0) return;
+    const masReciente = concluidas.sort((a,b)=>b.tsConcluido-a.tsConcluido)[0];
     pendientes.push({folio:f.folio, cliente:f.cliente, total:f.total, tsConcluido:masReciente.tsConcluido, tipo:f.tipo, nota:f.notaInconclusa||null});
   });
   return pendientes.sort((a,b)=>a.tsConcluido-b.tsConcluido);
@@ -1298,14 +1289,17 @@ document.getElementById('btnConfirmarCompulsa').addEventListener('click', async 
 function renderCompulsaHist(){
   const list = Object.entries(COMPULSAS).map(([id,c])=>({id,...c})).sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));
   document.getElementById('compulsaHistEmpty').style.display = list.length? 'none':'block';
-  document.getElementById('compulsaHistBody').innerHTML = list.map(c=>`<tr>
-      <td>${fmtDate(c.fecha)}</td><td>${c.origen||'—'}</td>
+  document.getElementById('compulsaHistBody').innerHTML = list.map(c=>{
+    const hora = c.timestamp ? new Date(c.timestamp).toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'}) : '—';
+    return `<tr>
+      <td>${fmtDate(c.fecha)}</td><td>${hora}</td><td>${c.origen||'—'}</td>
       <td class="right mono">${c.totalFilas}</td>
       <td class="right mono" style="color:var(--teal-700);font-weight:700;">${c.limpiadas}</td>
       <td class="right mono" style="color:var(--red-600);">${c.sinClasificar}</td>
       <td class="right mono muted">${c.yaResuelta ?? '—'}</td>
       <td class="right mono muted">${c.sinCoincidencia}</td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 /* ============================================================
