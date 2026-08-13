@@ -557,6 +557,17 @@ export default async function handler(req, res) {
       return res.status(200).json(data);
     }
 
+    if (metodo === 'REMISIONES_MICROSIP') {
+      if (req.method !== 'POST') return res.status(405).json({ error: 'Usar POST' });
+      const { baseUrl, token, fecha_ini, fecha_fin } = req.body || {};
+      if (!baseUrl || !token) return res.status(400).json({ error: 'baseUrl y token requeridos' });
+      const url = `${baseUrl.replace(/\/$/, '')}/api/v1/remisiones?fecha_ini=${fecha_ini}&fecha_fin=${fecha_fin}`;
+      const response = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+      if (!response.ok) return res.status(response.status).json({ error: 'HTTP ' + response.status + ' — revisa el token o el rango de fechas' });
+      const data = await response.json();
+      return res.status(200).json(data);
+    }
+
     if (metodo === 'RESTORE_CATALOGO') {
       if (req.method !== 'POST') return res.status(405).json({ error: 'Usar POST' });
       const { catalogo } = req.body || {};
