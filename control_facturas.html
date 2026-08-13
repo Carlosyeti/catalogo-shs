@@ -671,6 +671,7 @@ document.getElementById('btnGuardarFechaMinima').addEventListener('click', async
    ============================================================ */
 let API_CONFIG = {baseUrl:'', token:'', activo:false};
 let apiSyncTimer = null;
+const PROXY = 'https://catalogo-shs.vercel.app/api/proxy';
 
 refApiConfig.on('value', snap=>{
   API_CONFIG = snap.val() || {baseUrl:'', token:'', activo:false};
@@ -722,11 +723,19 @@ async function sincronizarConMicrosip(silencioso){
     return;
   }
   const fechaFin = todayISO();
-  const url = `${API_CONFIG.baseUrl}/api/v1/facturas?fecha_ini=${FECHA_MINIMA_CARGA}&fecha_fin=${fechaFin}`;
   try{
-    const resp = await fetch(url, {headers:{'Authorization':'Bearer '+API_CONFIG.token}});
-    if(!resp.ok) throw new Error('HTTP '+resp.status+' — revisa el token o el rango de fechas');
+    const resp = await fetch(`${PROXY}?metodo=FACTURAS_MICROSIP`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        baseUrl: API_CONFIG.baseUrl,
+        token: API_CONFIG.token,
+        fecha_ini: FECHA_MINIMA_CARGA,
+        fecha_fin: fechaFin
+      })
+    });
     const data = await resp.json();
+    if(!resp.ok || data.error) throw new Error(data.error || ('HTTP '+resp.status));
     const items = data.items || [];
     const updates = {};
     let nuevas = 0;
