@@ -4,13 +4,35 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Faltantes SHS – Vendedora</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; color: #1a202c; }
-  
-  header { background: #1e3a5f; color: white; padding: 14px 16px; display: flex; align-items: center; gap: 10px; }
-  header h1 { font-size: 1.1rem; font-weight: 700; }
-  header span { font-size: 0.75rem; opacity: 0.7; }
+  body { font-family: 'Segoe UI', sans-serif; background: #F7F5F0; color: #1a202c; padding-left: 64px; }
+
+  /* ── SHELL: sidebar fija (se oculta en pantallas angostas / celular) ── */
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:64px;background:#173F35;display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:6px;z-index:200}
+  .sb-logo{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.12);color:white;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;margin-bottom:22px}
+  .sb-btn{width:40px;height:40px;border-radius:10px;background:none;border:none;color:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer;transition:.15s;text-decoration:none}
+  .sb-btn:hover{background:rgba(255,255,255,.08);color:white}
+  .sb-btn.active{background:rgba(255,255,255,.14);color:white}
+  .sb-spacer{flex:1}
+  .sb-logout{width:40px;height:40px;border-radius:10px;background:none;border:none;color:rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer;margin-top:auto;margin-bottom:4px}
+  .sb-logout:hover{background:rgba(255,80,80,.14);color:#ffb4b4}
+  .sidebar-inner{display:flex;flex-direction:column;align-items:center;height:100%;width:100%}
+  .crumb{display:flex;align-items:center;gap:8px;padding:14px 16px 0;flex-wrap:wrap}
+  .crumb .path{font-size:12.5px;color:#64748b;font-weight:600}
+  .brand-logo{font-size:15px;font-weight:800;color:#1e4bcc;letter-spacing:-.01em}
+  .brand-logo span{color:#7ac143;margin-left:1px}
+  .crumb a{font-size:12.5px;color:#5B6B64;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:4px}
+  .crumb .sep{color:#c9c6ba}
+  @media(max-width:640px){
+    body{padding-left:0}
+    .sidebar{display:none}
+  }
+
+  header { background: transparent; color: #15241F; padding: 8px 16px 14px; display: flex; align-items: center; gap: 10px; }
+  header h1 { font-size: 1.35rem; font-weight: 700; }
+  header span { font-size: 0.82rem; color:#64748b; opacity: 1; }
   
   .role-select { background: #e8f0fe; padding: 12px 16px; border-bottom: 2px solid #1e3a5f; }
   .role-select label { font-size: 0.8rem; font-weight: 600; color: #1e3a5f; display: block; margin-bottom: 6px; }
@@ -83,7 +105,30 @@
 </head>
 <body>
 <script src="auth.js"></script>
-<script>shsRequireAccess('faltantes_vendedora');</script>
+<script>window.SHS_CUSTOM_SHELL = true; var session = shsRequireAccess('faltantes_vendedora');</script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  var lo = document.getElementById('btnLogout');
+  if(lo) lo.addEventListener('click', shsLogout);
+});
+</script>
+
+<nav class="sidebar">
+  <div class="sidebar-inner">
+    <div class="sb-logo">SHS</div>
+    <a class="sb-btn" href="panel.html" title="Inicio"><i class="ti ti-home" aria-hidden="true"></i></a>
+    <a class="sb-btn active" href="panel.html" title="Panel"><i class="ti ti-alert-triangle" aria-hidden="true"></i></a>
+    <div class="sb-spacer"></div>
+    <button class="sb-logout" id="btnLogout" title="Cerrar sesión"><i class="ti ti-logout" aria-hidden="true"></i></button>
+  </div>
+</nav>
+
+<div class="crumb">
+  <span class="brand-logo">SHS<span>&#10003;</span></span>
+  <span class="sep">|</span>
+  <a href="panel.html"><i class="ti ti-arrow-left" aria-hidden="true"></i> Volver al panel</a>
+</div>
+<div class="crumb"><span class="path">Ventas y catálogo &middot; Faltantes</span></div>
 
 <header>
   <div>
