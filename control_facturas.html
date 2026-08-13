@@ -8,6 +8,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
 
 <style>
 :root{
@@ -20,15 +21,50 @@
   font-family:'Segoe UI',Roboto,Arial,sans-serif;
 }
 *{box-sizing:border-box;}
-body{margin:0;background:var(--paper);color:var(--slate-900);font-size:14px;}
-header.app{background:linear-gradient(120deg,var(--teal-900),var(--teal-700));color:#fff;padding:18px 22px 14px;}
-header.app h1{margin:0;font-size:19px;font-weight:700;letter-spacing:.2px;}
-header.app p{margin:2px 0 0;font-size:12px;opacity:.8;}
-.chips{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;}
-.chip{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:6px 13px;font-size:12px;display:flex;gap:6px;align-items:center;}
-.chip b{font-size:13px;}
-.chip.alert{background:rgba(217,140,43,.25);border-color:rgba(217,140,43,.5);}
-.chip.danger{background:rgba(192,57,43,.3);border-color:rgba(192,57,43,.55);}
+body{margin:0;background:#F7F5F0;color:var(--slate-900);font-size:14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;min-height:100vh;}
+
+/* ── SHELL: sidebar + encabezado (igual que panel.html / usuarios.html) ── */
+.sidebar{width:64px;background:#173F35;display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:6px;flex-shrink:0}
+.sb-logo{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.12);color:white;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;margin-bottom:22px}
+.sb-btn{width:40px;height:40px;border-radius:10px;background:none;border:none;color:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer;transition:.15s;text-decoration:none}
+.sb-btn:hover{background:rgba(255,255,255,.08);color:white}
+.sb-btn.active{background:rgba(255,255,255,.14);color:white}
+.sb-spacer{flex:1}
+.sb-logout{width:40px;height:40px;border-radius:10px;background:none;border:none;color:rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer;margin-top:auto;margin-bottom:4px}
+.sb-logout:hover{background:rgba(255,80,80,.14);color:#ffb4b4}
+.sidebar-inner{display:flex;flex-direction:column;align-items:center;height:100%;width:100%}
+.shell-main{flex:1;min-width:0;display:flex;flex-direction:column}
+
+.crumb{display:flex;align-items:center;gap:8px;padding:20px 22px 0}
+.brand-logo{font-size:16px;font-weight:800;color:#1e4bcc;letter-spacing:-.01em}
+.brand-logo span{color:#7ac143;margin-left:1px}
+.crumb a{font-size:13px;color:#5B6B64;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:4px}
+.crumb a:hover{color:#173F35}
+.crumb .sep{color:#c9c6ba}
+
+header.app{background:transparent;color:var(--slate-900);padding:10px 22px 14px;}
+header.app .top-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+header.app h1{margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em;color:#15241F}
+header.app p{margin:3px 0 0;font-size:13px;color:#64748b;opacity:1}
+.top-right{display:flex;align-items:center;gap:12px}
+.icon-btn{width:36px;height:36px;border-radius:10px;border:1px solid #e5e3da;background:white;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:17px;cursor:pointer;position:relative}
+.icon-btn .dot{position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:#e24b4a}
+.user-chip{display:flex;align-items:center;gap:9px;background:white;border:1px solid #e5e3da;border-radius:24px;padding:5px 12px 5px 5px}
+.user-avatar{width:28px;height:28px;border-radius:50%;background:#173F35;color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.user-chip span{font-size:13px;font-weight:600}
+
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-top:14px}
+.stat-card{background:white;border:1px solid #e5e3da;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.stat-card .s-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.stat-card .s-label{font-size:12px;color:#64748b;margin-bottom:2px}
+.stat-card .s-value{font-size:19px;font-weight:700;color:#15241F}
+.stat-card.alert{border-color:#f0d9ae}
+.stat-card.alert .s-value{color:#8a5a12}
+.stat-card.danger{border-color:#f0b8b1}
+.stat-card.danger .s-value{color:var(--red-600)}
+.s-icon.green{background:#E1F5EE;color:#0F6E56}
+.s-icon.amber{background:var(--amber-100);color:#8a5a12}
+.s-icon.blue{background:#E6F1FB;color:#185FA5}
 .aviso-diario{margin-top:12px;background:#c0392b;border:1px solid rgba(255,255,255,.3);color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;display:none;align-items:center;gap:8px;}
 .aviso-bitacora{margin-top:10px;background:#c0392b;border:1px solid rgba(255,255,255,.3);color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:700;display:none;align-items:center;gap:8px;cursor:pointer;}
 .aviso-bitacora:hover{background:#a93226;}
@@ -47,10 +83,10 @@ header.app p{margin:2px 0 0;font-size:12px;opacity:.8;}
 textarea{border:1px solid var(--slate-300);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;width:100%;resize:vertical;min-height:70px;}
 .nota-inconclusa{font-size:12px;color:var(--slate-700);background:var(--amber-100);padding:4px 8px;border-radius:6px;display:inline-block;max-width:220px;}
 
-nav.tabs{display:flex;background:var(--teal-800);overflow-x:auto;position:sticky;top:0;z-index:20;}
-nav.tabs button{flex:1;min-width:130px;background:transparent;border:none;color:rgba(255,255,255,.65);padding:12px 10px;font-size:12.5px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;}
-nav.tabs button.active{color:#fff;border-bottom-color:var(--amber-500);background:rgba(255,255,255,.06);}
-nav.tabs button:hover{color:#fff;}
+nav.tabs{display:flex;gap:6px;background:transparent;overflow-x:auto;padding:16px 22px 0;flex-wrap:wrap;}
+nav.tabs button{background:white;border:1px solid #e5e3da;color:#5B6B64;padding:9px 16px;border-radius:22px;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;transition:.12s;}
+nav.tabs button.active{color:#fff;background:#173F35;border-color:#173F35;}
+nav.tabs button:hover{border-color:#173F35;}
 
 main{max-width:1180px;margin:0 auto;padding:18px 16px 60px;}
 section.tab{display:none;}
@@ -125,7 +161,7 @@ tr:hover td{background:var(--teal-100);}
 .ultima-carga.danger{background:var(--red-100);color:var(--red-600);}
 
 @media print{
-  nav.tabs, header.app .chips, .no-print{display:none !important;}
+  .sidebar, .crumb, nav.tabs, header.app .stat-grid, .top-right, .no-print{display:none !important;}
   header.app{background:#fff !important;color:#000 !important;padding:0 0 10px;}
   body{background:#fff;}
   .card{border:none;box-shadow:none;padding:0;}
@@ -138,11 +174,49 @@ tr:hover td{background:var(--teal-100);}
 </style>
 </head>
 <body>
+<script src="auth.js"></script>
+<script>window.SHS_CUSTOM_SHELL = true; var session = shsRequireAccess('control_facturas');</script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  document.getElementById('userNombre').textContent = session.nombre;
+  document.getElementById('userAvatar').textContent = session.nombre.trim().charAt(0).toUpperCase();
+  document.getElementById('btnLogout').addEventListener('click', shsLogout);
+});
+</script>
+
+<nav class="sidebar">
+  <div class="sidebar-inner">
+    <div class="sb-logo">SHS</div>
+    <a class="sb-btn" href="panel.html" title="Inicio"><i class="ti ti-home" aria-hidden="true"></i></a>
+    <a class="sb-btn active" href="panel.html" title="Panel"><i class="ti ti-file-invoice" aria-hidden="true"></i></a>
+    <div class="sb-spacer"></div>
+    <button class="sb-logout" id="btnLogout" title="Cerrar sesión"><i class="ti ti-logout" aria-hidden="true"></i></button>
+  </div>
+</nav>
+
+<div class="shell-main">
+<div class="crumb">
+  <span class="brand-logo">SHS<span>&#10003;</span></span>
+  <span class="sep">|</span>
+  <a href="panel.html"><i class="ti ti-arrow-left" aria-hidden="true"></i> Volver al panel</a>
+</div>
 
 <header class="app">
-  <h1>Control de Facturas · SHS</h1>
-  <p>Cobranza en efectivo, cheque y crédito — Surtidora de Higiénicos y Servicios</p>
-  <div class="chips" id="chips"></div>
+  <div class="top-row">
+    <div>
+      <h1>Control de facturas</h1>
+      <p>Cobranza en efectivo, cheque y crédito · Surtidora de Higiénicos y Servicios</p>
+    </div>
+    <div class="top-right">
+      <button class="icon-btn" title="Ayuda"><i class="ti ti-help" aria-hidden="true"></i></button>
+      <button class="icon-btn" title="Notificaciones"><span class="dot"></span><i class="ti ti-bell" aria-hidden="true"></i></button>
+      <div class="user-chip">
+        <div class="user-avatar" id="userAvatar">?</div>
+        <span id="userNombre">…</span>
+      </div>
+    </div>
+  </div>
+  <div class="chips stat-grid" id="chips"></div>
   <div class="aviso-diario no-print" id="avisoDeposito"></div>
   <div class="aviso-bitacora no-print" id="avisoBitacora" onclick="togglePanelBitacora()"></div>
   <div class="panel-bitacora no-print" id="panelBitacoraLista"></div>
@@ -469,6 +543,7 @@ tr:hover td{background:var(--teal-100);}
   </section>
 
 </main>
+</div>
 
 <div id="toast"></div>
 
@@ -837,10 +912,10 @@ function renderChips(){
 
   const chips = document.getElementById('chips');
   chips.innerHTML = `
-    <div class="chip">Facturas cargadas <b>${list.length}</b></div>
-    <div class="chip ${sinClasificar? 'alert':''}">Sin clasificar <b>${sinClasificar}</b></div>
-    <div class="chip ${totalCaja>=UMBRAL_DEPOSITO? 'danger':''}">En caja (efectivo+cheque) <b>${fmtMoney(totalCaja)}</b></div>
-    <div class="chip ${creditoSinConfirmar? 'alert':''}">Crédito sin confirmar <b>${creditoSinConfirmar}</b></div>
+    <div class="stat-card"><div class="s-icon green"><i class="ti ti-file-invoice" aria-hidden="true"></i></div><div><div class="s-label">Facturas cargadas</div><div class="s-value">${list.length}</div></div></div>
+    <div class="stat-card ${sinClasificar? 'alert':''}"><div class="s-icon amber"><i class="ti ti-file-alert" aria-hidden="true"></i></div><div><div class="s-label">Sin clasificar</div><div class="s-value">${sinClasificar}</div></div></div>
+    <div class="stat-card ${totalCaja>=UMBRAL_DEPOSITO? 'danger':''}"><div class="s-icon green"><i class="ti ti-cash-banknote" aria-hidden="true"></i></div><div><div class="s-label">En caja</div><div class="s-value">${fmtMoney(totalCaja)}</div></div></div>
+    <div class="stat-card ${creditoSinConfirmar? 'alert':''}"><div class="s-icon amber"><i class="ti ti-credit-card" aria-hidden="true"></i></div><div><div class="s-label">Crédito sin confirmar</div><div class="s-value">${creditoSinConfirmar}</div></div></div>
   `;
 
   const aviso = document.getElementById('avisoDeposito');

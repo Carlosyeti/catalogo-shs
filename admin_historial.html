@@ -118,17 +118,8 @@ input[type=file]{display:none}
 </style>
 </head>
 <body>
-
-<!-- LOGIN OVERLAY -->
-<div class="login-overlay" id="loginOverlay">
-  <div class="login-box">
-    <div class="login-logo">SHS<span>✓</span></div>
-    <div class="login-sub">Panel de administración</div>
-    <input type="password" id="loginInput" placeholder="Contraseña" onkeydown="if(event.key==='Enter') verificarLogin()">
-    <button class="login-btn" onclick="verificarLogin()">Entrar</button>
-    <div class="login-error" id="loginError">Contraseña incorrecta</div>
-  </div>
-</div>
+<script src="auth.js"></script>
+<script>shsRequireAccess('panel_sincronizacion');</script>
 <div class="container">
   <h1>Administracion SHS</h1>
   <p class="subtitle">Actualizar historial, catalogo y precios por cliente</p>
@@ -325,30 +316,6 @@ input[type=file]{display:none}
 </div>
 
 <script>
-// ── CONTRASEÑA ADMIN ──────────────────────────────────────────
-var PASS = 'SHS2026';
-
-function verificarLogin() {
-  var input = document.getElementById('loginInput').value;
-  if (input === PASS) {
-    sessionStorage.setItem('shs_admin_ok', '1');
-    document.getElementById('loginOverlay').style.display = 'none';
-  } else {
-    var err = document.getElementById('loginError');
-    err.style.display = 'block';
-    document.getElementById('loginInput').value = '';
-    setTimeout(function(){ err.style.display = 'none'; }, 2000);
-  }
-}
-
-(function() {
-  if (sessionStorage.getItem('shs_admin_ok') === '1') {
-    document.getElementById('loginOverlay').style.display = 'none';
-  }
-  setTimeout(function(){ document.getElementById('loginInput').focus(); }, 100);
-})();
-// ─────────────────────────────────────────────────────────────
-
 var PROXY = 'https://catalogo-shs.vercel.app/api/proxy';
 var archivos = {};
 // ── BUSCAR CLIENTE + COPIAR LINK ─────────────────────────────

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel SHS — Iniciar sesión</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f6f2;min-height:100vh;display:flex}
+.split{display:flex;width:100%;min-height:100vh}
+.left{flex:1;background:#173F35;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:center;padding:56px 48px;color:white;min-height:100vh}
+.left-brand{width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;margin-bottom:60px}
+.left h1{font-size:26px;font-weight:700;margin-bottom:10px;max-width:320px;letter-spacing:-.01em}
+.left p{font-size:14px;color:rgba(255,255,255,.65);max-width:300px;line-height:1.6;margin-bottom:28px}
+.left-pills{display:flex;flex-wrap:wrap;gap:8px;position:relative;z-index:2}
+.left-pill{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:8px 14px;font-size:12.5px;font-weight:600}
+.left-pill i{font-size:15px}
+.deco{position:absolute;inset:0;pointer-events:none;opacity:.55}
+.deco-chip{position:absolute;width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center}
+.deco-chip i{font-size:18px;color:rgba(255,255,255,.5)}
+.deco-line{position:absolute;border-top:1.5px dashed rgba(255,255,255,.14)}
+.left-foot{position:relative;z-index:2;margin-top:48px;font-size:12px;color:rgba(255,255,255,.4);display:flex;align-items:center;gap:6px}
+
+.right{flex:1;display:flex;align-items:center;justify-content:center;padding:40px;min-height:100vh}
+.form-wrap{width:100%;max-width:360px}
+.logo{font-size:26px;font-weight:800;color:#1e4bcc;margin-bottom:6px;letter-spacing:-.01em}
+.logo span{color:#7ac143;margin-left:1px}
+.form-wrap h2{font-size:22px;font-weight:700;color:#15241F;margin-bottom:6px}
+.form-wrap .sub{font-size:13.5px;color:#64748b;margin-bottom:28px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12.5px;font-weight:700;color:#475569;margin-bottom:6px}
+.input-wrap{position:relative;display:flex;align-items:center}
+.input-wrap i.left-i{position:absolute;left:13px;font-size:16px;color:#94a3b8}
+.input-wrap input{width:100%;padding:12px 14px 12px 40px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14.5px;font-family:inherit;outline:none;transition:.15s}
+.input-wrap input:focus{border-color:#173F35;box-shadow:0 0 0 3px rgba(23,63,53,.1)}
+.toggle-eye{position:absolute;right:12px;background:none;border:none;cursor:pointer;color:#94a3b8;font-size:16px;padding:4px}
+.btn-login{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:#173F35;color:white;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;transition:background .15s;margin-top:6px}
+.btn-login:hover{background:#0F2E26}
+.btn-login:disabled{opacity:.6;cursor:not-allowed}
+.enter-hint{display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;color:#94a3b8;margin-top:14px}
+.enter-hint kbd{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:5px;padding:2px 6px;font-size:11px;font-family:inherit}
+.secure-hint{display:flex;align-items:center;justify-content:center;gap:6px;font-size:12.5px;color:#2E9E6C;margin-top:20px;font-weight:600}
+.foot-note{text-align:center;font-size:12px;color:#94a3b8;margin-top:28px}
+.error-box{background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;font-size:13px;border-radius:10px;padding:11px 13px;margin-bottom:16px;display:none}
+
+@media(max-width:820px){.left{display:none}.right{padding:24px}}
+</style>
+</head>
+<body>
+
+<div class="split">
+  <div class="left">
+    <div class="deco" id="deco"></div>
+    <div class="left-brand">SHS</div>
+    <h1>Sistema Administrativo SHS</h1>
+    <p>Gestión centralizada de ventas, cobranza, logística y recursos humanos.</p>
+    <div class="left-pills">
+      <div class="left-pill"><i class="ti ti-chart-bar" aria-hidden="true"></i>Ventas</div>
+      <div class="left-pill"><i class="ti ti-report-money" aria-hidden="true"></i>Cobranza</div>
+      <div class="left-pill"><i class="ti ti-truck" aria-hidden="true"></i>Logística</div>
+      <div class="left-pill"><i class="ti ti-users" aria-hidden="true"></i>RRHH</div>
+    </div>
+    <div class="left-foot"><i class="ti ti-shield-check" aria-hidden="true"></i>Panel SHS · Acceso seguro</div>
+  </div>
+
+  <div class="right">
+    <div class="form-wrap">
+      <div class="logo">SHS<span>&#10003;</span></div>
+      <h2>Bienvenido</h2>
+      <p class="sub">Ingresa tus credenciales para acceder al Panel SHS.</p>
+
+      <div class="error-box" id="errorBox">Usuario o contraseña incorrectos.</div>
+
+      <div class="field">
+        <label>Usuario</label>
+        <div class="input-wrap">
+          <i class="ti ti-user left-i" aria-hidden="true"></i>
+          <input type="text" id="fUsuario" placeholder="Ingresa tu usuario" autocomplete="username">
+        </div>
+      </div>
+      <div class="field">
+        <label>Contraseña</label>
+        <div class="input-wrap">
+          <i class="ti ti-lock left-i" aria-hidden="true"></i>
+          <input type="password" id="fPassword" placeholder="Ingresa tu contraseña" autocomplete="current-password">
+          <button type="button" class="toggle-eye" id="toggleEye" aria-label="Mostrar contraseña"><i class="ti ti-eye" aria-hidden="true"></i></button>
+        </div>
+      </div>
+
+      <button class="btn-login" id="btnLogin">Iniciar sesión <i class="ti ti-arrow-right" aria-hidden="true"></i></button>
+      <div class="enter-hint"><kbd>Enter</kbd> También puedes presionar Enter</div>
+      <div class="secure-hint"><i class="ti ti-shield-check" aria-hidden="true"></i>Acceso exclusivo para personal autorizado</div>
+      <div class="foot-note">SHS · Panel de administración</div>
+    </div>
+  </div>
+</div>
+
+<script>
+var DECO_ICONS = ['ti-cube','ti-chart-bar','ti-layout-grid','ti-truck','ti-users','ti-clipboard-list','ti-shield-check'];
+var DECO_POS = [
+  {top:'8%', left:'62%'}, {top:'22%', left:'85%'}, {top:'40%', left:'8%'},
+  {top:'58%', left:'88%'}, {top:'72%', left:'20%'}, {top:'86%', left:'70%'}, {top:'50%', left:'55%'}
+];
+document.getElementById('deco').innerHTML = DECO_POS.map(function(p,i){
+  return '<div class="deco-chip" style="top:'+p.top+';left:'+p.left+'"><i class="ti '+DECO_ICONS[i]+'" aria-hidden="true"></i></div>';
+}).join('');
+
+document.getElementById('toggleEye').addEventListener('click', function(){
+  var inp = document.getElementById('fPassword');
+  var icon = this.querySelector('i');
+  var showing = inp.type === 'text';
+  inp.type = showing ? 'password' : 'text';
+  icon.className = 'ti ' + (showing ? 'ti-eye' : 'ti-eye-off');
+});
+
+var firebaseConfig = {
+  apiKey: "AIzaSyDGBgicmvOge196PiSgmIHhseQUGMiko-E",
+  authDomain: "surtidora-de-higienicos.firebaseapp.com",
+  databaseURL: "https://surtidora-de-higienicos-default-rtdb.firebaseio.com",
+  projectId: "surtidora-de-higienicos",
+  appId: "1:232648877023:web:9e8a4a743b68f4e16d9a6a"
+};
+firebase.initializeApp(firebaseConfig);
+var db = firebase.database();
+
+function sha256(str) {
+  return new Promise(function(resolve) {
+    if (window.crypto && window.crypto.subtle) {
+      try {
+        window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(str))
+          .then(function(buf) {
+            resolve(Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join(''));
+          })
+          .catch(function(){ resolve(sha256sync(str)); });
+        return;
+      } catch(e) {}
+    }
+    resolve(sha256sync(str));
+  });
+}
+function sha256sync(ascii) {
+  function rr(v,a){ return(v>>>a)|(v<<(32-a)); }
+  var pow=Math.pow, max=pow(2,32);
+  var H=[],K=[];
+  var isComposite={};
+  var n=2;
+  while(H.length<8){
+    if(!isComposite[n]){
+      H.push(Math.floor((pow(n,0.5)-Math.floor(pow(n,0.5)))*max)>>>0);
+      for(var j=n*n;j<400;j+=n) isComposite[j]=true;
+    }
+    n++;
+  }
+  n=2; isComposite={};
+  while(K.length<64){
+    if(!isComposite[n]){
+      K.push(Math.floor((pow(n,1/3)-Math.floor(pow(n,1/3)))*max)>>>0);
+      for(var j=n*n;j<400;j+=n) isComposite[j]=true;
+    }
+    n++;
+  }
+  ascii += '\x80';
+  var l = ascii.length/4 + 2;
+  var N = Math.ceil(l/16);
+  var M = new Array(N);
+  for(var i=0;i<N;i++){
+    M[i]=new Array(16);
+    for(var j=0;j<16;j++){
+      M[i][j] = (ascii.charCodeAt(i*64+j*4)<<24) | (ascii.charCodeAt(i*64+j*4+1)<<16) |
+                (ascii.charCodeAt(i*64+j*4+2)<<8) | (ascii.charCodeAt(i*64+j*4+3));
+    }
+  }
+  M[N-1][14] = Math.floor(((ascii.length-1)*8)/pow(2,32));
+  M[N-1][15] = ((ascii.length-1)*8) & 0xffffffff;
+  for(i=0;i<N;i++){
+    var W=new Array(64);
+    for(var t=0;t<16;t++) W[t]=M[i][t]|0;
+    for(t=16;t<64;t++){
+      var s0=rr(W[t-15],7)^rr(W[t-15],18)^(W[t-15]>>>3);
+      var s1=rr(W[t-2],17)^rr(W[t-2],19)^(W[t-2]>>>10);
+      W[t]=(W[t-16]+s0+W[t-7]+s1)|0;
+    }
+    var a=H[0],b=H[1],c=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];
+    for(t=0;t<64;t++){
+      var S1=rr(e,6)^rr(e,11)^rr(e,25);
+      var ch=(e&f)^((~e)&g);
+      var temp1=(h+S1+ch+K[t]+W[t])|0;
+      var S0=rr(a,2)^rr(a,13)^rr(a,22);
+      var maj=(a&b)^(a&c)^(b&c);
+      var temp2=(S0+maj)|0;
+      h=g; g=f; f=e; e=(d+temp1)|0; d=c; c=b; b=a; a=(temp1+temp2)|0;
+    }
+    H[0]=(H[0]+a)|0; H[1]=(H[1]+b)|0; H[2]=(H[2]+c)|0; H[3]=(H[3]+d)|0;
+    H[4]=(H[4]+e)|0; H[5]=(H[5]+f)|0; H[6]=(H[6]+g)|0; H[7]=(H[7]+h)|0;
+  }
+  var res='';
+  for(i=0;i<8;i++) res += (H[i]>>>0).toString(16).padStart(8,'0');
+  return res;
+}
+function sanitizarUsuario(v){
+  return String(v||'').trim().toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[.#$\[\]\s]/g,'-')
+    .replace(/[^a-z0-9_-]/g,'')
+    .replace(/-+/g,'-');
+}
+
+function mostrarError(msg){
+  var box = document.getElementById('errorBox');
+  box.textContent = msg;
+  box.style.display = 'block';
+}
+function ocultarError(){
+  document.getElementById('errorBox').style.display = 'none';
+}
+
+async function intentarLogin(){
+  ocultarError();
+  var usuarioInput = document.getElementById('fUsuario').value;
+  var password = document.getElementById('fPassword').value;
+  var key = sanitizarUsuario(usuarioInput);
+
+  if(!key || !password){ mostrarError('Escribe tu usuario y tu contraseña.'); return; }
+
+  var btn = document.getElementById('btnLogin');
+  btn.disabled = true;
+  btn.textContent = 'Entrando…';
+
+  try{
+    var snap = await db.ref('usuarios/' + key).once('value');
+    var u = snap.val();
+    if(!u || u.activo === false){ mostrarError('Usuario o contraseña incorrectos.'); return; }
+    var hash = await sha256(password);
+    if(hash !== u.passwordHash){ mostrarError('Usuario o contraseña incorrectos.'); return; }
+
+    sessionStorage.setItem('shs_session', JSON.stringify({
+      usuario: u.usuario || key,
+      nombre: u.nombre || u.usuario || key,
+      permisos: u.permisos || {}
+    }));
+
+    var params = new URLSearchParams(location.search);
+    window.location.href = params.get('next') || 'panel.html';
+  }catch(err){
+    mostrarError('No se pudo conectar. Intenta de nuevo.');
+    console.error(err);
+  }finally{
+    btn.disabled = false;
+    btn.innerHTML = 'Iniciar sesión <i class="ti ti-arrow-right" aria-hidden="true"></i>';
+  }
+}
+
+document.getElementById('btnLogin').addEventListener('click', intentarLogin);
+document.getElementById('fPassword').addEventListener('keydown', function(e){ if(e.key==='Enter') intentarLogin(); });
+document.getElementById('fUsuario').addEventListener('keydown', function(e){ if(e.key==='Enter') intentarLogin(); });
+
+(function(){
+  if(sessionStorage.getItem('shs_session')){ window.location.href = 'panel.html'; }
+})();
+</script>
+</body>
+</html>

@@ -4,139 +4,227 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Usuarios y permisos — SHS</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="tools-data.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;min-height:100vh;padding:24px}
-.wrap{max-width:920px;margin:0 auto}
-h1{font-size:22px;color:#1a1a2e;font-weight:700;margin-bottom:4px}
-.subtitle{color:#64748b;font-size:14px;margin-bottom:24px}
-.card{background:white;border-radius:16px;padding:28px;box-shadow:0 4px 24px rgba(0,0,0,0.06);margin-bottom:20px}
-.card h2{font-size:16px;font-weight:700;color:#1e4bcc;margin-bottom:16px}
-.field{margin-bottom:14px}
-.field label{display:block;font-size:12.5px;font-weight:700;color:#475569;margin-bottom:5px}
-.field input{width:100%;padding:11px 13px;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Segoe UI',sans-serif;outline:none;transition:border-color .2s}
-.field input:focus{border-color:#1e4bcc}
-.field .hint{font-size:11.5px;color:#94a3b8;margin-top:4px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F7F5F0;color:#15241F;display:flex;min-height:100vh}
+
+.sidebar{width:64px;background:#173F35;display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:6px;flex-shrink:0}
+.sb-logo{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.12);color:white;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;margin-bottom:22px}
+.sb-btn{width:40px;height:40px;border-radius:10px;background:none;border:none;color:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer;transition:.15s;text-decoration:none}
+.sb-btn:hover{background:rgba(255,255,255,.08);color:white}
+.sb-btn.active{background:rgba(255,255,255,.14);color:white}
+.sb-spacer{flex:1}
+.sb-logout{width:40px;height:40px;border-radius:10px;background:none;border:none;color:rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer;margin-top:auto;margin-bottom:4px}
+.sb-logout:hover{background:rgba(255,80,80,.14);color:#ffb4b4}
+.sidebar-inner{display:flex;flex-direction:column;align-items:center;height:100%;width:100%}
+
+.main{flex:1;min-width:0;padding:32px 40px 60px;max-width:900px;margin:0 auto}
+.crumb{display:flex;align-items:center;gap:8px;margin-bottom:18px}
+.brand-logo{font-size:17px;font-weight:800;color:#1e4bcc;letter-spacing:-.01em}
+.brand-logo span{color:#7ac143;margin-left:1px}
+.crumb a{font-size:13px;color:#5B6B64;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:4px}
+.crumb a:hover{color:#173F35}
+.crumb .sep{color:#c9c6ba}
+
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:24px;flex-wrap:wrap}
+.top h1{font-size:24px;font-weight:700;letter-spacing:-.01em}
+.top p{font-size:13.5px;color:#64748b;margin-top:3px}
+.top-right{display:flex;align-items:center;gap:14px}
+.icon-btn{width:36px;height:36px;border-radius:10px;border:1px solid #e5e3da;background:white;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:17px;cursor:pointer;position:relative}
+.icon-btn .dot{position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:#e24b4a}
+.user-chip{display:flex;align-items:center;gap:9px;background:white;border:1px solid #e5e3da;border-radius:24px;padding:5px 12px 5px 5px;cursor:default}
+.user-avatar{width:28px;height:28px;border-radius:50%;background:#173F35;color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.user-chip span{font-size:13px;font-weight:600}
+.user-chip i{font-size:14px;color:#94a3b8}
+
+.card{background:white;border:1px solid #e5e3da;border-radius:16px;padding:26px;margin-bottom:20px}
+.card-head{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.card-head .icon-chip{width:40px;height:40px;border-radius:11px;background:#E1F5EE;color:#0F6E56;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.card-head h2{font-size:16px;font-weight:700}
+.card-head p{font-size:12.5px;color:#64748b;margin-top:1px}
+
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12.5px;font-weight:700;color:#475569;margin-bottom:6px}
+.input-wrap{position:relative;display:flex;align-items:center}
+.input-wrap i.left-i{position:absolute;left:13px;font-size:15px;color:#94a3b8}
+.input-wrap input{width:100%;padding:11px 13px 11px 38px;border:1.5px solid #e5e3da;border-radius:10px;font-size:14px;font-family:inherit;outline:none;transition:.15s}
+.input-wrap input:focus{border-color:#173F35;box-shadow:0 0 0 3px rgba(23,63,53,.08)}
+.toggle-eye{position:absolute;right:11px;background:none;border:none;cursor:pointer;color:#94a3b8;font-size:15px;padding:4px}
+.field .hint{font-size:11.5px;color:#94a3b8;margin-top:5px}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.cats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
-.cat-opt{display:flex;align-items:flex-start;gap:10px;padding:12px;border:2px solid #e2e8f0;border-radius:10px;cursor:pointer;transition:all .15s}
-.cat-opt:hover{border-color:#c7d5f0}
-.cat-opt.checked{border-color:#1e4bcc;background:#eff6ff}
-.cat-opt input{width:16px;height:16px;margin-top:2px;accent-color:#1e4bcc;flex-shrink:0}
-.cat-opt-body{min-width:0}
-.cat-opt-title{font-size:13px;font-weight:700;color:#1a1a2e}
-.cat-opt-tools{font-size:11px;color:#64748b;margin-top:2px;line-height:1.5}
-.templates{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
-.tpl-btn{font-size:11.5px;font-weight:700;color:#1e4bcc;background:#eff6ff;border:1px solid #dbeafe;border-radius:20px;padding:6px 12px;cursor:pointer;transition:all .15s}
-.tpl-btn:hover{background:#dbeafe}
-.btn{padding:12px 22px;border-radius:10px;border:none;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;background:#1e4bcc;color:white}
-.btn:hover{background:#163799}
-.btn.secondary{background:#f1f5f9;color:#475569}
-.btn.secondary:hover{background:#e2e8f0}
-.btn-row{display:flex;gap:10px;margin-top:6px}
+
+.divider{border-top:1px solid #ece9df;margin:22px 0 18px}
+.section-label{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;margin-bottom:12px}
+.section-label i{font-size:15px;color:#5B6B64}
+
+.templates{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.tpl-btn{border:1px solid #e5e3da;background:white;color:#5B6B64;font-size:12.5px;font-weight:600;padding:8px 15px;border-radius:22px;cursor:pointer;transition:.12s}
+.tpl-btn:hover{border-color:#173F35}
+.tpl-btn.active{background:#173F35;border-color:#173F35;color:white}
+
+.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cat-card{border:1px solid #e5e3da;border-radius:14px;overflow:hidden;transition:.12s}
+.cat-card.checked{border-color:#173F35}
+.cat-card-head{display:flex;align-items:flex-start;gap:12px;padding:14px;cursor:pointer}
+.cat-card .icon-chip{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.cat-card-body{flex:1;min-width:0}
+.cat-card-body .name{font-size:13.5px;font-weight:700}
+.cat-card-body .desc{font-size:11px;color:#94a3b8;margin-top:2px;line-height:1.5}
+.cat-check{width:20px;height:20px;border-radius:6px;flex-shrink:0;cursor:pointer}
+.chev{font-size:11px;color:#94a3b8;transition:transform .15s;padding:4px}
+.cat-card.open .chev{transform:rotate(90deg)}
+.cat-card-tools{display:none;padding:0 14px 12px 62px}
+.cat-card.open .cat-card-tools{display:block}
+.tool-opt{display:flex;align-items:center;gap:9px;padding:6px 0}
+.tool-opt input{width:15px;height:15px;accent-color:#173F35;flex-shrink:0}
+.tool-opt .name{font-size:12.5px;font-weight:600;color:#334155}
+.tool-opt .badge-public{font-size:9.5px;font-weight:700;color:#0f766e;background:#ccfbf1;border-radius:5px;padding:1px 6px;margin-left:6px}
+
+.chip-ventas{background:#FAECE7}.chip-ventas i{color:#993C1D}
+.chip-finanzas{background:#EEEDFE}.chip-finanzas i{color:#534AB7}
+.chip-logistica{background:#E6F1FB}.chip-logistica i{color:#185FA5}
+.chip-rrhh{background:#E1F5EE}.chip-rrhh i{color:#0F6E56}
+.chip-admin{background:#F1EFE8}.chip-admin i{color:#5F5E5A}
+
+.btn-row{display:flex;gap:10px;margin-top:20px}
+.btn{padding:12px 22px;border-radius:10px;border:none;font-size:14px;font-weight:700;cursor:pointer;transition:.15s;background:#173F35;color:white;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:#0F2E26}
+.btn.secondary{background:white;color:#475569;border:1px solid #e5e3da}
+.btn.secondary:hover{background:#f8fafc}
 .msg{margin-top:14px;padding:12px 14px;border-radius:10px;font-size:13px;display:none}
 .msg.ok{background:#f0fdf4;border:1px solid #86efac;color:#166534;display:block}
 .msg.err{background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;display:block}
+
 table{width:100%;border-collapse:collapse;font-size:13px}
-th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:#94a3b8;padding:8px 10px;border-bottom:2px solid #f1f5f9}
-td{padding:10px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
-.u-nombre{font-weight:700;color:#1a1a2e}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:#94a3b8;padding:8px 10px;border-bottom:1.5px solid #ece9df}
+td{padding:11px 10px;border-bottom:1px solid #ece9df;vertical-align:middle}
+.u-nombre{font-weight:700}
 .u-login{color:#64748b;font-size:12px}
 .badges{display:flex;flex-wrap:wrap;gap:4px}
-.badge{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:6px;background:#eff6ff;color:#1e4bcc;white-space:nowrap}
-.badge.admin{background:#fef3c7;color:#92400e}
+.badge{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:6px;background:#EEEDFE;color:#534AB7;white-space:nowrap}
+.badge.admin{background:#FAEEDA;color:#8A5A0B}
 .estado-toggle{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;font-weight:700}
-.dot{width:8px;height:8px;border-radius:50%;background:#16a34a}
-.dot.off{background:#cbd5e1}
+.dot2{width:8px;height:8px;border-radius:50%;background:#1F7A4D}
+.dot2.off{background:#cbd5c9}
 .acciones{display:flex;gap:6px}
-.mini-btn{font-size:12px;font-weight:700;border:none;border-radius:7px;padding:6px 11px;cursor:pointer;transition:all .15s}
-.mini-btn.edit{background:#eff6ff;color:#1e4bcc}
-.mini-btn.edit:hover{background:#dbeafe}
-.mini-btn.del{background:#fef2f2;color:#dc2626}
-.mini-btn.del:hover{background:#fca5a5}
+.mini-btn{font-size:12px;font-weight:700;border:none;border-radius:7px;padding:6px 11px;cursor:pointer;transition:.15s}
+.mini-btn.edit{background:#EEEDFE;color:#534AB7}
+.mini-btn.edit:hover{background:#dcdafc}
+.mini-btn.del{background:#FCEBEB;color:#A32D2D}
+.mini-btn.del:hover{background:#f9d3d3}
 .empty{text-align:center;color:#94a3b8;font-size:13px;padding:24px 0}
 
-/* LOGIN */
-.login-overlay{position:fixed;inset:0;background:#f0f4f8;display:flex;align-items:center;justify-content:center;z-index:9999}
-.login-box{background:white;border-radius:16px;padding:40px 32px;max-width:360px;width:90%;box-shadow:0 4px 24px rgba(0,0,0,0.10);text-align:center}
-.login-logo{font-size:28px;font-weight:900;color:#1e4bcc;margin-bottom:4px}
-.login-logo span{color:#7ac143}
-.login-sub{color:#64748b;font-size:13px;margin-bottom:28px}
-.login-box input{width:100%;padding:13px 16px;border:2px solid #e2e8f0;border-radius:10px;font-size:15px;font-family:'Segoe UI',sans-serif;outline:none;text-align:center;letter-spacing:2px;transition:border-color 0.2s;margin-bottom:12px}
-.login-box input:focus{border-color:#1e4bcc}
-.login-btn{width:100%;padding:13px;border-radius:10px;border:none;font-size:15px;font-weight:700;cursor:pointer;background:#1e4bcc;color:white;transition:background 0.2s}
-.login-btn:hover{background:#163799}
-.login-error{color:#dc2626;font-size:13px;font-weight:600;margin-top:10px;display:none}
-
-@media(max-width:640px){.row2,.cats{grid-template-columns:1fr}}
+@media(max-width:700px){.main{padding:24px 16px 60px}.row2,.cat-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
+<script src="auth.js"></script>
+<script>window.SHS_CUSTOM_SHELL = true; var session = shsRequireAccess('usuarios_permisos');</script>
 
-<!-- LOGIN OVERLAY -->
-<div class="login-overlay" id="loginOverlay">
-  <div class="login-box">
-    <div class="login-logo">SHS<span>✓</span></div>
-    <div class="login-sub">Usuarios y permisos</div>
-    <input type="password" id="loginInput" placeholder="Contraseña" onkeydown="if(event.key==='Enter') verificarLogin()">
-    <button class="login-btn" onclick="verificarLogin()">Entrar</button>
-    <div class="login-error" id="loginError">Contraseña incorrecta</div>
+<nav class="sidebar">
+  <div class="sidebar-inner">
+    <div class="sb-logo">SHS</div>
+    <a class="sb-btn" href="panel.html" title="Inicio"><i class="ti ti-home" aria-hidden="true"></i></a>
+    <a class="sb-btn" href="panel.html" title="Todas"><i class="ti ti-layout-grid" aria-hidden="true"></i></a>
+    <a class="sb-btn" href="panel.html" title="Favoritos"><i class="ti ti-star" aria-hidden="true"></i></a>
+    <a class="sb-btn" href="panel.html" title="Recientes"><i class="ti ti-clock" aria-hidden="true"></i></a>
+    <button class="sb-btn active" title="Usuarios y permisos"><i class="ti ti-settings" aria-hidden="true"></i></button>
+    <div class="sb-spacer"></div>
+    <button class="sb-logout" id="btnLogout" title="Cerrar sesión"><i class="ti ti-logout" aria-hidden="true"></i></button>
   </div>
-</div>
+</nav>
 
-<div class="wrap">
-  <h1>Usuarios y permisos</h1>
-  <p class="subtitle">Crea usuarios y decide qué área de herramientas puede ver cada quien</p>
+<div class="main">
+  <div class="crumb">
+    <span class="brand-logo">SHS<span>&#10003;</span></span>
+    <span class="sep">|</span>
+    <a href="panel.html"><i class="ti ti-arrow-left" aria-hidden="true"></i> Volver al panel</a>
+  </div>
+
+  <div class="top">
+    <div>
+      <h1>Usuarios y permisos</h1>
+      <p>Crea usuarios y decide exactamente qué herramientas puede abrir cada quien</p>
+    </div>
+    <div class="top-right">
+      <button class="icon-btn" title="Ayuda"><i class="ti ti-help" aria-hidden="true"></i></button>
+      <button class="icon-btn" title="Notificaciones"><span class="dot"></span><i class="ti ti-bell" aria-hidden="true"></i></button>
+      <div class="user-chip">
+        <div class="user-avatar" id="userAvatar">?</div>
+        <span id="userNombre">…</span>
+      </div>
+    </div>
+  </div>
 
   <div class="card">
-    <h2 id="formTitulo">Nuevo usuario</h2>
+    <div class="card-head">
+      <div class="icon-chip" id="formIcon"><i class="ti ti-user-plus" aria-hidden="true"></i></div>
+      <div>
+        <h2 id="formTitulo">Nuevo usuario</h2>
+        <p>Completa los datos y asigna sus permisos de acceso</p>
+      </div>
+    </div>
 
     <div class="row2">
       <div class="field">
         <label>Nombre completo</label>
-        <input type="text" id="fNombre" placeholder="Ej. Carmen Lorenzo">
+        <div class="input-wrap">
+          <i class="ti ti-user left-i" aria-hidden="true"></i>
+          <input type="text" id="fNombre" placeholder="Ej. Carmen Lorenzo">
+        </div>
       </div>
       <div class="field">
-        <label>Usuario (para entrar)</label>
-        <input type="text" id="fUsuario" placeholder="Ej. carmen">
-        <div class="hint">Es lo que la persona escribe para entrar. Espacios, acentos y puntos se convierten en guion.</div>
+        <label>Usuario para entrar</label>
+        <div class="input-wrap">
+          <i class="ti ti-at left-i" aria-hidden="true"></i>
+          <input type="text" id="fUsuario" placeholder="Ej. carmen.lorenzo">
+        </div>
+        <div class="hint">Sin espacios, acentos ni puntos (se convierten en guion).</div>
       </div>
     </div>
 
     <div class="field">
       <label>Contraseña</label>
-      <input type="password" id="fPassword" placeholder="Mínimo 6 caracteres">
+      <div class="input-wrap">
+        <i class="ti ti-lock left-i" aria-hidden="true"></i>
+        <input type="password" id="fPassword" placeholder="Mínimo 6 caracteres">
+        <button type="button" class="toggle-eye" id="toggleEye" aria-label="Mostrar contraseña"><i class="ti ti-eye" aria-hidden="true"></i></button>
+      </div>
       <div class="hint" id="passHint">Se guarda cifrada, nunca en texto plano.</div>
     </div>
 
-    <div class="field">
-      <label>Acceso por área</label>
-      <div class="templates">
-        <button type="button" class="tpl-btn" data-tpl="admin">Administrador (todo)</button>
-        <button type="button" class="tpl-btn" data-tpl="ventas">Solo Ventas</button>
-        <button type="button" class="tpl-btn" data-tpl="finanzas">Solo Cobranza</button>
-        <button type="button" class="tpl-btn" data-tpl="logistica">Solo Logística</button>
-        <button type="button" class="tpl-btn" data-tpl="rrhh">Solo RRHH</button>
-        <button type="button" class="tpl-btn" data-tpl="ninguno">Limpiar</button>
-      </div>
-      <div class="cats" id="catOpts"></div>
+    <div class="divider"></div>
+    <div class="section-label"><i class="ti ti-shield-check" aria-hidden="true"></i>Acceso por área</div>
+
+    <div class="templates" id="templates">
+      <button type="button" class="tpl-btn" data-tpl="admin">Administrador (todo)</button>
+      <button type="button" class="tpl-btn" data-tpl="ventas">Solo Ventas</button>
+      <button type="button" class="tpl-btn" data-tpl="finanzas">Solo Cobranza</button>
+      <button type="button" class="tpl-btn" data-tpl="logistica">Solo Logística</button>
+      <button type="button" class="tpl-btn" data-tpl="rrhh">Solo RRHH</button>
+      <button type="button" class="tpl-btn" data-tpl="ninguno">Limpiar</button>
     </div>
 
+    <div class="cat-grid" id="catGroups"></div>
+
     <div class="btn-row">
-      <button class="btn" id="btnGuardar">Guardar usuario</button>
-      <button class="btn secondary" id="btnCancelar" style="display:none">Cancelar edición</button>
+      <button class="btn secondary" id="btnCancelar" style="display:none">Cancelar</button>
+      <button class="btn" id="btnGuardar"><i class="ti ti-user-plus" aria-hidden="true"></i>Crear usuario</button>
     </div>
     <div class="msg" id="formMsg"></div>
   </div>
 
   <div class="card">
-    <h2>Usuarios (<span id="totalUsuarios">0</span>)</h2>
+    <div class="card-head">
+      <div class="icon-chip" style="background:#EEEDFE;color:#534AB7"><i class="ti ti-users" aria-hidden="true"></i></div>
+      <div><h2>Usuarios (<span id="totalUsuarios">0</span>)</h2></div>
+    </div>
     <table>
-      <thead>
-        <tr><th>Usuario</th><th>Acceso</th><th>Estado</th><th></th></tr>
-      </thead>
+      <thead><tr><th>Usuario</th><th>Acceso</th><th>Estado</th><th></th></tr></thead>
       <tbody id="tablaUsuarios"></tbody>
     </table>
     <div class="empty" id="emptyMsg" style="display:none">Todavía no hay usuarios registrados.</div>
@@ -144,25 +232,16 @@ td{padding:10px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
 </div>
 
 <script>
-// ── LOGIN (mismo candado que el panel de Administración) ──
-var PASS = 'SHS2026';
-function verificarLogin() {
-  var input = document.getElementById('loginInput').value;
-  if (input === PASS) {
-    sessionStorage.setItem('shs_admin_ok', '1');
-    document.getElementById('loginOverlay').style.display = 'none';
-  } else {
-    var err = document.getElementById('loginError');
-    err.style.display = 'block';
-    document.getElementById('loginInput').value = '';
-    setTimeout(function(){ err.style.display = 'none'; }, 2000);
-  }
-}
-(function() {
-  if (sessionStorage.getItem('shs_admin_ok') === '1') {
-    document.getElementById('loginOverlay').style.display = 'none';
-  }
-})();
+document.getElementById('userNombre').textContent = session.nombre;
+document.getElementById('userAvatar').textContent = session.nombre.trim().charAt(0).toUpperCase();
+document.getElementById('btnLogout').addEventListener('click', shsLogout);
+document.getElementById('toggleEye').addEventListener('click', function(){
+  var inp = document.getElementById('fPassword');
+  var icon = this.querySelector('i');
+  var showing = inp.type === 'text';
+  inp.type = showing ? 'password' : 'text';
+  icon.className = 'ti ' + (showing ? 'ti-eye' : 'ti-eye-off');
+});
 
 // ── FIREBASE (mismo proyecto que Facturas / Remisiones / Logística) ──
 var firebaseConfig = {
@@ -254,59 +333,90 @@ function sha256sync(ascii) {
   return res;
 }
 
-// ── CATEGORÍAS (basadas en las herramientas reales del sitio) ──
-var CATEGORIAS = [
-  {key:'ventas', label:'Ventas y catálogo', tools:'Catálogo de pedidos, Tabulador de ventas, Faltantes (vendedora)'},
-  {key:'finanzas', label:'Cobranza y finanzas', tools:'Control de facturas, Control de remisiones, Gestoría de cobranza, Estados financieros, Facturas de proveedores, Calendario de compras, Captura de gastos'},
-  {key:'logistica', label:'Logística y operación', tools:'Bitácora de rutas, Master logística, Inventario, Faltantes (comprador)'},
-  {key:'rrhh', label:'Recursos humanos', tools:'Empleado del mes'},
-  {key:'admin', label:'Administración', tools:'Panel de sincronización, Usuarios y permisos'},
-];
-
-document.getElementById('catOpts').innerHTML = CATEGORIAS.map(function(c){
-  return '<label class="cat-opt" data-cat="'+c.key+'">'+
-    '<input type="checkbox" value="'+c.key+'">'+
-    '<div class="cat-opt-body"><div class="cat-opt-title">'+c.label+'</div>'+
-    '<div class="cat-opt-tools">'+c.tools+'</div></div></label>';
+// ── FORMULARIO: un checkbox por herramienta, agrupado por área ──
+document.getElementById('catGroups').innerHTML = SHS_CATEGORIAS.map(function(c){
+  var tools = SHS_TOOLS.filter(function(t){ return t.cat === c.key; });
+  var rows = tools.map(function(t){
+    return '<label class="tool-opt">'+
+      '<input type="checkbox" value="'+t.id+'" data-cat="'+c.key+'">'+
+      '<span class="name">'+t.name+'</span>'+
+      (t.gated ? '' : '<span class="badge-public">pública</span>') +
+    '</label>';
+  }).join('');
+  return '<div class="cat-card" data-cat="'+c.key+'">'+
+    '<div class="cat-card-head">'+
+      '<div class="icon-chip chip-'+c.key+'"><i class="ti '+c.icon+'" aria-hidden="true"></i></div>'+
+      '<div class="cat-card-body"><div class="name">'+c.label+'</div>'+
+      '<div class="desc" data-catdesc="'+c.key+'"></div></div>'+
+      '<input type="checkbox" class="cat-check" data-catall="'+c.key+'">'+
+      '<span class="chev">&#9656;</span>'+
+    '</div>'+
+    '<div class="cat-card-tools">'+rows+'</div>'+
+  '</div>';
 }).join('');
 
-document.querySelectorAll('.cat-opt input').forEach(function(cb){
-  cb.addEventListener('change', function(){
-    cb.closest('.cat-opt').classList.toggle('checked', cb.checked);
+function actualizarContadorCategoria(cat){
+  var boxes = Array.from(document.querySelectorAll('.tool-opt input[data-cat="'+cat+'"]'));
+  var marcados = boxes.filter(function(b){ return b.checked; }).length;
+  document.querySelector('[data-catdesc="'+cat+'"]').textContent = marcados + ' de ' + boxes.length + ' herramientas';
+  document.querySelector('[data-catall="'+cat+'"]').checked = marcados === boxes.length;
+  document.querySelector('[data-catall="'+cat+'"]').indeterminate = marcados > 0 && marcados < boxes.length;
+  document.querySelector('.cat-card[data-cat="'+cat+'"]').classList.toggle('checked', marcados > 0);
+}
+
+document.querySelectorAll('.tool-opt input').forEach(function(cb){
+  cb.addEventListener('change', function(){ actualizarContadorCategoria(cb.dataset.cat); });
+});
+document.querySelectorAll('.cat-card-head').forEach(function(head){
+  var group = head.closest('.cat-card');
+  var allBox = head.querySelector('[data-catall]');
+  head.addEventListener('click', function(e){
+    if(e.target === allBox) return;
+    group.classList.toggle('open');
+  });
+  allBox.addEventListener('click', function(e){ e.stopPropagation(); });
+  allBox.addEventListener('change', function(){
+    var cat = allBox.dataset.catall;
+    document.querySelectorAll('.tool-opt input[data-cat="'+cat+'"]').forEach(function(cb){ cb.checked = allBox.checked; });
+    actualizarContadorCategoria(cat);
   });
 });
+SHS_CATEGORIAS.forEach(function(c){ actualizarContadorCategoria(c.key); });
 
 var TEMPLATES = {
-  admin: ['ventas','finanzas','logistica','rrhh','admin'],
-  ventas: ['ventas'],
-  finanzas: ['finanzas'],
-  logistica: ['logistica'],
-  rrhh: ['rrhh'],
+  admin: SHS_TOOLS.map(function(t){ return t.id; }),
+  ventas: SHS_TOOLS.filter(function(t){ return t.cat==='ventas'; }).map(function(t){ return t.id; }),
+  finanzas: SHS_TOOLS.filter(function(t){ return t.cat==='finanzas'; }).map(function(t){ return t.id; }),
+  logistica: SHS_TOOLS.filter(function(t){ return t.cat==='logistica'; }).map(function(t){ return t.id; }),
+  rrhh: SHS_TOOLS.filter(function(t){ return t.cat==='rrhh'; }).map(function(t){ return t.id; }),
   ninguno: []
 };
 document.querySelectorAll('.tpl-btn').forEach(function(btn){
   btn.addEventListener('click', function(){
+    document.querySelectorAll('.tpl-btn').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
     var set = TEMPLATES[btn.dataset.tpl];
-    document.querySelectorAll('.cat-opt input').forEach(function(cb){
-      cb.checked = set.includes(cb.value);
-      cb.closest('.cat-opt').classList.toggle('checked', cb.checked);
+    document.querySelectorAll('.tool-opt input').forEach(function(cb){ cb.checked = set.indexOf(cb.value) > -1; });
+    SHS_CATEGORIAS.forEach(function(c){ actualizarContadorCategoria(c.key); });
+    document.querySelectorAll('.cat-card').forEach(function(g){
+      var cat = g.dataset.cat;
+      g.classList.toggle('open', set.length>0 && set.some(function(id){ return SHS_TOOLS.find(function(t){return t.id===id;}).cat === cat; }));
     });
   });
 });
 
-function categoriasSeleccionadas(){
+function permisosSeleccionados(){
   var out = {};
-  document.querySelectorAll('.cat-opt input').forEach(function(cb){ out[cb.value] = cb.checked; });
+  document.querySelectorAll('.tool-opt input').forEach(function(cb){ out[cb.value] = cb.checked; });
   return out;
 }
-function marcarCategorias(cats){
-  document.querySelectorAll('.cat-opt input').forEach(function(cb){
-    cb.checked = !!(cats && cats[cb.value]);
-    cb.closest('.cat-opt').classList.toggle('checked', cb.checked);
-  });
+function marcarPermisos(permisos){
+  document.querySelectorAll('.tool-opt input').forEach(function(cb){ cb.checked = !!(permisos && permisos[cb.value]); });
+  document.querySelectorAll('.tpl-btn').forEach(function(b){ b.classList.remove('active'); });
+  SHS_CATEGORIAS.forEach(function(c){ actualizarContadorCategoria(c.key); });
 }
 function sanitizarUsuario(v){
-  // Firebase no permite ".", "#", "$", "[", "]" en las llaves, as\u00ed que
+  // Firebase no permite ".", "#", "$", "[", "]" en las llaves, así que
   // se reemplazan por guion en vez de solo quitarlos (para que
   // "carmen.lorenzo" siga siendo legible como "carmen-lorenzo").
   return String(v||'').trim().toLowerCase()
@@ -330,14 +440,14 @@ document.getElementById('btnGuardar').addEventListener('click', async function()
   var usuarioInput = document.getElementById('fUsuario').value.trim();
   var usuario = sanitizarUsuario(usuarioInput);
   var password = document.getElementById('fPassword').value;
-  var cats = categoriasSeleccionadas();
-  var tieneAcceso = Object.values(cats).some(Boolean);
+  var permisos = permisosSeleccionados();
+  var tieneAcceso = Object.values(permisos).some(Boolean);
 
   if(!nombre || !usuarioInput){ mostrarMsg('Completa nombre y usuario.', 'err'); return; }
   if(!usuario){ mostrarMsg('El usuario debe tener al menos una letra o número.', 'err'); return; }
   if(!editando && !password){ mostrarMsg('La contraseña es obligatoria para un usuario nuevo.', 'err'); return; }
   if(password && password.length < 6){ mostrarMsg('La contraseña debe tener al menos 6 caracteres.', 'err'); return; }
-  if(!tieneAcceso){ mostrarMsg('Selecciona al menos un área de acceso.', 'err'); return; }
+  if(!tieneAcceso){ mostrarMsg('Selecciona al menos una herramienta.', 'err'); return; }
 
   var key = editando || usuario;
 
@@ -349,7 +459,7 @@ document.getElementById('btnGuardar').addEventListener('click', async function()
   var datos = {
     nombre: nombre,
     usuario: usuario,
-    categorias: cats,
+    permisos: permisos,
     fechaModificacion: firebase.database.ServerValue.TIMESTAMP
   };
   if(!editando){
@@ -382,9 +492,9 @@ function cancelarEdicion(){
   document.getElementById('fUsuario').disabled = false;
   document.getElementById('fPassword').value = '';
   document.getElementById('passHint').textContent = 'Se guarda cifrada, nunca en texto plano.';
-  marcarCategorias({});
+  marcarPermisos({});
   document.getElementById('btnCancelar').style.display = 'none';
-  document.getElementById('btnGuardar').textContent = 'Guardar usuario';
+  document.getElementById('btnGuardar').innerHTML = '<i class="ti ti-user-plus" aria-hidden="true"></i>Crear usuario';
 }
 document.getElementById('btnCancelar').addEventListener('click', cancelarEdicion);
 
@@ -396,9 +506,9 @@ function editarUsuario(key, u){
   document.getElementById('fUsuario').disabled = true;
   document.getElementById('fPassword').value = '';
   document.getElementById('passHint').textContent = 'Déjala en blanco para no cambiarla.';
-  marcarCategorias(u.categorias || {});
-  document.getElementById('btnCancelar').style.display = 'inline-block';
-  document.getElementById('btnGuardar').textContent = 'Guardar cambios';
+  marcarPermisos(u.permisos || {});
+  document.getElementById('btnCancelar').style.display = 'inline-flex';
+  document.getElementById('btnGuardar').innerHTML = '<i class="ti ti-device-floppy" aria-hidden="true"></i>Guardar cambios';
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
@@ -411,9 +521,6 @@ async function alternarEstado(key, activo){
   await refUsuarios.child(key).update({activo: !activo});
 }
 
-var CAT_LABELS = {};
-CATEGORIAS.forEach(function(c){ CAT_LABELS[c.key] = c.label.split(' ')[0]; });
-
 refUsuarios.on('value', function(snap){
   var data = snap.val() || {};
   var keys = Object.keys(data);
@@ -424,15 +531,19 @@ refUsuarios.on('value', function(snap){
     return (data[a].nombre||'').localeCompare(data[b].nombre||'');
   }).map(function(key){
     var u = data[key];
-    var cats = u.categorias || {};
-    var badges = Object.keys(cats).filter(function(k){ return cats[k]; }).map(function(k){
-      return '<span class="badge'+(k==='admin'?' admin':'')+'">'+(CAT_LABELS[k]||k)+'</span>';
-    }).join('') || '<span class="badge" style="background:#f1f5f9;color:#94a3b8">Sin acceso</span>';
+    var permisos = u.permisos || {};
+    var badges = SHS_CATEGORIAS.map(function(c){
+      var toolsCat = SHS_TOOLS.filter(function(t){ return t.cat===c.key; });
+      var n = toolsCat.filter(function(t){ return permisos[t.id]; }).length;
+      if(n===0) return null;
+      var texto = c.label.split(' ')[0] + (n<toolsCat.length ? ' ('+n+'/'+toolsCat.length+')' : '');
+      return '<span class="badge'+(c.key==='admin'?' admin':'')+'">'+texto+'</span>';
+    }).filter(Boolean).join('') || '<span class="badge" style="background:#f1f5f9;color:#94a3b8">Sin acceso</span>';
     var activo = u.activo !== false;
     return '<tr>'+
       '<td><div class="u-nombre">'+u.nombre+'</div><div class="u-login">@'+ (u.usuario||key) +'</div></td>'+
       '<td><div class="badges">'+badges+'</div></td>'+
-      '<td><span class="estado-toggle" onclick="alternarEstado(\''+key+'\','+activo+')"><span class="dot'+(activo?'':' off')+'"></span>'+(activo?'Activo':'Inactivo')+'</span></td>'+
+      '<td><span class="estado-toggle" onclick="alternarEstado(\''+key+'\','+activo+')"><span class="dot2'+(activo?'':' off')+'"></span>'+(activo?'Activo':'Inactivo')+'</span></td>'+
       '<td><div class="acciones">'+
         '<button class="mini-btn edit" onclick=\'editarUsuario("'+key+'", '+JSON.stringify(u).replace(/'/g,"&#39;")+')\'>Editar</button>'+
         '<button class="mini-btn del" onclick="eliminarUsuario(\''+key+'\',\''+(u.nombre||'').replace(/'/g,"\\'")+'\')">Eliminar</button>'+
