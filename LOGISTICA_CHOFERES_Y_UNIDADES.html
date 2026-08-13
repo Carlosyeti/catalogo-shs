@@ -7852,6 +7852,47 @@ function normalizarFolio(folio) {
   return m ? (m[1] + m[2]) : s;
 }
 
+// Respaldo: la API en vivo de Microsip a veces no trae documentos muy
+// recientes (quirk conocido de esa API externa). Control de Facturas ya
+// tiene esos folios cargados en Firebase (vía Excel o su propio sync),
+// así que si Microsip no lo encuentra, se busca ahí antes de rendirse.
+var _facturasFbCache = null;
+var _facturasFbCacheTime = 0;
+var _facturasFbPromesa = null;
+var FB_CACHE_TTL_MS = 10 * 60 * 1000; // 10 min (Control de Facturas se actualiza seguido)
+
+function prefetchFacturasFirebase(forzar) {
+  var ahora = Date.now();
+  if (!forzar && _facturasFbCache && (ahora - _facturasFbCacheTime) < FB_CACHE_TTL_MS) {
+    return Promise.resolve(_facturasFbCache);
+  }
+  if (_facturasFbPromesa) return _facturasFbPromesa;
+  if (!db) return Promise.resolve(_facturasFbCache || {});
+
+  _facturasFbPromesa = db.ref('control_facturas/facturas').once('value')
+    .then(function(snap) {
+      var raw = snap.val() || {};
+      var idx = {};
+      Object.keys(raw).forEach(function(folio) {
+        var f = raw[folio];
+        if (!f) return;
+        idx[normalizarFolio(folio)] = {
+          folio: folio, cliente: f.cliente, fecha: f.fecha, importe_neto: f.total
+        };
+      });
+      _facturasFbCache = idx;
+      _facturasFbCacheTime = Date.now();
+      _facturasFbPromesa = null;
+      return idx;
+    })
+    .catch(function(err) {
+      console.warn('Control de Facturas: no se pudo precargar —', err.message);
+      _facturasFbPromesa = null;
+      return _facturasFbCache || {};
+    });
+  return _facturasFbPromesa;
+}
+
 function prefetchMicrosipDocumentos(forzar) {
   var ahora = Date.now();
   if (!forzar && _msDocsCache && (ahora - _msDocsCacheTime) < MS_CACHE_TTL_MS) {
@@ -7903,12 +7944,20 @@ function conectarFolioMicrosip(inpFolio, getClienteInput) {
     if (v.length < 3) { info.textContent = ''; return; }
     info.style.color = '#888';
     info.textContent = 'Buscando en Microsip...';
+    var clave = normalizarFolio(v);
     prefetchMicrosipDocumentos().then(function(idx) {
-      var doc = idx[normalizarFolio(v)];
-      if (doc) {
+      var doc = idx[clave];
+      if (doc) return { doc: doc, origen: 'Microsip' };
+      return prefetchFacturasFirebase().then(function(idxFb) {
+        var docFb = idxFb[clave];
+        return docFb ? { doc: docFb, origen: 'Control de Facturas' } : null;
+      });
+    }).then(function(resultado) {
+      if (resultado) {
+        var doc = resultado.doc;
         info.style.color = '#1b7a3d';
         var imp = (doc.importe_neto != null) ? ' &middot; $' + Number(doc.importe_neto).toLocaleString('es-MX', {minimumFractionDigits:2}) : '';
-        info.innerHTML = '&#10003; ' + doc.cliente + imp + (doc.fecha ? ' &middot; ' + doc.fecha : '');
+        info.innerHTML = '&#10003; ' + doc.cliente + imp + (doc.fecha ? ' &middot; ' + doc.fecha : '') + ' &middot; <span style="opacity:.6">(' + resultado.origen + ')</span>';
         var inpCliente = getClienteInput && getClienteInput();
         if (inpCliente && (!inpCliente.value.trim() || inpCliente.dataset.msAuto === '1')) {
           inpCliente.value = doc.cliente;
@@ -7916,7 +7965,7 @@ function conectarFolioMicrosip(inpFolio, getClienteInput) {
         }
       } else {
         info.style.color = '#b26a00';
-        info.innerHTML = '&#9888; Folio no encontrado en Microsip (verifica o captura el cliente manualmente)';
+        info.innerHTML = '&#9888; Folio no encontrado en Microsip ni en Control de Facturas (verifica o captura el cliente manualmente)';
       }
     });
   }
