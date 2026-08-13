@@ -7843,6 +7843,15 @@ var _msDocsCacheTime = 0;
 var _msDocsPromesa = null;
 var MS_CACHE_TTL_MS = 4 * 60 * 60 * 1000; // 4 horas (las facturas/remisiones viejas casi no cambian)
 
+// Normaliza un folio quitando ceros a la izquierda de la parte numérica
+// (ej. "A81825" y "A00081825" quedan como "A81825"), para que el chofer
+// pueda capturar el folio sin tener que escribir los ceros de relleno.
+function normalizarFolio(folio) {
+  var s = String(folio || '').trim().toUpperCase();
+  var m = s.match(/^([A-Z]*)0*(\d+)$/);
+  return m ? (m[1] + m[2]) : s;
+}
+
 function prefetchMicrosipDocumentos(forzar) {
   var ahora = Date.now();
   if (!forzar && _msDocsCache && (ahora - _msDocsCacheTime) < MS_CACHE_TTL_MS) {
@@ -7864,7 +7873,7 @@ function prefetchMicrosipDocumentos(forzar) {
     .then(function(data) {
       var idx = {};
       (data.items || []).forEach(function(doc) {
-        if (doc && doc.folio) idx[String(doc.folio).trim().toUpperCase()] = doc;
+        if (doc && doc.folio) idx[normalizarFolio(doc.folio)] = doc;
       });
       _msDocsCache = idx;
       _msDocsCacheTime = Date.now();
@@ -7895,7 +7904,7 @@ function conectarFolioMicrosip(inpFolio, getClienteInput) {
     info.style.color = '#888';
     info.textContent = 'Buscando en Microsip...';
     prefetchMicrosipDocumentos().then(function(idx) {
-      var doc = idx[v];
+      var doc = idx[normalizarFolio(v)];
       if (doc) {
         info.style.color = '#1b7a3d';
         var imp = (doc.importe_neto != null) ? ' &middot; $' + Number(doc.importe_neto).toLocaleString('es-MX', {minimumFractionDigits:2}) : '';
