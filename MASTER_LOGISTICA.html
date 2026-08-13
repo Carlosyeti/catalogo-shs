@@ -8,6 +8,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
 
 <style>
 :root {
@@ -29,49 +30,74 @@
 }
 
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-.header,.header *{color:#fff}
+body{font-family:'Barlow',sans-serif;background:#F7F5F0;color:var(--text);min-height:100vh;padding-left:64px}
+
+/* ── SHELL: sidebar + encabezado (igual que el resto del sitio) ── */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:64px;background:#173F35;display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:6px;z-index:300;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.sb-logo{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.12);color:white;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;margin-bottom:22px}
+.sb-btn{width:40px;height:40px;border-radius:10px;background:none;border:none;color:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer;transition:.15s;text-decoration:none}
+.sb-btn:hover{background:rgba(255,255,255,.08);color:white}
+.sb-btn.active{background:rgba(255,255,255,.14);color:white}
+.sb-spacer{flex:1}
+.sb-logout{width:40px;height:40px;border-radius:10px;background:none;border:none;color:rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer;margin-top:auto;margin-bottom:4px}
+.sb-logout:hover{background:rgba(255,80,80,.14);color:#ffb4b4}
+.sidebar-inner{display:flex;flex-direction:column;align-items:center;height:100%;width:100%}
+.crumb{display:flex;align-items:center;gap:8px;padding:18px 28px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.brand-logo{font-size:16px;font-weight:800;color:#1e4bcc;letter-spacing:-.01em}
+.brand-logo span{color:#7ac143;margin-left:1px}
+.crumb a{font-size:13px;color:#5B6B64;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:4px}
+.crumb a:hover{color:#173F35}
+.crumb .sep{color:#c9c6ba}
+.top-right{display:flex;align-items:center;gap:12px}
+.icon-btn{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);background:white;display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:17px;cursor:pointer;position:relative}
+.icon-btn .dot{position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:#e24b4a}
+.user-chip{display:flex;align-items:center;gap:9px;background:white;border:1px solid var(--border);border-radius:24px;padding:5px 12px 5px 5px}
+.user-avatar{width:28px;height:28px;border-radius:50%;background:#173F35;color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:-apple-system,sans-serif}
+.user-chip span{font-size:13px;font-weight:600;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.status-pill{background:white;border:1px solid var(--border);border-radius:20px;padding:7px 14px;font-weight:600;font-size:12.5px;display:inline-flex;align-items:center}
 
 /* HEADER */
-.header{background:#0d1b2a;border-bottom:1px solid #1e2d42;padding:0 28px;height:62px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header{background:transparent;border-bottom:none;padding:8px 28px 0;height:auto;display:flex;align-items:flex-start;justify-content:space-between;position:static}
+.header,.header *{color:var(--text)}
 .brand{display:flex;align-items:center;gap:12px}
-.brand-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--blue),var(--teal));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px}
-.brand h1{font-family:'Barlow Condensed',sans-serif;font-size:21px;font-weight:800;letter-spacing:.3px}
-.brand span{font-size:11px;color:var(--text2);display:block;margin-top:-2px}
-.conn-dot{width:9px;height:9px;border-radius:50%;background:#888;display:inline-block;margin-right:5px;transition:background .4s}
-.conn-dot.on{background:var(--green)}
-.hdr-right{display:flex;align-items:center;gap:16px;font-size:12px;color:var(--text2)}
-.hdr-date{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:7px;padding:5px 12px;font-size:12px;color:#fff}
+.brand-icon{width:40px;height:40px;background:#E1F5EE;color:#0F6E56;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:19px}
+.brand h1{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:22px;font-weight:700;letter-spacing:-.01em}
+.brand span{font-size:13px;color:var(--text2);display:block;margin-top:3px}
+.conn-dot{width:8px;height:8px;border-radius:50%;background:#cbd5c9;display:inline-block;margin-right:6px;transition:background .4s}
+.conn-dot.on{background:#1F7A4D}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.hdr-date{background:white;border:1px solid var(--border);border-radius:7px;padding:7px 12px;font-size:12.5px;color:var(--text)}
 
 /* TABS */
-.tabs{background:#ffffff;border-bottom:2px solid var(--border);display:flex;padding:0 28px;gap:0;overflow-x:auto}
-.tab-btn{padding:14px 22px;font-family:'Barlow',sans-serif;font-size:13px;font-weight:700;border:none;background:transparent;cursor:pointer;color:var(--text2);border-bottom:3px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:all .2s;text-transform:uppercase;letter-spacing:.3px}
-.tab-btn.active{color:#1565c0;border-bottom-color:#1565c0}
-.tab-btn:hover:not(.active){color:#1a2332}
+.tabs{background:transparent;border-bottom:none;display:flex;padding:14px 28px 16px;gap:6px;overflow-x:auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.tab-btn{padding:9px 16px;font-family:inherit;font-size:12.5px;font-weight:600;border:1px solid var(--border);background:white;border-radius:22px;cursor:pointer;color:var(--text2);margin-bottom:0;white-space:nowrap;transition:all .15s;text-transform:none;letter-spacing:0}
+.tab-btn.active{color:#fff;background:#173F35;border-color:#173F35}
+.tab-btn:hover:not(.active){border-color:#173F35;color:var(--text)}
 
 /* LAYOUT */
-.container{max-width:1300px;margin:0 auto;padding:28px 20px}
+.container{max-width:1300px;margin:0 auto;padding:0 28px 60px}
 .section{display:none}.section.active{display:block}
 
 /* FILTER BAR */
-.filter-bar{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-bottom:24px}
+.filter-bar{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 18px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:18px;box-shadow:none}
 .filter-bar label{font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);letter-spacing:.4px;display:block;margin-bottom:4px}
 .filter-bar input,.filter-bar select{background:#fff;border:1.5px solid var(--border);border-radius:7px;padding:8px 12px;font-family:'Barlow',sans-serif;font-size:13px;color:var(--text);outline:none;min-width:130px}
 .filter-bar input:focus,.filter-bar select:focus{border-color:var(--blue)}
 
 /* STAT CARDS */
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px}
-.kpi-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;box-shadow:var(--shadow);position:relative;overflow:hidden}
-.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
-.kpi-blue::before{background:var(--blue)}
-.kpi-teal::before{background:var(--teal)}
-.kpi-amber::before{background:var(--amber)}
-.kpi-green::before{background:var(--green)}
-.kpi-red::before{background:var(--red)}
-.kpi-purple::before{background:var(--purple)}
-.kpi-num{font-family:'Barlow Condensed',sans-serif;font-size:38px;font-weight:800;line-height:1}
-.kpi-label{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--text2);margin-top:4px;font-weight:600}
-.kpi-icon{position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:28px;opacity:.15}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-bottom:20px}
+.kpi-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;box-shadow:none;position:relative;overflow:visible;display:flex;align-items:center;gap:12px}
+.kpi-card::before{display:none}
+.kpi-card .s-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.kpi-blue .s-icon{background:#E6F1FB;color:var(--blue)}
+.kpi-teal .s-icon{background:#E1F5EE;color:var(--teal)}
+.kpi-amber .s-icon{background:#FAEEDA;color:#BA7517}
+.kpi-green .s-icon{background:#EAF3DE;color:var(--green)}
+.kpi-red .s-icon{background:#FCEBEB;color:var(--red)}
+.kpi-purple .s-icon{background:#EEEDFE;color:var(--purple)}
+.kpi-num{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:19px;font-weight:700;line-height:1;color:var(--text)}
+.kpi-label{font-size:12px;text-transform:none;letter-spacing:0;color:var(--text2);margin-top:2px;font-weight:400;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.kpi-icon{display:none}
 
 /* CHARTS GRID */
 .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
@@ -114,6 +140,7 @@ tr:hover td{background:#f7f9fc}
 .btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:#2563eb}
 .btn-teal{background:var(--teal);color:#fff}.btn-teal:hover{background:#0d9488}
 .btn-outline{background:transparent;color:var(--text2);border:1.5px solid var(--border)}.btn-outline:hover{border-color:var(--blue);color:var(--blue)}
+.btn-shs{background:#173F35;color:#fff}.btn-shs:hover{background:#0F2E26}
 .btn-sm{padding:6px 12px;font-size:12px}
 .btn-group{display:flex;gap:10px;flex-wrap:wrap}
 
@@ -175,29 +202,64 @@ tr:hover td{background:#f7f9fc}
 </head>
 <body>
 <script src="auth.js"></script>
-<script>shsRequireAccess('master_logistica');</script>
+<script>window.SHS_CUSTOM_SHELL = true; var session = shsRequireAccess('master_logistica');</script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  document.getElementById('userNombre').textContent = session.nombre;
+  document.getElementById('userAvatar').textContent = session.nombre.trim().charAt(0).toUpperCase();
+  document.getElementById('btnLogout').addEventListener('click', shsLogout);
+});
+</script>
+
+<nav class="sidebar">
+  <div class="sidebar-inner">
+    <div class="sb-logo">SHS</div>
+    <a class="sb-btn" href="panel.html" title="Inicio"><i class="ti ti-home" aria-hidden="true"></i></a>
+    <a class="sb-btn active" href="panel.html" title="Panel"><i class="ti ti-route" aria-hidden="true"></i></a>
+    <div class="sb-spacer"></div>
+    <button class="sb-logout" id="btnLogout" title="Cerrar sesión"><i class="ti ti-logout" aria-hidden="true"></i></button>
+  </div>
+</nav>
+
+<div class="crumb">
+  <span class="brand-logo">SHS<span>&#10003;</span></span>
+  <span class="sep">|</span>
+  <a href="panel.html"><i class="ti ti-arrow-left" aria-hidden="true"></i> Volver al panel</a>
+</div>
 
 <!-- HEADER -->
 <div class="header">
   <div class="brand">
-    <div class="brand-icon">📊</div>
+    <div class="brand-icon"><i class="ti ti-chart-bar" aria-hidden="true"></i></div>
     <div>
-      <h1>Master – Análisis de Rutas</h1>
+      <h1>Master &middot; Análisis de rutas</h1>
       <span>Surtidora de Higiénicos y Servicios</span>
     </div>
   </div>
   <div class="hdr-right">
-    <span><span class="conn-dot" id="conn-dot"></span><span id="conn-text">Conectando…</span></span>
-    <input type="date" class="hdr-date" id="rng-desde">
-    <input type="date" class="hdr-date" id="rng-hasta">
-    <button class="btn btn-outline btn-sm" onclick="aplicarFiltros()">🔍 Filtrar</button>
-    <button class="btn btn-outline btn-sm" onclick="toggleDebug()" style="background:#1e293b;color:#94a3b8;border-color:#334155">🪣 Debug</button>
-    <button class="btn btn-outline btn-sm" onclick="resetFiltros()">↺ Todo</button>
+    <button class="icon-btn" title="Ayuda"><i class="ti ti-help" aria-hidden="true"></i></button>
+    <button class="icon-btn" title="Notificaciones"><span class="dot"></span><i class="ti ti-bell" aria-hidden="true"></i></button>
+    <div class="user-chip">
+      <div class="user-avatar" id="userAvatar">?</div>
+      <span id="userNombre">…</span>
+    </div>
+    <div class="status-pill"><span class="conn-dot" id="conn-dot"></span><span id="conn-text">Conectando…</span></div>
+  </div>
+</div>
+
+<div class="container" style="padding-top:14px;padding-bottom:0">
+  <div class="filter-bar">
+    <div><label>Periodo</label><input type="date" class="hdr-date" id="rng-desde"></div>
+    <div style="align-self:center;padding-bottom:8px;color:var(--text2)"><i class="ti ti-arrow-right" aria-hidden="true"></i></div>
+    <div><label>&nbsp;</label><input type="date" class="hdr-date" id="rng-hasta"></div>
+    <button class="btn btn-shs" onclick="aplicarFiltros()"><i class="ti ti-filter" aria-hidden="true"></i> Aplicar filtros</button>
+    <button class="btn btn-outline" onclick="resetFiltros()">Ver todo</button>
+    <button class="btn btn-outline btn-sm" onclick="toggleDebug()" style="background:#1e293b;color:#94a3b8;border-color:#334155;margin-left:auto">🪣 Debug</button>
   </div>
 </div>
 
 <!-- ALERTA RUTAS SIN CONCLUIR -->
-<div id="alerta-rutas-banner" style="display:none;background:#fff3cd;border-bottom:2px solid #ffc107;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+<div id="alerta-rutas-banner" style="display:none;background:#FAEEDA;border:1px solid #f0d9ae;border-radius:12px;margin:14px 28px 0;padding:12px 18px;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
   <div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:#856404">
     <span style="font-size:18px">&#x1F6A8;</span>
     <span id="alerta-rutas-texto">Hay rutas activas con mas de 8 horas sin concluir</span>
@@ -746,11 +808,16 @@ function renderKpisOverview() {
     ${kpiCard('teal',  bidonesTotal,           'Bidones Recolectados', '🫧')}
   `;
 }
+var KPI_ICONS = {
+  'Rutas Totales':'ti-route', 'Rutas Concluidas':'ti-circle-check', 'En Ruta Ahora':'ti-truck',
+  'Paradas Totales':'ti-map-pin', 'Folios Registrados':'ti-file-invoice', 'Km Totales':'ti-road',
+  'Tasa de Conclusión':'ti-chart-donut', 'Bidones Recolectados':'ti-package'
+};
 function kpiCard(color, val, label, icon) {
+  var ic = KPI_ICONS[label] || 'ti-chart-bar';
   return `<div class="kpi-card kpi-${color}">
-    <div class="kpi-num">${val}</div>
-    <div class="kpi-label">${label}</div>
-    <div class="kpi-icon">${icon}</div>
+    <div class="s-icon"><i class="ti ${ic}" aria-hidden="true"></i></div>
+    <div><div class="kpi-num">${val}</div><div class="kpi-label">${label}</div></div>
   </div>`;
 }
 
