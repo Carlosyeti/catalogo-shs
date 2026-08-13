@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Calendario de Compras SHS</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
 <style>
   :root {
     --bg: #F7F8FA;
@@ -27,32 +28,56 @@
     --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 13px; }
+  body { font-family: var(--font); background: #F7F5F0; color: var(--text); font-size: 13px; padding-left: 64px; }
+
+  /* ── SHELL: sidebar + encabezado (igual que el resto del sitio) ── */
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:64px;background:#173F35;display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:6px;z-index:300}
+  .sb-logo{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.12);color:white;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;margin-bottom:22px}
+  .sb-btn{width:40px;height:40px;border-radius:10px;background:none;border:none;color:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer;transition:.15s;text-decoration:none}
+  .sb-btn:hover{background:rgba(255,255,255,.08);color:white}
+  .sb-btn.active{background:rgba(255,255,255,.14);color:white}
+  .sb-spacer{flex:1}
+  .sb-logout{width:40px;height:40px;border-radius:10px;background:none;border:none;color:rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer;margin-top:auto;margin-bottom:4px}
+  .sb-logout:hover{background:rgba(255,80,80,.14);color:#ffb4b4}
+  .sidebar-inner{display:flex;flex-direction:column;align-items:center;height:100%;width:100%}
+  .crumb{display:flex;align-items:center;gap:8px;padding:18px 20px 0}
+  .brand-logo{font-size:16px;font-weight:800;color:#1e4bcc;letter-spacing:-.01em;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+  .brand-logo span{color:#7ac143;margin-left:1px}
+  .crumb a{font-size:13px;color:#5B6B64;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+  .crumb a:hover{color:#173F35}
+  .crumb .sep{color:#c9c6ba}
 
   /* ── HEADER ── */
   header {
-    background: var(--accent);
-    color: #fff;
-    padding: 14px 20px;
+    background: transparent;
+    color: var(--text);
+    padding: 8px 20px 0;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
+    font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   }
-  header h1 { font-size: 16px; font-weight: 700; letter-spacing: .3px; }
-  header span { font-size: 11px; opacity: .75; }
+  header h1 { font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
+  header span { font-size: 13px; color: var(--text-muted); opacity: 1; }
   #statusDot { width: 8px; height: 8px; border-radius: 50%; background: #F59E0B; display: inline-block; margin-right: 5px; }
   #statusDot.ok { background: #34D399; }
+  .status-pill{background:white;border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-weight:600}
+  .icon-btn{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);background:white;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:17px;cursor:pointer;position:relative}
+  .icon-btn .dot{position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:#e24b4a}
+  .user-chip{display:flex;align-items:center;gap:9px;background:white;border:1px solid var(--border);border-radius:24px;padding:5px 12px 5px 5px}
+  .user-avatar{width:28px;height:28px;border-radius:50%;background:#173F35;color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+  .user-chip span{font-size:13px;font-weight:600}
 
   /* ── TABS ── */
-  nav.tabs { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; }
+  nav.tabs { background: transparent; border-bottom: none; display: flex; gap:6px; padding: 6px 20px 16px; flex-wrap:wrap; font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
   nav.tabs button {
-    padding: 11px 20px; border: none; background: none; cursor: pointer;
-    font-size: 13px; color: var(--text-muted); font-weight: 500; border-bottom: 2px solid transparent;
+    padding: 9px 16px; border: 1px solid var(--border); background: white; cursor: pointer;
+    font-size: 12.5px; color: var(--text-muted); font-weight: 600; border-radius: 22px;
     transition: all .15s;
   }
-  nav.tabs button.active { color: var(--accent); border-bottom-color: var(--accent); }
-  nav.tabs button:hover { color: var(--text); }
+  nav.tabs button.active { color: #fff; background: #173F35; border-color: #173F35; }
+  nav.tabs button:hover:not(.active) { border-color: #173F35; color: var(--text); }
 
   /* ── PANELS ── */
   .panel { display: none; padding: 16px 20px; }
@@ -221,7 +246,30 @@
 </head>
 <body>
 <script src="auth.js"></script>
-<script>shsRequireAccess('calendario_compras');</script>
+<script>window.SHS_CUSTOM_SHELL = true; var session = shsRequireAccess('calendario_compras');</script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  document.getElementById('userNombre').textContent = session.nombre;
+  document.getElementById('userAvatar').textContent = session.nombre.trim().charAt(0).toUpperCase();
+  document.getElementById('btnLogout').addEventListener('click', shsLogout);
+});
+</script>
+
+<nav class="sidebar">
+  <div class="sidebar-inner">
+    <div class="sb-logo">SHS</div>
+    <a class="sb-btn" href="panel.html" title="Inicio"><i class="ti ti-home" aria-hidden="true"></i></a>
+    <a class="sb-btn active" href="panel.html" title="Panel"><i class="ti ti-calendar" aria-hidden="true"></i></a>
+    <div class="sb-spacer"></div>
+    <button class="sb-logout" id="btnLogout" title="Cerrar sesión"><i class="ti ti-logout" aria-hidden="true"></i></button>
+  </div>
+</nav>
+
+<div class="crumb">
+  <span class="brand-logo">SHS<span>&#10003;</span></span>
+  <span class="sep">|</span>
+  <a href="panel.html"><i class="ti ti-arrow-left" aria-hidden="true"></i> Volver al panel</a>
+</div>
 
 <!-- FIREBASE -->
 <script type="module">
@@ -254,11 +302,21 @@ document.dispatchEvent(new Event('firebaseReady'));
 
 <header>
   <div>
-    <h1>📦 Calendario de Compras SHS</h1>
+    <h1>Calendario de compras SHS</h1>
     <span>Gestión de órdenes y comportamiento de proveedores</span>
   </div>
-  <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.8)">
-    <span id="statusDot"></span><span id="statusText">Conectando...</span>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="icon-btn" title="Ayuda"><i class="ti ti-help" aria-hidden="true"></i></button>
+      <button class="icon-btn" title="Notificaciones"><span class="dot"></span><i class="ti ti-bell" aria-hidden="true"></i></button>
+      <div class="user-chip">
+        <div class="user-avatar" id="userAvatar">?</div>
+        <span id="userNombre">…</span>
+      </div>
+    </div>
+    <div class="status-pill" style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-muted)">
+      <span id="statusDot"></span><span id="statusText">Conectando...</span>
+    </div>
   </div>
 </header>
 
