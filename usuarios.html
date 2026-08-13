@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Usuarios y permisos — SHS</title>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;min-height:100vh;padding:24px}
+.wrap{max-width:920px;margin:0 auto}
+h1{font-size:22px;color:#1a1a2e;font-weight:700;margin-bottom:4px}
+.subtitle{color:#64748b;font-size:14px;margin-bottom:24px}
+.card{background:white;border-radius:16px;padding:28px;box-shadow:0 4px 24px rgba(0,0,0,0.06);margin-bottom:20px}
+.card h2{font-size:16px;font-weight:700;color:#1e4bcc;margin-bottom:16px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12.5px;font-weight:700;color:#475569;margin-bottom:5px}
+.field input{width:100%;padding:11px 13px;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Segoe UI',sans-serif;outline:none;transition:border-color .2s}
+.field input:focus{border-color:#1e4bcc}
+.field .hint{font-size:11.5px;color:#94a3b8;margin-top:4px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.cats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
+.cat-opt{display:flex;align-items:flex-start;gap:10px;padding:12px;border:2px solid #e2e8f0;border-radius:10px;cursor:pointer;transition:all .15s}
+.cat-opt:hover{border-color:#c7d5f0}
+.cat-opt.checked{border-color:#1e4bcc;background:#eff6ff}
+.cat-opt input{width:16px;height:16px;margin-top:2px;accent-color:#1e4bcc;flex-shrink:0}
+.cat-opt-body{min-width:0}
+.cat-opt-title{font-size:13px;font-weight:700;color:#1a1a2e}
+.cat-opt-tools{font-size:11px;color:#64748b;margin-top:2px;line-height:1.5}
+.templates{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.tpl-btn{font-size:11.5px;font-weight:700;color:#1e4bcc;background:#eff6ff;border:1px solid #dbeafe;border-radius:20px;padding:6px 12px;cursor:pointer;transition:all .15s}
+.tpl-btn:hover{background:#dbeafe}
+.btn{padding:12px 22px;border-radius:10px;border:none;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;background:#1e4bcc;color:white}
+.btn:hover{background:#163799}
+.btn.secondary{background:#f1f5f9;color:#475569}
+.btn.secondary:hover{background:#e2e8f0}
+.btn-row{display:flex;gap:10px;margin-top:6px}
+.msg{margin-top:14px;padding:12px 14px;border-radius:10px;font-size:13px;display:none}
+.msg.ok{background:#f0fdf4;border:1px solid #86efac;color:#166534;display:block}
+.msg.err{background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;display:block}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:#94a3b8;padding:8px 10px;border-bottom:2px solid #f1f5f9}
+td{padding:10px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+.u-nombre{font-weight:700;color:#1a1a2e}
+.u-login{color:#64748b;font-size:12px}
+.badges{display:flex;flex-wrap:wrap;gap:4px}
+.badge{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:6px;background:#eff6ff;color:#1e4bcc;white-space:nowrap}
+.badge.admin{background:#fef3c7;color:#92400e}
+.estado-toggle{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;font-weight:700}
+.dot{width:8px;height:8px;border-radius:50%;background:#16a34a}
+.dot.off{background:#cbd5e1}
+.acciones{display:flex;gap:6px}
+.mini-btn{font-size:12px;font-weight:700;border:none;border-radius:7px;padding:6px 11px;cursor:pointer;transition:all .15s}
+.mini-btn.edit{background:#eff6ff;color:#1e4bcc}
+.mini-btn.edit:hover{background:#dbeafe}
+.mini-btn.del{background:#fef2f2;color:#dc2626}
+.mini-btn.del:hover{background:#fca5a5}
+.empty{text-align:center;color:#94a3b8;font-size:13px;padding:24px 0}
+
+/* LOGIN */
+.login-overlay{position:fixed;inset:0;background:#f0f4f8;display:flex;align-items:center;justify-content:center;z-index:9999}
+.login-box{background:white;border-radius:16px;padding:40px 32px;max-width:360px;width:90%;box-shadow:0 4px 24px rgba(0,0,0,0.10);text-align:center}
+.login-logo{font-size:28px;font-weight:900;color:#1e4bcc;margin-bottom:4px}
+.login-logo span{color:#7ac143}
+.login-sub{color:#64748b;font-size:13px;margin-bottom:28px}
+.login-box input{width:100%;padding:13px 16px;border:2px solid #e2e8f0;border-radius:10px;font-size:15px;font-family:'Segoe UI',sans-serif;outline:none;text-align:center;letter-spacing:2px;transition:border-color 0.2s;margin-bottom:12px}
+.login-box input:focus{border-color:#1e4bcc}
+.login-btn{width:100%;padding:13px;border-radius:10px;border:none;font-size:15px;font-weight:700;cursor:pointer;background:#1e4bcc;color:white;transition:background 0.2s}
+.login-btn:hover{background:#163799}
+.login-error{color:#dc2626;font-size:13px;font-weight:600;margin-top:10px;display:none}
+
+@media(max-width:640px){.row2,.cats{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN OVERLAY -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div class="login-logo">SHS<span>✓</span></div>
+    <div class="login-sub">Usuarios y permisos</div>
+    <input type="password" id="loginInput" placeholder="Contraseña" onkeydown="if(event.key==='Enter') verificarLogin()">
+    <button class="login-btn" onclick="verificarLogin()">Entrar</button>
+    <div class="login-error" id="loginError">Contraseña incorrecta</div>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>Usuarios y permisos</h1>
+  <p class="subtitle">Crea usuarios y decide qué área de herramientas puede ver cada quien</p>
+
+  <div class="card">
+    <h2 id="formTitulo">Nuevo usuario</h2>
+
+    <div class="row2">
+      <div class="field">
+        <label>Nombre completo</label>
+        <input type="text" id="fNombre" placeholder="Ej. Carmen Lorenzo">
+      </div>
+      <div class="field">
+        <label>Usuario (para entrar)</label>
+        <input type="text" id="fUsuario" placeholder="Ej. carmen">
+        <div class="hint">Es lo que la persona escribe para entrar. Espacios, acentos y puntos se convierten en guion.</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Contraseña</label>
+      <input type="password" id="fPassword" placeholder="Mínimo 6 caracteres">
+      <div class="hint" id="passHint">Se guarda cifrada, nunca en texto plano.</div>
+    </div>
+
+    <div class="field">
+      <label>Acceso por área</label>
+      <div class="templates">
+        <button type="button" class="tpl-btn" data-tpl="admin">Administrador (todo)</button>
+        <button type="button" class="tpl-btn" data-tpl="ventas">Solo Ventas</button>
+        <button type="button" class="tpl-btn" data-tpl="finanzas">Solo Cobranza</button>
+        <button type="button" class="tpl-btn" data-tpl="logistica">Solo Logística</button>
+        <button type="button" class="tpl-btn" data-tpl="rrhh">Solo RRHH</button>
+        <button type="button" class="tpl-btn" data-tpl="ninguno">Limpiar</button>
+      </div>
+      <div class="cats" id="catOpts"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btnGuardar">Guardar usuario</button>
+      <button class="btn secondary" id="btnCancelar" style="display:none">Cancelar edición</button>
+    </div>
+    <div class="msg" id="formMsg"></div>
+  </div>
+
+  <div class="card">
+    <h2>Usuarios (<span id="totalUsuarios">0</span>)</h2>
+    <table>
+      <thead>
+        <tr><th>Usuario</th><th>Acceso</th><th>Estado</th><th></th></tr>
+      </thead>
+      <tbody id="tablaUsuarios"></tbody>
+    </table>
+    <div class="empty" id="emptyMsg" style="display:none">Todavía no hay usuarios registrados.</div>
+  </div>
+</div>
+
+<script>
+// ── LOGIN (mismo candado que el panel de Administración) ──
+var PASS = 'SHS2026';
+function verificarLogin() {
+  var input = document.getElementById('loginInput').value;
+  if (input === PASS) {
+    sessionStorage.setItem('shs_admin_ok', '1');
+    document.getElementById('loginOverlay').style.display = 'none';
+  } else {
+    var err = document.getElementById('loginError');
+    err.style.display = 'block';
+    document.getElementById('loginInput').value = '';
+    setTimeout(function(){ err.style.display = 'none'; }, 2000);
+  }
+}
+(function() {
+  if (sessionStorage.getItem('shs_admin_ok') === '1') {
+    document.getElementById('loginOverlay').style.display = 'none';
+  }
+})();
+
+// ── FIREBASE (mismo proyecto que Facturas / Remisiones / Logística) ──
+var firebaseConfig = {
+  apiKey: "AIzaSyDGBgicmvOge196PiSgmIHhseQUGMiko-E",
+  authDomain: "surtidora-de-higienicos.firebaseapp.com",
+  databaseURL: "https://surtidora-de-higienicos-default-rtdb.firebaseio.com",
+  projectId: "surtidora-de-higienicos",
+  appId: "1:232648877023:web:9e8a4a743b68f4e16d9a6a"
+};
+firebase.initializeApp(firebaseConfig);
+var db = firebase.database();
+var refUsuarios = db.ref('usuarios');
+
+// ── HASH DE CONTRASEÑA (mismo patrón que master-financiero.html) ──
+function sha256(str) {
+  return new Promise(function(resolve) {
+    if (window.crypto && window.crypto.subtle) {
+      try {
+        window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(str))
+          .then(function(buf) {
+            resolve(Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join(''));
+          })
+          .catch(function(){ resolve(sha256sync(str)); });
+        return;
+      } catch(e) {}
+    }
+    resolve(sha256sync(str));
+  });
+}
+function sha256sync(ascii) {
+  function rr(v,a){ return(v>>>a)|(v<<(32-a)); }
+  var pow=Math.pow, max=pow(2,32);
+  var H=[],K=[],pc=0,ic={};
+  var isComposite={};
+  for(var i=2;i<64;i++){
+    if(!isComposite[i]){
+      for(var j=i*i;j<312;j+=i) isComposite[j]=true;
+    }
+  }
+  function frac(x){ return (x-Math.floor(x)); }
+  var primeIdx=0, n=2;
+  while(H.length<8){
+    if(!isComposite[n]){ H.push(Math.floor(frac(pow(n,0.5))*max)>>>0); }
+    n++;
+  }
+  n=2; isComposite={};
+  for(var i=2;i<400;i++){ if(!isComposite[i]){ for(var j=i*i;j<400;j+=i) isComposite[j]=true; } }
+  n=2; var count=0;
+  while(K.length<64){
+    if(!isComposite[n]){ K.push(Math.floor(frac(pow(n,1/3))*max)>>>0); }
+    n++;
+  }
+  ascii += '\x80';
+  var l = ascii.length/4 + 2;
+  var N = Math.ceil(l/16);
+  var M = new Array(N);
+  for(i=0;i<N;i++){
+    M[i]=new Array(16);
+    for(j=0;j<16;j++){
+      M[i][j] = (ascii.charCodeAt(i*64+j*4)<<24) | (ascii.charCodeAt(i*64+j*4+1)<<16) |
+                (ascii.charCodeAt(i*64+j*4+2)<<8) | (ascii.charCodeAt(i*64+j*4+3));
+    }
+  }
+  M[N-1][14] = Math.floor(((ascii.length-1)*8)/pow(2,32));
+  M[N-1][15] = ((ascii.length-1)*8) & 0xffffffff;
+  for(i=0;i<N;i++){
+    var W=new Array(64);
+    for(t=0;t<16;t++) W[t]=M[i][t]|0;
+    for(t=16;t<64;t++){
+      var s0=rr(W[t-15],7)^rr(W[t-15],18)^(W[t-15]>>>3);
+      var s1=rr(W[t-2],17)^rr(W[t-2],19)^(W[t-2]>>>10);
+      W[t]=(W[t-16]+s0+W[t-7]+s1)|0;
+    }
+    var a=H[0],b=H[1],c=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];
+    for(t=0;t<64;t++){
+      var S1=rr(e,6)^rr(e,11)^rr(e,25);
+      var ch=(e&f)^((~e)&g);
+      var temp1=(h+S1+ch+K[t]+W[t])|0;
+      var S0=rr(a,2)^rr(a,13)^rr(a,22);
+      var maj=(a&b)^(a&c)^(b&c);
+      var temp2=(S0+maj)|0;
+      h=g; g=f; f=e; e=(d+temp1)|0; d=c; c=b; b=a; a=(temp1+temp2)|0;
+    }
+    H[0]=(H[0]+a)|0; H[1]=(H[1]+b)|0; H[2]=(H[2]+c)|0; H[3]=(H[3]+d)|0;
+    H[4]=(H[4]+e)|0; H[5]=(H[5]+f)|0; H[6]=(H[6]+g)|0; H[7]=(H[7]+h)|0;
+  }
+  var res='';
+  for(i=0;i<8;i++) res += (H[i]>>>0).toString(16).padStart(8,'0');
+  return res;
+}
+
+// ── CATEGORÍAS (basadas en las herramientas reales del sitio) ──
+var CATEGORIAS = [
+  {key:'ventas', label:'Ventas y catálogo', tools:'Catálogo de pedidos, Tabulador de ventas, Faltantes (vendedora)'},
+  {key:'finanzas', label:'Cobranza y finanzas', tools:'Control de facturas, Control de remisiones, Gestoría de cobranza, Estados financieros, Facturas de proveedores, Calendario de compras, Captura de gastos'},
+  {key:'logistica', label:'Logística y operación', tools:'Bitácora de rutas, Master logística, Inventario, Faltantes (comprador)'},
+  {key:'rrhh', label:'Recursos humanos', tools:'Empleado del mes'},
+  {key:'admin', label:'Administración', tools:'Panel de sincronización, Usuarios y permisos'},
+];
+
+document.getElementById('catOpts').innerHTML = CATEGORIAS.map(function(c){
+  return '<label class="cat-opt" data-cat="'+c.key+'">'+
+    '<input type="checkbox" value="'+c.key+'">'+
+    '<div class="cat-opt-body"><div class="cat-opt-title">'+c.label+'</div>'+
+    '<div class="cat-opt-tools">'+c.tools+'</div></div></label>';
+}).join('');
+
+document.querySelectorAll('.cat-opt input').forEach(function(cb){
+  cb.addEventListener('change', function(){
+    cb.closest('.cat-opt').classList.toggle('checked', cb.checked);
+  });
+});
+
+var TEMPLATES = {
+  admin: ['ventas','finanzas','logistica','rrhh','admin'],
+  ventas: ['ventas'],
+  finanzas: ['finanzas'],
+  logistica: ['logistica'],
+  rrhh: ['rrhh'],
+  ninguno: []
+};
+document.querySelectorAll('.tpl-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var set = TEMPLATES[btn.dataset.tpl];
+    document.querySelectorAll('.cat-opt input').forEach(function(cb){
+      cb.checked = set.includes(cb.value);
+      cb.closest('.cat-opt').classList.toggle('checked', cb.checked);
+    });
+  });
+});
+
+function categoriasSeleccionadas(){
+  var out = {};
+  document.querySelectorAll('.cat-opt input').forEach(function(cb){ out[cb.value] = cb.checked; });
+  return out;
+}
+function marcarCategorias(cats){
+  document.querySelectorAll('.cat-opt input').forEach(function(cb){
+    cb.checked = !!(cats && cats[cb.value]);
+    cb.closest('.cat-opt').classList.toggle('checked', cb.checked);
+  });
+}
+function sanitizarUsuario(v){
+  // Firebase no permite ".", "#", "$", "[", "]" en las llaves, as\u00ed que
+  // se reemplazan por guion en vez de solo quitarlos (para que
+  // "carmen.lorenzo" siga siendo legible como "carmen-lorenzo").
+  return String(v||'').trim().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[.#$\[\]\s]/g,'-')
+    .replace(/[^a-z0-9_-]/g,'')
+    .replace(/-+/g,'-');
+}
+
+var editando = null; // key del usuario que se está editando, o null = nuevo
+
+function mostrarMsg(texto, tipo){
+  var el = document.getElementById('formMsg');
+  el.textContent = texto;
+  el.className = 'msg ' + tipo;
+  setTimeout(function(){ el.className = 'msg'; }, 3500);
+}
+
+document.getElementById('btnGuardar').addEventListener('click', async function(){
+  var nombre = document.getElementById('fNombre').value.trim();
+  var usuarioInput = document.getElementById('fUsuario').value.trim();
+  var usuario = sanitizarUsuario(usuarioInput);
+  var password = document.getElementById('fPassword').value;
+  var cats = categoriasSeleccionadas();
+  var tieneAcceso = Object.values(cats).some(Boolean);
+
+  if(!nombre || !usuarioInput){ mostrarMsg('Completa nombre y usuario.', 'err'); return; }
+  if(!usuario){ mostrarMsg('El usuario debe tener al menos una letra o número.', 'err'); return; }
+  if(!editando && !password){ mostrarMsg('La contraseña es obligatoria para un usuario nuevo.', 'err'); return; }
+  if(password && password.length < 6){ mostrarMsg('La contraseña debe tener al menos 6 caracteres.', 'err'); return; }
+  if(!tieneAcceso){ mostrarMsg('Selecciona al menos un área de acceso.', 'err'); return; }
+
+  var key = editando || usuario;
+
+  if(!editando){
+    var existe = await refUsuarios.child(key).once('value');
+    if(existe.exists()){ mostrarMsg('Ya existe un usuario con ese nombre de acceso.', 'err'); return; }
+  }
+
+  var datos = {
+    nombre: nombre,
+    usuario: usuario,
+    categorias: cats,
+    fechaModificacion: firebase.database.ServerValue.TIMESTAMP
+  };
+  if(!editando){
+    datos.fechaCreacion = firebase.database.ServerValue.TIMESTAMP;
+    datos.activo = true;
+  }
+  if(password){
+    datos.passwordHash = await sha256(password);
+  }
+
+  try{
+    if(editando){
+      await refUsuarios.child(key).update(datos);
+      mostrarMsg('Usuario actualizado.', 'ok');
+    } else {
+      await refUsuarios.child(key).set(Object.assign({activo:true, passwordHash: await sha256(password)}, datos));
+      mostrarMsg('Usuario creado.', 'ok');
+    }
+    cancelarEdicion();
+  }catch(err){
+    mostrarMsg('Error al guardar: ' + err.message, 'err');
+  }
+});
+
+function cancelarEdicion(){
+  editando = null;
+  document.getElementById('formTitulo').textContent = 'Nuevo usuario';
+  document.getElementById('fNombre').value = '';
+  document.getElementById('fUsuario').value = '';
+  document.getElementById('fUsuario').disabled = false;
+  document.getElementById('fPassword').value = '';
+  document.getElementById('passHint').textContent = 'Se guarda cifrada, nunca en texto plano.';
+  marcarCategorias({});
+  document.getElementById('btnCancelar').style.display = 'none';
+  document.getElementById('btnGuardar').textContent = 'Guardar usuario';
+}
+document.getElementById('btnCancelar').addEventListener('click', cancelarEdicion);
+
+function editarUsuario(key, u){
+  editando = key;
+  document.getElementById('formTitulo').textContent = 'Editando: ' + u.nombre;
+  document.getElementById('fNombre').value = u.nombre || '';
+  document.getElementById('fUsuario').value = u.usuario || key;
+  document.getElementById('fUsuario').disabled = true;
+  document.getElementById('fPassword').value = '';
+  document.getElementById('passHint').textContent = 'Déjala en blanco para no cambiarla.';
+  marcarCategorias(u.categorias || {});
+  document.getElementById('btnCancelar').style.display = 'inline-block';
+  document.getElementById('btnGuardar').textContent = 'Guardar cambios';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+async function eliminarUsuario(key, nombre){
+  if(!confirm('¿Eliminar al usuario "' + nombre + '"? Esta acción no se puede deshacer.')) return;
+  await refUsuarios.child(key).remove();
+}
+
+async function alternarEstado(key, activo){
+  await refUsuarios.child(key).update({activo: !activo});
+}
+
+var CAT_LABELS = {};
+CATEGORIAS.forEach(function(c){ CAT_LABELS[c.key] = c.label.split(' ')[0]; });
+
+refUsuarios.on('value', function(snap){
+  var data = snap.val() || {};
+  var keys = Object.keys(data);
+  document.getElementById('totalUsuarios').textContent = keys.length;
+  document.getElementById('emptyMsg').style.display = keys.length ? 'none' : 'block';
+
+  document.getElementById('tablaUsuarios').innerHTML = keys.sort(function(a,b){
+    return (data[a].nombre||'').localeCompare(data[b].nombre||'');
+  }).map(function(key){
+    var u = data[key];
+    var cats = u.categorias || {};
+    var badges = Object.keys(cats).filter(function(k){ return cats[k]; }).map(function(k){
+      return '<span class="badge'+(k==='admin'?' admin':'')+'">'+(CAT_LABELS[k]||k)+'</span>';
+    }).join('') || '<span class="badge" style="background:#f1f5f9;color:#94a3b8">Sin acceso</span>';
+    var activo = u.activo !== false;
+    return '<tr>'+
+      '<td><div class="u-nombre">'+u.nombre+'</div><div class="u-login">@'+ (u.usuario||key) +'</div></td>'+
+      '<td><div class="badges">'+badges+'</div></td>'+
+      '<td><span class="estado-toggle" onclick="alternarEstado(\''+key+'\','+activo+')"><span class="dot'+(activo?'':' off')+'"></span>'+(activo?'Activo':'Inactivo')+'</span></td>'+
+      '<td><div class="acciones">'+
+        '<button class="mini-btn edit" onclick=\'editarUsuario("'+key+'", '+JSON.stringify(u).replace(/'/g,"&#39;")+')\'>Editar</button>'+
+        '<button class="mini-btn del" onclick="eliminarUsuario(\''+key+'\',\''+(u.nombre||'').replace(/'/g,"\\'")+'\')">Eliminar</button>'+
+      '</div></td>'+
+    '</tr>';
+  }).join('');
+});
+</script>
+</body>
+</html>
