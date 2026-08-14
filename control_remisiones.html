@@ -726,6 +726,7 @@ function localISO(d){
 }
 function todayISO(){ return localISO(new Date()); }
 function ayerISO(){ const d = new Date(); d.setDate(d.getDate()-1); return localISO(d); }
+function hace7DiasISO(){ const d = new Date(); d.setDate(d.getDate()-7); return localISO(d); }
 // Quita ceros a la izquierda de la parte numerica del folio (A000156 -> A156)
 // para estandarizar como se guarda, sin importar si viene de Microsip, Excel o captura manual.
 function normalizarFolio(folio){
@@ -890,11 +891,13 @@ async function sincronizarConMicrosip(silencioso){
     return;
   }
   const fechaFin = todayISO();
-  // Solo se consulta desde ayer: el dedup por folio (mas abajo) ya evita
-  // duplicar remisiones viejas, y asi cada corrida deja de re-consultar todo
-  // el historial desde FECHA_MINIMA_CARGA (mas lento y expuesto a rangos
-  // viejos que a veces truenan del lado de la API de Microsip).
-  const fechaIniConsulta = ayerISO();
+  // Se consulta una semana hacia atras (no solo ayer): una remision puede
+  // llegar marcada "-C" (cancelada) varios dias despues de haberse creado,
+  // y hay que volver a verla en ese rango para poder eliminarla. El dedup
+  // por folio evita duplicar las que ya existen, asi que repetir la consulta
+  // sobre dias ya sincronizados no genera duplicados, solo permite detectar
+  // cancelaciones tardias.
+  const fechaIniConsulta = hace7DiasISO();
   try{
     const resp = await fetch(`${PROXY}?metodo=REMISIONES_MICROSIP`, {
       method: 'POST',
