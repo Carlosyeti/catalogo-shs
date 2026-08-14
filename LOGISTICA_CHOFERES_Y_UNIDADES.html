@@ -7893,6 +7893,44 @@ function prefetchFacturasFirebase(forzar) {
   return _facturasFbPromesa;
 }
 
+// Mismo respaldo que arriba pero contra Control de Remisiones, para
+// folios de remisión (prefijo "RF") que tampoco traiga Microsip.
+var _remisionesFbCache = null;
+var _remisionesFbCacheTime = 0;
+var _remisionesFbPromesa = null;
+
+function prefetchRemisionesFirebase(forzar) {
+  var ahora = Date.now();
+  if (!forzar && _remisionesFbCache && (ahora - _remisionesFbCacheTime) < FB_CACHE_TTL_MS) {
+    return Promise.resolve(_remisionesFbCache);
+  }
+  if (_remisionesFbPromesa) return _remisionesFbPromesa;
+  if (!db) return Promise.resolve(_remisionesFbCache || {});
+
+  _remisionesFbPromesa = db.ref('control_remisiones/remisiones').once('value')
+    .then(function(snap) {
+      var raw = snap.val() || {};
+      var idx = {};
+      Object.keys(raw).forEach(function(folio) {
+        var f = raw[folio];
+        if (!f) return;
+        idx[normalizarFolio(folio)] = {
+          folio: folio, cliente: f.cliente, fecha: f.fecha, importe_neto: f.total
+        };
+      });
+      _remisionesFbCache = idx;
+      _remisionesFbCacheTime = Date.now();
+      _remisionesFbPromesa = null;
+      return idx;
+    })
+    .catch(function(err) {
+      console.warn('Control de Remisiones: no se pudo precargar —', err.message);
+      _remisionesFbPromesa = null;
+      return _remisionesFbCache || {};
+    });
+  return _remisionesFbPromesa;
+}
+
 function prefetchMicrosipDocumentos(forzar) {
   var ahora = Date.now();
   if (!forzar && _msDocsCache && (ahora - _msDocsCacheTime) < MS_CACHE_TTL_MS) {
@@ -7950,7 +7988,11 @@ function conectarFolioMicrosip(inpFolio, getClienteInput) {
       if (doc) return { doc: doc, origen: 'Microsip' };
       return prefetchFacturasFirebase().then(function(idxFb) {
         var docFb = idxFb[clave];
-        return docFb ? { doc: docFb, origen: 'Control de Facturas' } : null;
+        if (docFb) return { doc: docFb, origen: 'Control de Facturas' };
+        return prefetchRemisionesFirebase().then(function(idxRem) {
+          var docRem = idxRem[clave];
+          return docRem ? { doc: docRem, origen: 'Control de Remisiones' } : null;
+        });
       });
     }).then(function(resultado) {
       if (resultado) {
@@ -7965,7 +8007,7 @@ function conectarFolioMicrosip(inpFolio, getClienteInput) {
         }
       } else {
         info.style.color = '#b26a00';
-        info.innerHTML = '&#9888; Folio no encontrado en Microsip ni en Control de Facturas (verifica o captura el cliente manualmente)';
+        info.innerHTML = '&#9888; Folio no encontrado en Microsip, Control de Facturas ni Control de Remisiones (verifica o captura el cliente manualmente)';
       }
     });
   }
