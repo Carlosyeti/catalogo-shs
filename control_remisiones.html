@@ -725,6 +725,13 @@ function localISO(d){
 }
 function todayISO(){ return localISO(new Date()); }
 function ayerISO(){ const d = new Date(); d.setDate(d.getDate()-1); return localISO(d); }
+// Quita ceros a la izquierda de la parte numerica del folio (A000156 -> A156)
+// para estandarizar como se guarda, sin importar si viene de Microsip, Excel o captura manual.
+function normalizarFolio(folio){
+  const s = String(folio||'').trim().toUpperCase();
+  const m = s.match(/^([A-Z]*)0*(\d+)$/);
+  return m ? (m[1]+m[2]) : s;
+}
 function parseMonto(v){
   // Soporta valores ya numéricos y strings formateados tipo "3,542.45" o "$3,542.45".
   if(v==null || v==='') return 0;
@@ -895,7 +902,7 @@ async function sincronizarConMicrosip(silencioso){
     const updates = {};
     let nuevas = 0;
     items.forEach(it=>{
-      const folio = String(it.folio||'').trim();
+      const folio = normalizarFolio(it.folio);
       if(!folio) return;
       if(REMISIONES[folio]) return; // ya existe, no se toca (misma regla que la carga por Excel)
       const fecha = it.fecha || todayISO();
@@ -1090,7 +1097,7 @@ function parseDiario(rows){
     const total = parseMonto(row[cols.total]);
     if(!fechaISO && neto===0 && total===0) continue;
     parsed.push({
-      folio: String(folioRaw).trim(),
+      folio: normalizarFolio(folioRaw),
       fecha: fechaISO || todayISO(),
       cliente: String(clienteRaw||'').trim(),
       importeNeto: neto,
