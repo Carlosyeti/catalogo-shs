@@ -293,6 +293,7 @@ tr:hover td{background:var(--teal-100);}
           <input type="date" id="fRemHasta">
         </div>
       </div>
+      <div class="total-strip" id="remisionesResumen"></div>
     </div>
 
     <div class="card">
@@ -724,7 +725,6 @@ function localISO(d){
   return `${y}-${m}-${day}`;
 }
 function todayISO(){ return localISO(new Date()); }
-function ayerISO(){ const d = new Date(); d.setDate(d.getDate()-1); return localISO(d); }
 function parseMonto(v){
   // Soporta valores ya numéricos y strings formateados tipo "3,542.45" o "$3,542.45".
   if(v==null || v==='') return 0;
@@ -873,11 +873,6 @@ async function sincronizarConMicrosip(silencioso){
     return;
   }
   const fechaFin = todayISO();
-  // Solo se consulta desde ayer: el dedup por folio (mas abajo) ya evita
-  // duplicar remisiones viejas, y asi cada corrida deja de re-consultar todo
-  // el historial desde FECHA_MINIMA_CARGA (mas lento y expuesto a rangos
-  // viejos que a veces truenan del lado de la API de Microsip).
-  const fechaIniConsulta = ayerISO();
   try{
     const resp = await fetch(`${PROXY}?metodo=REMISIONES_MICROSIP`, {
       method: 'POST',
@@ -885,7 +880,7 @@ async function sincronizarConMicrosip(silencioso){
       body: JSON.stringify({
         baseUrl: API_CONFIG.baseUrl,
         token: API_CONFIG.token,
-        fecha_ini: fechaIniConsulta,
+        fecha_ini: FECHA_MINIMA_CARGA,
         fecha_fin: fechaFin
       })
     });
@@ -1269,6 +1264,27 @@ function renderRemisiones(){
 
   const body = document.getElementById('remisionesBody');
   document.getElementById('remisionesEmpty').style.display = list.length? 'none':'block';
+
+  /* Resumen del filtro actual */
+  const resumen = {
+    n: list.length,
+    monto: list.reduce((s,r)=> s + (Number(r.total)||0), 0),
+    sinClas: list.filter(r=>!r.tipo).length,
+    credito: list.filter(r=>r.tipo==='credito').length,
+    contado: list.filter(r=>r.tipo==='contado').length,
+    pagadas: list.filter(r=>r.pagada).length,
+    pendientes: list.filter(r=>!r.pagada).length,
+    montoPend: list.filter(r=>!r.pagada).reduce((s,r)=> s + (Number(r.total)||0), 0)
+  };
+  document.getElementById('remisionesResumen').innerHTML = `
+    <div>Remisiones en el filtro<b>${resumen.n}</b></div>
+    <div>Monto total<b>${fmtMoney(resumen.monto)}</b></div>
+    <div>Sin clasificar<b>${resumen.sinClas}</b></div>
+    <div>Crédito<b>${resumen.credito}</b></div>
+    <div>Contado<b>${resumen.contado}</b></div>
+    <div>Pendientes de pago<b>${resumen.pendientes}</b></div>
+    <div>Pagadas<b>${resumen.pagadas}</b></div>
+    <div>Saldo pendiente<b>${fmtMoney(resumen.montoPend)}</b></div>`;
 
   body.innerHTML = list.map(r=>{
     let tipoBadge = '<span class="badge pend">Sin clasificar</span>';
