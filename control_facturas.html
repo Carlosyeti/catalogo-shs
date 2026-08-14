@@ -262,6 +262,7 @@ tr:hover td{background:var(--teal-100);}
         <div class="field"><label>Desde</label><input type="date" id="fFacDesde"></div>
         <div class="field"><label>Hasta</label><input type="date" id="fFacHasta"></div>
       </div>
+      <div class="total-strip" id="facturasResumen"></div>
     </div>
     <div class="card">
       <div class="table-wrap">
@@ -1352,6 +1353,20 @@ function renderFacturas(){
 
   const body = document.getElementById('facturasBody');
   document.getElementById('facturasEmpty').style.display = list.length? 'none':'block';
+
+  /* Resumen del filtro actual */
+  const cnt = t => list.filter(f=>f.tipo===t).length;
+  const sum = arr => arr.reduce((s,f)=> s + (Number(f.total)||0), 0);
+  document.getElementById('facturasResumen').innerHTML = `
+    <div>Facturas en el filtro<b>${list.length}</b></div>
+    <div>Monto total<b>${fmtMoney(sum(list))}</b></div>
+    <div>Sin clasificar<b>${list.filter(f=>!f.tipo).length}</b></div>
+    <div>Efectivo<b>${cnt('efectivo')}</b></div>
+    <div>Cheque<b>${cnt('cheque')}</b></div>
+    <div>Tarjeta<b>${cnt('tarjeta')}</b></div>
+    <div>Transferencia<b>${cnt('transferencia')}</b></div>
+    <div>Crédito<b>${cnt('credito')}</b></div>
+    <div>Monto sin clasificar<b>${fmtMoney(sum(list.filter(f=>!f.tipo)))}</b></div>`;
 
   body.innerHTML = list.map(f=>{
     let tipoBadge = '<span class="badge pend">Sin clasificar</span>';

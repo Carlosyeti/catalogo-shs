@@ -293,6 +293,7 @@ tr:hover td{background:var(--teal-100);}
           <input type="date" id="fRemHasta">
         </div>
       </div>
+      <div class="total-strip" id="remisionesResumen"></div>
     </div>
 
     <div class="card">
@@ -1276,6 +1277,27 @@ function renderRemisiones(){
 
   const body = document.getElementById('remisionesBody');
   document.getElementById('remisionesEmpty').style.display = list.length? 'none':'block';
+
+  /* Resumen del filtro actual */
+  const resumen = {
+    n: list.length,
+    monto: list.reduce((s,r)=> s + (Number(r.total)||0), 0),
+    sinClas: list.filter(r=>!r.tipo).length,
+    credito: list.filter(r=>r.tipo==='credito').length,
+    contado: list.filter(r=>r.tipo==='contado').length,
+    pagadas: list.filter(r=>r.pagada).length,
+    pendientes: list.filter(r=>!r.pagada).length,
+    montoPend: list.filter(r=>!r.pagada).reduce((s,r)=> s + (Number(r.total)||0), 0)
+  };
+  document.getElementById('remisionesResumen').innerHTML = `
+    <div>Remisiones en el filtro<b>${resumen.n}</b></div>
+    <div>Monto total<b>${fmtMoney(resumen.monto)}</b></div>
+    <div>Sin clasificar<b>${resumen.sinClas}</b></div>
+    <div>Crédito<b>${resumen.credito}</b></div>
+    <div>Contado<b>${resumen.contado}</b></div>
+    <div>Pendientes de pago<b>${resumen.pendientes}</b></div>
+    <div>Pagadas<b>${resumen.pagadas}</b></div>
+    <div>Saldo pendiente<b>${fmtMoney(resumen.montoPend)}</b></div>`;
 
   body.innerHTML = list.map(r=>{
     let tipoBadge = '<span class="badge pend">Sin clasificar</span>';
