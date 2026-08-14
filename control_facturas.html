@@ -262,6 +262,7 @@ tr:hover td{background:var(--teal-100);}
         <div class="field"><label>Desde</label><input type="date" id="fFacDesde"></div>
         <div class="field"><label>Hasta</label><input type="date" id="fFacHasta"></div>
       </div>
+      <div class="total-strip" id="facturasResumen"></div>
     </div>
     <div class="card">
       <div class="table-wrap">
@@ -511,7 +512,6 @@ function localISO(d){
   return `${y}-${m}-${day}`;
 }
 function todayISO(){ return localISO(new Date()); }
-function ayerISO(){ const d = new Date(); d.setDate(d.getDate()-1); return localISO(d); }
 function parseMonto(v){
   if(v==null || v==='') return 0;
   if(typeof v === 'number') return v;
@@ -724,11 +724,6 @@ async function sincronizarConMicrosip(silencioso){
     return;
   }
   const fechaFin = todayISO();
-  // Solo se consulta desde ayer: el dedup por folio (mas abajo) ya evita
-  // duplicar facturas viejas, y asi cada corrida deja de re-consultar todo
-  // el historial desde FECHA_MINIMA_CARGA (mas lento y expuesto a rangos
-  // viejos que a veces truenan del lado de la API de Microsip).
-  const fechaIniConsulta = ayerISO();
   try{
     const resp = await fetch(`${PROXY}?metodo=FACTURAS_MICROSIP`, {
       method: 'POST',
@@ -736,7 +731,7 @@ async function sincronizarConMicrosip(silencioso){
       body: JSON.stringify({
         baseUrl: API_CONFIG.baseUrl,
         token: API_CONFIG.token,
-        fecha_ini: fechaIniConsulta,
+        fecha_ini: FECHA_MINIMA_CARGA,
         fecha_fin: fechaFin
       })
     });
@@ -1345,6 +1340,20 @@ function renderFacturas(){
 
   const body = document.getElementById('facturasBody');
   document.getElementById('facturasEmpty').style.display = list.length? 'none':'block';
+
+  /* Resumen del filtro actual */
+  const cnt = t => list.filter(f=>f.tipo===t).length;
+  const sum = arr => arr.reduce((s,f)=> s + (Number(f.total)||0), 0);
+  document.getElementById('facturasResumen').innerHTML = `
+    <div>Facturas en el filtro<b>${list.length}</b></div>
+    <div>Monto total<b>${fmtMoney(sum(list))}</b></div>
+    <div>Sin clasificar<b>${list.filter(f=>!f.tipo).length}</b></div>
+    <div>Efectivo<b>${cnt('efectivo')}</b></div>
+    <div>Cheque<b>${cnt('cheque')}</b></div>
+    <div>Tarjeta<b>${cnt('tarjeta')}</b></div>
+    <div>Transferencia<b>${cnt('transferencia')}</b></div>
+    <div>Crédito<b>${cnt('credito')}</b></div>
+    <div>Monto sin clasificar<b>${fmtMoney(sum(list.filter(f=>!f.tipo)))}</b></div>`;
 
   body.innerHTML = list.map(f=>{
     let tipoBadge = '<span class="badge pend">Sin clasificar</span>';
