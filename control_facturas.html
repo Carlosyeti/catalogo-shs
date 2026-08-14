@@ -511,6 +511,7 @@ function localISO(d){
   return `${y}-${m}-${day}`;
 }
 function todayISO(){ return localISO(new Date()); }
+function ayerISO(){ const d = new Date(); d.setDate(d.getDate()-1); return localISO(d); }
 function parseMonto(v){
   if(v==null || v==='') return 0;
   if(typeof v === 'number') return v;
@@ -723,6 +724,11 @@ async function sincronizarConMicrosip(silencioso){
     return;
   }
   const fechaFin = todayISO();
+  // Solo se consulta desde ayer: el dedup por folio (mas abajo) ya evita
+  // duplicar facturas viejas, y asi cada corrida deja de re-consultar todo
+  // el historial desde FECHA_MINIMA_CARGA (mas lento y expuesto a rangos
+  // viejos que a veces truenan del lado de la API de Microsip).
+  const fechaIniConsulta = ayerISO();
   try{
     const resp = await fetch(`${PROXY}?metodo=FACTURAS_MICROSIP`, {
       method: 'POST',
@@ -730,7 +736,7 @@ async function sincronizarConMicrosip(silencioso){
       body: JSON.stringify({
         baseUrl: API_CONFIG.baseUrl,
         token: API_CONFIG.token,
-        fecha_ini: FECHA_MINIMA_CARGA,
+        fecha_ini: fechaIniConsulta,
         fecha_fin: fechaFin
       })
     });
