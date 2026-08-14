@@ -733,6 +733,15 @@ function normalizarFolio(folio){
   const m = s.match(/^([A-Z]*)0*(\d+)$/);
   return m ? (m[1]+m[2]) : s;
 }
+// La API de Microsip a veces manda el folio con un sufijo de estado:
+// "-C" (cancelada) o "-P" (normal). El sufijo nunca se guarda como parte
+// del folio -- solo indica si esa remision debe eliminarse de nuestra base.
+function extraerEstadoFolio(folioRaw){
+  const s = String(folioRaw||'').trim().toUpperCase();
+  const m = s.match(/^(.*)-([CP])$/);
+  if(!m) return {folio: normalizarFolio(s), cancelada:false};
+  return {folio: normalizarFolio(m[1]), cancelada: m[2]==='C'};
+}
 function parseMonto(v){
   // Soporta valores ya numéricos y strings formateados tipo "3,542.45" o "$3,542.45".
   if(v==null || v==='') return 0;
@@ -847,7 +856,7 @@ function renderApiSyncStatus(estado){
   if(!estado){ el.textContent = 'Aún no se ha sincronizado con la API.'; return; }
   const hora = new Date(estado.ultimo).toLocaleString('es-MX');
   if(estado.ok){
-    el.innerHTML = `✅ Última sincronización: ${hora} — ${estado.nuevas} remisión(es) nueva(s) agregada(s).`;
+    el.innerHTML = `✅ Última sincronización: ${hora} — ${estado.nuevas} remisión(es) nueva(s) agregada(s)${estado.canceladas?`, ${estado.canceladas} cancelada(s) eliminada(s)`:''}.`;
   } else {
     el.innerHTML = `<span style="color:var(--red-600);">⚠️ Falló la última sincronización (${hora}): ${estado.error} — revisa URL, token o CORS con el equipo de sistemas.</span>`;
   }
@@ -902,9 +911,14 @@ async function sincronizarConMicrosip(silencioso){
     const items = data.items || [];
     const updates = {};
     let nuevas = 0;
+    let canceladas = 0;
     items.forEach(it=>{
-      const folio = normalizarFolio(it.folio);
+      const {folio, cancelada} = extraerEstadoFolio(it.folio);
       if(!folio) return;
+      if(cancelada){
+        if(REMISIONES[folio]){ updates[folio] = null; canceladas++; }
+        return; // una remision cancelada nunca se inserta como nueva
+      }
       if(REMISIONES[folio]) return; // ya existe, no se toca (misma regla que la carga por Excel)
       const fecha = it.fecha || todayISO();
       if(fecha < FECHA_MINIMA_CARGA) return;
@@ -920,9 +934,9 @@ async function sincronizarConMicrosip(silencioso){
       };
       nuevas++;
     });
-    if(nuevas>0) await refRemisiones.update(updates);
-    await refApiSyncEstado.set({ultimo: Date.now(), ok:true, nuevas});
-    if(!silencioso) toast(`Sincronización OK — ${nuevas} remisión(es) nueva(s).`);
+    if(nuevas>0 || canceladas>0) await refRemisiones.update(updates);
+    await refApiSyncEstado.set({ultimo: Date.now(), ok:true, nuevas, canceladas});
+    if(!silencioso) toast(`Sincronización OK — ${nuevas} remisión(es) nueva(s)${canceladas?`, ${canceladas} cancelada(s) eliminada(s)`:''}.`);
   }catch(err){
     await refApiSyncEstado.set({ultimo: Date.now(), ok:false, error: err.message});
     if(!silencioso) toast('Error al sincronizar: '+err.message);
