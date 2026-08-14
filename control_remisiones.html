@@ -913,7 +913,11 @@ async function sincronizarConMicrosip(silencioso){
     let nuevas = 0;
     let canceladas = 0;
     items.forEach(it=>{
-      const {folio, cancelada} = extraerEstadoFolio(it.folio);
+      // El proxy ya limpia el folio y manda "cancelada" resuelto; se vuelve a
+      // interpretar aqui tambien por si el folio llegara crudo (compatibilidad).
+      const parsedFolio = extraerEstadoFolio(it.folio);
+      const folio = parsedFolio.folio;
+      const cancelada = it.cancelada === true || parsedFolio.cancelada;
       if(!folio) return;
       if(cancelada){
         if(REMISIONES[folio]){ updates[folio] = null; canceladas++; }

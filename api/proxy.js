@@ -54,6 +54,17 @@ export default async function handler(req, res) {
     return m ? (m[1] + m[2]) : s;
   }
 
+  // La API de remisiones a veces agrega " - C" (cancelada) o " - P" (normal)
+  // al folio. Se resuelve aqui, del lado del servidor, para que el folio que
+  // reciben TODOS los clientes (viejos o nuevos) ya venga limpio, y para que
+  // el estado de cancelada no dependa de que el navegador sepa interpretarlo.
+  function procesarFolioRemisionServidor(folioRaw) {
+    const s = String(folioRaw || '').trim().toUpperCase();
+    const m = s.match(/^(.*?)\s*-\s*([CP])$/);
+    if (!m) return { folio: normalizarFolioServidor(s), cancelada: false };
+    return { folio: normalizarFolioServidor(m[1]), cancelada: m[2] === 'C' };
+  }
+
   function toNum(v) {
     if (v === undefined || v === null || v === '' || v === 0) return 0;
     const limpio = String(v).replace(/\D/g, '');
@@ -575,7 +586,10 @@ export default async function handler(req, res) {
       const response = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
       if (!response.ok) return res.status(response.status).json({ error: 'HTTP ' + response.status + ' — revisa el token o el rango de fechas' });
       const data = await response.json();
-      if (Array.isArray(data.items)) data.items = data.items.map(it => ({ ...it, folio: normalizarFolioServidor(it.folio) }));
+      if (Array.isArray(data.items)) data.items = data.items.map(it => {
+        const { folio, cancelada } = procesarFolioRemisionServidor(it.folio);
+        return { ...it, folio, cancelada };
+      });
       return res.status(200).json(data);
     }
 
