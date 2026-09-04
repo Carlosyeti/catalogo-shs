@@ -370,7 +370,7 @@ export default async function handler(req, res) {
             Descripcion: "COMPRA ONLINE",
             MetodoPago: "Pago manual",
             EstatusPago: "Pendiente",
-            Almacen: "CEDIS COLIMA",
+            Almacen: "CEDIS VILLA DE ALVAREZ",
             CP_inv_inicial: 0,
             CP_pagos: 0,
             CP_pagos_letra: "",
