@@ -155,6 +155,7 @@ tr:hover td{background:var(--teal-100);}
   <button data-tab="credito">📇 Crédito</button>
   <button data-tab="caja">💰 Caja</button>
   <button data-tab="reportes">📊 Reportes</button>
+  <span id="versionBadge" title="Versión del archivo abierto" style="align-self:center;padding:0 14px;color:rgba(255,255,255,.55);font-size:11px;font-weight:600;white-space:nowrap;">v31-OPT</span>
 </nav>
 
 <main>
@@ -1358,6 +1359,7 @@ function renderFacturasDebounced(){
 });
 
 function renderFacturas(){
+  const _t0 = performance.now();
   const busca = document.getElementById('fFacBusca').value.trim().toLowerCase();
   const tipoF = document.getElementById('fFacTipo').value;
   const conclF = document.getElementById('fFacConcluidas').value;
@@ -1453,6 +1455,11 @@ function renderFacturas(){
       </td>
     </tr>`;
   }).join('');
+
+  /* Diagnóstico: cuánto tardó en dibujarse. Sirve para comparar entre computadoras. */
+  const _ms = Math.round(performance.now() - _t0);
+  const _badge = document.getElementById('versionBadge');
+  if(_badge) _badge.textContent = `v31-OPT · ${_ms} ms`;
 }
 
 async function clasificarFactura(folio, tipo){
