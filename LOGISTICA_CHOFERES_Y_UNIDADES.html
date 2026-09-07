@@ -220,7 +220,7 @@ tr:hover td{background:#f7f9fc}
       </div>
     </div>
     <div class="btn-group">
-      <button class="btn btn-primary" onclick="registrarBitacora()">&#x2705; Iniciar Ruta</button>
+      <button class="btn btn-primary" id="btn-iniciar-ruta" onclick="registrarBitacora()">&#x2705; Iniciar Ruta</button>
       <button class="btn btn-outline" onclick="limpiarForm()">&#x1F5D1; Limpiar</button>
     </div>
   </div>
@@ -8199,7 +8199,10 @@ function setupAC(inp, list) {
 }
 
 // ══ REGISTRAR ═════════════════════════════════════════════════
+var _registrandoBitacora = false; // evita crear bitácoras duplicadas por doble clic
+
 function registrarBitacora() {
+  if (_registrandoBitacora) return; // ya se está guardando una, ignora el clic repetido
   var rep   = document.getElementById('inp-repartidor').value;
   var uni   = document.getElementById('inp-unidad').value;
   var kmI   = parseInt(document.getElementById('inp-km-inicio').value) || 0;
@@ -8251,6 +8254,10 @@ function registrarBitacora() {
     });
   });
   if (!ok) return;
+  _registrandoBitacora = true;
+  var btnIniciar = document.getElementById('btn-iniciar-ruta');
+  if (btnIniciar) { btnIniciar.disabled = true; btnIniciar.textContent = 'Guardando...'; }
+
   var id = Date.now().toString();
   var horaI = document.getElementById('inp-hora-inicio').value;
   generarFolioBitacora(function(folioGenerado) {
@@ -8259,7 +8266,10 @@ function registrarBitacora() {
                 kmFin:null, kmRecorridos:null, notas:'' };
     _currentBitacora = obj;
     // 1. Guardar bitácora INMEDIATAMENTE (sin esperar fotos)
-    guardar(id, obj, function() {
+    guardar(id, obj, function(err) {
+      _registrandoBitacora = false;
+      if (btnIniciar) { btnIniciar.disabled = false; btnIniciar.textContent = '✅ Iniciar Ruta'; }
+      if (err) return; // el error ya se mostró dentro de guardar()
       document.getElementById('conf-folio').textContent = folioGenerado;
       document.getElementById('conf-rep').textContent = rep;
       document.getElementById('conf-uni').textContent = uni;
@@ -8317,15 +8327,15 @@ function generarFolioBitacora(cb) {
 function guardar(id, data, cb) {
   if (db) {
     db.ref('bitacoras/' + id).set(data, function(err) {
-      if (err) { alert('Error Firebase: ' + err.message); return; }
-      cb();
+      if (err) alert('Error Firebase: ' + err.message);
+      cb(err || null);
     });
   } else {
     var local = JSON.parse(localStorage.getItem('shs_bitacoras') || '{}');
     local[id] = data;
     localStorage.setItem('shs_bitacoras', JSON.stringify(local));
     _bitacoras[id] = data;
-    cb();
+    cb(null);
   }
 }
 
