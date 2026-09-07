@@ -274,6 +274,7 @@ tr:hover td{background:var(--teal-100);}
         </table>
       </div>
       <div class="empty" id="facturasEmpty" style="display:none;">No hay facturas con estos filtros.</div>
+      <div class="small-note" id="facturasAvisoRecorte" style="display:none;margin-top:8px;"></div>
     </div>
   </section>
 
@@ -544,19 +545,34 @@ function fmtHoraCarga(ts){
   return `${fecha} <span class="small-note">${hora}</span>`;
 }
 function normFolio(f){ return String(f||'').trim().toUpperCase(); }
-function bitacorasQueCoinciden(folio){
-  const nf = normFolio(folio);
-  const matches = [];
+
+/* ÍNDICE DE BITÁCORAS — folio => [bitácoras]
+   Antes se recorrían TODAS las bitácoras y sus paradas por cada fila dibujada,
+   lo que hacía la búsqueda lentísima. Ahora el índice se arma una sola vez
+   cuando llega el snapshot y cada fila es una consulta directa. */
+let BITACORAS_IDX = new Map();
+function reconstruirIndiceBitacoras(){
+  const idx = new Map();
+  const agregar = (folio, reg)=>{
+    const nf = normFolio(folio);
+    if(!nf) return;
+    let arr = idx.get(nf);
+    if(!arr){ arr = []; idx.set(nf, arr); }
+    if(!arr.some(x=>x.id===reg.id)) arr.push(reg);
+  };
   Object.entries(BITACORAS).forEach(([id,b])=>{
     if(!b || !Array.isArray(b.paradas)) return;
-    const coincide = b.paradas.some(p=>{
-      if(p.folio && normFolio(p.folio)===nf) return true;
-      if(Array.isArray(p.folios) && p.folios.some(f=>normFolio(f)===nf)) return true;
-      return false;
+    const reg = {id, ...b};
+    b.paradas.forEach(p=>{
+      if(!p) return;
+      if(p.folio) agregar(p.folio, reg);
+      if(Array.isArray(p.folios)) p.folios.forEach(f=>agregar(f, reg));
     });
-    if(coincide) matches.push({id, ...b});
   });
-  return matches;
+  BITACORAS_IDX = idx;
+}
+function bitacorasQueCoinciden(folio){
+  return BITACORAS_IDX.get(normFolio(folio)) || [];
 }
 function fmtTranscurrido(ms){
   const horas = ms/3600000;
@@ -792,6 +808,7 @@ refFacturas.on('value', snap=>{
 });
 refBitacoras.on('value', snap=>{
   BITACORAS = snap.val() || {};
+  reconstruirIndiceBitacoras();
   renderFacturas();
   renderAvisoBitacora();
 });
@@ -1328,8 +1345,15 @@ function renderCompulsaHist(){
 /* ============================================================
    2) FACTURAS — tabla y clasificación
    ============================================================ */
+/* El buscador se dispara con debounce: al escribir "DANISCO" antes se redibujaba
+   la tabla 7 veces (una por tecla); ahora sólo una vez al dejar de teclear. */
+let _tFacBusca = null;
+function renderFacturasDebounced(){
+  clearTimeout(_tFacBusca);
+  _tFacBusca = setTimeout(renderFacturas, 250);
+}
 ['fFacBusca','fFacTipo','fFacConcluidas','fFacDesde','fFacHasta'].forEach(id=>{
-  document.getElementById(id).addEventListener('input', renderFacturas);
+  document.getElementById(id).addEventListener('input', renderFacturasDebounced);
   document.getElementById(id).addEventListener('change', renderFacturas);
 });
 
@@ -1354,21 +1378,38 @@ function renderFacturas(){
   const body = document.getElementById('facturasBody');
   document.getElementById('facturasEmpty').style.display = list.length? 'none':'block';
 
-  /* Resumen del filtro actual */
-  const cnt = t => list.filter(f=>f.tipo===t).length;
-  const sum = arr => arr.reduce((s,f)=> s + (Number(f.total)||0), 0);
+  /* Resumen del filtro actual — una sola pasada sobre la lista */
+  const c = {efectivo:0, cheque:0, tarjeta:0, transferencia:0, credito:0};
+  let monto = 0, sinClas = 0, montoSinClas = 0;
+  for(const f of list){
+    const t = Number(f.total)||0;
+    monto += t;
+    if(f.tipo && c[f.tipo]!==undefined) c[f.tipo]++;
+    if(!f.tipo){ sinClas++; montoSinClas += t; }
+  }
   document.getElementById('facturasResumen').innerHTML = `
     <div>Facturas en el filtro<b>${list.length}</b></div>
-    <div>Monto total<b>${fmtMoney(sum(list))}</b></div>
-    <div>Sin clasificar<b>${list.filter(f=>!f.tipo).length}</b></div>
-    <div>Efectivo<b>${cnt('efectivo')}</b></div>
-    <div>Cheque<b>${cnt('cheque')}</b></div>
-    <div>Tarjeta<b>${cnt('tarjeta')}</b></div>
-    <div>Transferencia<b>${cnt('transferencia')}</b></div>
-    <div>Crédito<b>${cnt('credito')}</b></div>
-    <div>Monto sin clasificar<b>${fmtMoney(sum(list.filter(f=>!f.tipo)))}</b></div>`;
+    <div>Monto total<b>${fmtMoney(monto)}</b></div>
+    <div>Sin clasificar<b>${sinClas}</b></div>
+    <div>Efectivo<b>${c.efectivo}</b></div>
+    <div>Cheque<b>${c.cheque}</b></div>
+    <div>Tarjeta<b>${c.tarjeta}</b></div>
+    <div>Transferencia<b>${c.transferencia}</b></div>
+    <div>Crédito<b>${c.credito}</b></div>
+    <div>Monto sin clasificar<b>${fmtMoney(montoSinClas)}</b></div>`;
 
-  body.innerHTML = list.map(f=>{
+  /* Sólo se dibujan las primeras MAX_FILAS. Los contadores de arriba siempre
+     reflejan el filtro completo, así que el conteo no cambia. */
+  const MAX_FILAS = 150;
+  const recortada = list.length > MAX_FILAS;
+  const visibles = recortada ? list.slice(0, MAX_FILAS) : list;
+  const avisoEl = document.getElementById('facturasAvisoRecorte');
+  if(avisoEl){
+    avisoEl.style.display = recortada ? 'block' : 'none';
+    if(recortada) avisoEl.innerHTML = `Mostrando las ${MAX_FILAS} más recientes de ${list.length}. Usa el buscador o las fechas para acotar — los totales de arriba sí consideran las ${list.length}.`;
+  }
+
+  body.innerHTML = visibles.map(f=>{
     let tipoBadge = '<span class="badge pend">Sin clasificar</span>';
     if(f.tipo==='efectivo') tipoBadge = '<span class="badge efectivo">Efectivo</span>';
     if(f.tipo==='cheque') tipoBadge = '<span class="badge cheque">Cheque</span>';
