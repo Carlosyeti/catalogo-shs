@@ -8996,12 +8996,16 @@ function imprimirBitacora(b) {
     '.firma{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:28px}' +
     '.fb{border-top:1px solid #999;padding-top:8px;text-align:center;font-size:11px;color:#666}' +
     '.footer{margin-top:18px;text-align:center;font-size:10px;color:#aaa;border-top:1px solid #eee;padding-top:10px}' +
+    '.pagebreak{page-break-before:always}' +
+    '.chk-table td{vertical-align:middle}' +
+    '.chk-box{display:inline-block;width:13px;height:13px;border:1.5px solid #666;margin-right:5px;vertical-align:middle}' +
+    '.leyenda{background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:12px 14px;font-size:11.5px;line-height:1.6;margin:14px 0}' +
     '@media print{' +
       '@page{size:letter;margin:12mm 10mm}' +
       'thead{display:table-header-group}' +
       'tfoot{display:table-footer-group}' +
       'tr{page-break-inside:avoid;break-inside:avoid}' +
-      '.top,.grid,.kmrow,.firma{page-break-inside:avoid}' +
+      '.top,.grid,.kmrow,.firma,.leyenda{page-break-inside:avoid}' +
       'h2{page-break-after:avoid}' +
     '}' +
     '</style></head><body>' +
@@ -9015,6 +9019,44 @@ function imprimirBitacora(b) {
     (devs.length ? '<h2>Devoluciones</h2><table><thead><tr><th>#</th><th>Clave</th><th>Artículo</th><th>Cant.</th><th>U.M.</th><th>Causa</th></tr></thead><tbody>'+devs.map(function(d,i){ return '<tr><td>'+(i+1)+'</td><td style="font-family:monospace">'+d.clave+'</td><td>'+d.nombre+'</td><td>'+d.cantidad+'</td><td>'+d.umed+'</td><td>'+d.causa+'</td></tr>'; }).join('')+'</tbody></table>' : '') +
     '<div class="firma"><div class="fb">Firma del Repartidor<br><br><strong>'+b.repartidor+'</strong></div><div class="fb">Recibido / Autorizado<br><br>&nbsp;</div></div>' +
     '<div class="footer">Bit&aacute;cora generada el '+(b.timestamp ? new Date(b.timestamp).toLocaleString('es-MX') : b.fecha)+' - Surtidora de Higienicos y Servicios</div>' +
+
+    // ══ SEGUNDA HOJA: CHEQUEO DE UNIDAD (mismo folio, misma impresión) ══
+    '<div class="pagebreak"></div>' +
+    '<div class="top"><div><h1>Hoja de Chequeo de Unidad</h1><div class="sub">Surtidora de Higienicos y Servicios</div></div>' +
+    '<div class="folio"><div style="font-size:16px;font-weight:800;color:#1565c0">Folio: '+(b.folio||'&mdash;')+'</div><div><strong>Fecha:</strong> '+b.fecha+'</div></div></div>' +
+    '<div class="grid"><div class="gi"><label>Unidad</label><span>'+b.unidad+'</span></div><div class="gi"><label>Chofer que recibe</label><span>'+b.repartidor+'</span></div><div class="gi"><label>Km al Salir</label><span>'+(b.kmInicio||'--')+'</span></div></div>' +
+    '<h2>Puntos a Revisar</h2>' +
+    '<table class="chk-table"><thead><tr><th style="width:34%">Punto</th><th style="width:16%">Bien</th><th style="width:16%">Falta</th><th style="width:16%">Da&ntilde;ado</th><th>Observaciones</th></tr></thead><tbody>' +
+      ['Laminado / Carrocer\u00eda (rayones, golpes, abolladuras)', 'Tarjeta de Circulaci\u00f3n', 'Gato Hidr\u00e1ulico', 'Llanta de Refacci\u00f3n'].map(function(item){
+        return '<tr><td>'+item+'</td>' +
+          '<td style="text-align:center"><span class="chk-box"></span></td>' +
+          '<td style="text-align:center"><span class="chk-box"></span></td>' +
+          '<td style="text-align:center"><span class="chk-box"></span></td>' +
+          '<td style="color:#ddd;font-size:10px">________________________</td></tr>';
+      }).join('') +
+    '</tbody></table>' +
+    '<div class="leyenda"><strong>Responsiva de la unidad:</strong> El chofer que firma de recibido en este documento declara haber revisado, junto con el supervisor que entrega, el estado general de la unidad descrito arriba (laminado/carrocer&iacute;a, tarjeta de circulaci&oacute;n, gato hidr&aacute;ulico y llanta de refacci&oacute;n) al momento de recibirla. Por lo anterior, se hace responsable de cualquier golpe, rayón o da&ntilde;o a la l&aacute;mina de la unidad que se presente durante el periodo en que la traiga bajo su resguardo, salvo caso fortuito o de fuerza mayor debidamente reportado a la empresa el mismo d&iacute;a en que ocurra.</div>' +
+    '<div class="firma"><div class="fb">Firma de quien RECIBE la unidad (Chofer)<br><br><strong>'+b.repartidor+'</strong></div><div class="fb">Firma de quien ENTREGA la unidad (Supervisor)<br><br>&nbsp;</div></div>' +
+    '<div class="footer">Hoja de chequeo generada el '+(b.timestamp ? new Date(b.timestamp).toLocaleString('es-MX') : b.fecha)+' - Surtidora de Higienicos y Servicios &mdash; Folio '+(b.folio||'')+'</div>' +
+
+    // ══ TERCERA HOJA: CHEQUEO DE RETORNO A BODEGA (mismo folio) ══
+    '<div class="pagebreak"></div>' +
+    '<div class="top"><div><h1>Chequeo de Retorno a Bodega</h1><div class="sub">Surtidora de Higienicos y Servicios</div></div>' +
+    '<div class="folio"><div style="font-size:16px;font-weight:800;color:#1565c0">Folio: '+(b.folio||'&mdash;')+'</div><div><strong>Fecha:</strong> '+b.fecha+'</div></div></div>' +
+    '<div class="grid"><div class="gi"><label>Unidad</label><span>'+b.unidad+'</span></div><div class="gi"><label>Chofer que entrega</label><span>'+b.repartidor+'</span></div><div class="gi"><label>Km al Regresar</label><span>'+(b.kmFin ? Number(b.kmFin).toLocaleString()+' km' : '________'  )+'</span></div></div>' +
+    '<h2>Verificaci&oacute;n al Regreso (comparar contra la salida)</h2>' +
+    '<table class="chk-table"><thead><tr><th style="width:34%">Punto</th><th style="width:20%">Igual que a la salida</th><th style="width:20%">Con novedad</th><th>Descripci&oacute;n de la novedad</th></tr></thead><tbody>' +
+      ['Laminado / Carrocer\u00eda (rayones, golpes, abolladuras)', 'Tarjeta de Circulaci\u00f3n', 'Gato Hidr\u00e1ulico', 'Llanta de Refacci\u00f3n'].map(function(item){
+        return '<tr><td>'+item+'</td>' +
+          '<td style="text-align:center"><span class="chk-box"></span></td>' +
+          '<td style="text-align:center"><span class="chk-box"></span></td>' +
+          '<td style="color:#ddd;font-size:10px">________________________</td></tr>';
+      }).join('') +
+    '</tbody></table>' +
+    '<div class="leyenda"><strong>Cierre de responsiva:</strong> &#x2610; La unidad se recibi&oacute; de vuelta en las mismas condiciones en que fue entregada el d&iacute;a de hoy (ver Hoja de Chequeo de Unidad, mismo folio). &nbsp;&nbsp; &#x2610; Se encontr&oacute; alguna novedad o da&ntilde;o descrito en la tabla de arriba; se turna a Gerencia para su revisi&oacute;n y, de proceder, se aplicar&aacute; la responsiva firmada por el chofer al momento de recibir la unidad.</div>' +
+    '<div class="firma"><div class="fb">Firma de quien ENTREGA la unidad (Chofer)<br><br><strong>'+b.repartidor+'</strong></div><div class="fb">Firma de quien RECIBE la unidad (Supervisor)<br><br>&nbsp;</div></div>' +
+    '<div class="footer">Chequeo de retorno &mdash; Folio '+(b.folio||'')+' - Surtidora de Higienicos y Servicios</div>' +
+
     '<script>setTimeout(function(){window.print();},400);<\/script></body></html>';
   var w = window.open('','_blank','width=760,height=680');
   w.document.write(html);
