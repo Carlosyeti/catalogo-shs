@@ -8940,6 +8940,30 @@ function imprimirById(id) {
   var b = _bitacoras[id];
   if (b) imprimirBitacora(b);
 }
+function diagramaVehiculoHTML() {
+  return '<div style="margin:10px 0 14px">' +
+    '<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#888;margin-bottom:6px">Mapa de la Unidad &mdash; marque con una X cualquier golpe, ray&oacute;n o abolladura</div>' +
+    '<div style="display:flex;gap:24px;align-items:flex-end;border:1px solid #dde3ec;border-radius:8px;padding:12px;background:#fafcff">' +
+      '<div style="text-align:center"><svg width="260" height="110" viewBox="0 0 260 110" style="overflow:visible">' +
+        '<line x1="8" y1="88" x2="252" y2="88" stroke="#999" stroke-width="1.5"/>' +
+        '<rect x="95" y="18" width="150" height="62" fill="none" stroke="#333" stroke-width="1.6"/>' +
+        '<polygon points="12,80 12,50 36,50 56,25 95,25 95,80" fill="none" stroke="#333" stroke-width="1.6"/>' +
+        '<line x1="12" y1="80" x2="245" y2="80" stroke="#333" stroke-width="1.6"/>' +
+        '<line x1="42" y1="50" x2="88" y2="50" stroke="#333" stroke-width="1"/>' +
+        '<circle cx="45" cy="88" r="13" fill="none" stroke="#333" stroke-width="1.6"/><circle cx="45" cy="88" r="4" fill="none" stroke="#333"/>' +
+        '<circle cx="205" cy="88" r="13" fill="none" stroke="#333" stroke-width="1.6"/><circle cx="205" cy="88" r="4" fill="none" stroke="#333"/>' +
+        '</svg><div style="font-size:10px;color:#888;margin-top:2px">Vista lateral</div></div>' +
+      '<div style="text-align:center"><svg width="100" height="110" viewBox="0 0 100 110" style="overflow:visible">' +
+        '<rect x="14" y="14" width="72" height="64" fill="none" stroke="#333" stroke-width="1.6"/>' +
+        '<line x1="50" y1="14" x2="50" y2="78" stroke="#333" stroke-width="1.2"/>' +
+        '<rect x="18" y="44" width="8" height="3" fill="#333"/><rect x="74" y="44" width="8" height="3" fill="#333"/>' +
+        '<rect x="10" y="80" width="80" height="8" fill="none" stroke="#333" stroke-width="1.4"/>' +
+        '<circle cx="26" cy="96" r="9" fill="none" stroke="#333" stroke-width="1.6"/>' +
+        '<circle cx="74" cy="96" r="9" fill="none" stroke="#333" stroke-width="1.6"/>' +
+        '</svg><div style="font-size:10px;color:#888;margin-top:2px">Vista trasera</div></div>' +
+    '</div></div>';
+}
+
 function imprimirBitacora(b) {
   var paradas = b.paradas || [];
   var asIcon = {ENTREGA:'[ENT]',COBRANZA:'[COB]',INSTALACION:'[INS]',PENDIENTE:'[PEN]'};
@@ -9027,7 +9051,7 @@ function imprimirBitacora(b) {
     '<div class="grid"><div class="gi"><label>Unidad</label><span>'+b.unidad+'</span></div><div class="gi"><label>Chofer que recibe</label><span>'+b.repartidor+'</span></div><div class="gi"><label>Km al Salir</label><span>'+(b.kmInicio||'--')+'</span></div></div>' +
     '<h2>Puntos a Revisar</h2>' +
     '<table class="chk-table"><thead><tr><th style="width:34%">Punto</th><th style="width:16%">Bien</th><th style="width:16%">Falta</th><th style="width:16%">Da&ntilde;ado</th><th>Observaciones</th></tr></thead><tbody>' +
-      ['Laminado / Carrocer\u00eda (rayones, golpes, abolladuras)', 'Tarjeta de Circulaci\u00f3n', 'Gato Hidr\u00e1ulico', 'Llanta de Refacci\u00f3n'].map(function(item){
+      ['Laminado / Carrocer\u00eda (rayones, golpes, abolladuras)', 'Tarjeta de Circulaci\u00f3n', 'Gato Hidr\u00e1ulico', 'Llanta de Refacci\u00f3n', 'P\u00f3liza de Seguro'].map(function(item){
         return '<tr><td>'+item+'</td>' +
           '<td style="text-align:center"><span class="chk-box"></span></td>' +
           '<td style="text-align:center"><span class="chk-box"></span></td>' +
@@ -9035,7 +9059,10 @@ function imprimirBitacora(b) {
           '<td style="color:#ddd;font-size:10px">________________________</td></tr>';
       }).join('') +
     '</tbody></table>' +
-    '<div class="leyenda"><strong>Responsiva de la unidad:</strong> El chofer que firma de recibido en este documento declara haber revisado, junto con el supervisor que entrega, el estado general de la unidad descrito arriba (laminado/carrocer&iacute;a, tarjeta de circulaci&oacute;n, gato hidr&aacute;ulico y llanta de refacci&oacute;n) al momento de recibirla. Por lo anterior, se hace responsable de cualquier golpe, rayón o da&ntilde;o a la l&aacute;mina de la unidad que se presente durante el periodo en que la traiga bajo su resguardo, salvo caso fortuito o de fuerza mayor debidamente reportado a la empresa el mismo d&iacute;a en que ocurra.</div>' +
+    diagramaVehiculoHTML() +
+    '<div class="leyenda"><strong>Responsiva de la unidad:</strong> El chofer que firma de recibido en este documento declara haber revisado, junto con el supervisor que entrega, el estado general de la unidad descrito arriba (laminado/carrocer&iacute;a, tarjeta de circulaci&oacute;n, gato hidr&aacute;ulico, llanta de refacci&oacute;n y p&oacute;liza de seguro) al momento de recibirla. Por lo anterior, se hace responsable de cualquier golpe, rayón o da&ntilde;o a la l&aacute;mina de la unidad que se presente durante el periodo en que la traiga bajo su resguardo, salvo caso fortuito o de fuerza mayor debidamente reportado a la empresa el mismo d&iacute;a en que ocurra.</div>' +
+    '<div style="margin:14px 0"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#888;margin-bottom:4px">Notas</div>' +
+      '<div style="border:1px solid #dde3ec;border-radius:6px;padding:10px;min-height:50px;font-size:11px;line-height:2.2;color:#ccc">________________________________________________________________<br>________________________________________________________________</div></div>' +
     '<div class="firma"><div class="fb">Firma de quien RECIBE la unidad (Chofer)<br><br><strong>'+b.repartidor+'</strong></div><div class="fb">Firma de quien ENTREGA la unidad (Supervisor)<br><br>&nbsp;</div></div>' +
     '<div class="footer">Hoja de chequeo generada el '+(b.timestamp ? new Date(b.timestamp).toLocaleString('es-MX') : b.fecha)+' - Surtidora de Higienicos y Servicios &mdash; Folio '+(b.folio||'')+'</div>' +
 
@@ -9046,14 +9073,18 @@ function imprimirBitacora(b) {
     '<div class="grid"><div class="gi"><label>Unidad</label><span>'+b.unidad+'</span></div><div class="gi"><label>Chofer que entrega</label><span>'+b.repartidor+'</span></div><div class="gi"><label>Km al Regresar</label><span>'+(b.kmFin ? Number(b.kmFin).toLocaleString()+' km' : '________'  )+'</span></div></div>' +
     '<h2>Verificaci&oacute;n al Regreso (comparar contra la salida)</h2>' +
     '<table class="chk-table"><thead><tr><th style="width:34%">Punto</th><th style="width:20%">Igual que a la salida</th><th style="width:20%">Con novedad</th><th>Descripci&oacute;n de la novedad</th></tr></thead><tbody>' +
-      ['Laminado / Carrocer\u00eda (rayones, golpes, abolladuras)', 'Tarjeta de Circulaci\u00f3n', 'Gato Hidr\u00e1ulico', 'Llanta de Refacci\u00f3n'].map(function(item){
+      ['Laminado / Carrocer\u00eda (rayones, golpes, abolladuras)', 'Tarjeta de Circulaci\u00f3n', 'Gato Hidr\u00e1ulico', 'Llanta de Refacci\u00f3n', 'P\u00f3liza de Seguro'].map(function(item){
         return '<tr><td>'+item+'</td>' +
           '<td style="text-align:center"><span class="chk-box"></span></td>' +
           '<td style="text-align:center"><span class="chk-box"></span></td>' +
           '<td style="color:#ddd;font-size:10px">________________________</td></tr>';
       }).join('') +
     '</tbody></table>' +
+    diagramaVehiculoHTML() +
     '<div class="leyenda"><strong>Cierre de responsiva:</strong> &#x2610; La unidad se recibi&oacute; de vuelta en las mismas condiciones en que fue entregada el d&iacute;a de hoy (ver Hoja de Chequeo de Unidad, mismo folio). &nbsp;&nbsp; &#x2610; Se encontr&oacute; alguna novedad o da&ntilde;o descrito en la tabla de arriba; se turna a Gerencia para su revisi&oacute;n y, de proceder, se aplicar&aacute; la responsiva firmada por el chofer al momento de recibir la unidad.</div>' +
+    '<div style="margin:14px 0"><strong style="font-size:11px;text-transform:uppercase;color:#888">Hora de llegada de la unidad:</strong> <span style="display:inline-block;min-width:160px;border-bottom:1px solid #999;margin-left:6px">&nbsp;</span></div>' +
+    '<div style="margin:14px 0"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#888;margin-bottom:4px">Notas</div>' +
+      '<div style="border:1px solid #dde3ec;border-radius:6px;padding:10px;min-height:50px;font-size:11px;line-height:2.2;color:#ccc">________________________________________________________________<br>________________________________________________________________</div></div>' +
     '<div class="firma"><div class="fb">Firma de quien ENTREGA la unidad (Chofer)<br><br><strong>'+b.repartidor+'</strong></div><div class="fb">Firma de quien RECIBE la unidad (Supervisor)<br><br>&nbsp;</div></div>' +
     '<div class="footer">Chequeo de retorno &mdash; Folio '+(b.folio||'')+' - Surtidora de Higienicos y Servicios</div>' +
 
