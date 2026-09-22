@@ -264,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function(){
       </div>
     </div>
     <div class="btn-group">
-      <button class="btn btn-primary" onclick="registrarBitacora()">&#x2705; Iniciar Ruta</button>
+      <button class="btn btn-primary" id="btn-iniciar-ruta" onclick="registrarBitacora()">&#x2705; Iniciar Ruta</button>
       <button class="btn btn-outline" onclick="limpiarForm()">&#x1F5D1; Limpiar</button>
     </div>
   </div>
@@ -7937,6 +7937,44 @@ function prefetchFacturasFirebase(forzar) {
   return _facturasFbPromesa;
 }
 
+// Mismo respaldo que arriba pero contra Control de Remisiones, para
+// folios de remisión (prefijo "RF") que tampoco traiga Microsip.
+var _remisionesFbCache = null;
+var _remisionesFbCacheTime = 0;
+var _remisionesFbPromesa = null;
+
+function prefetchRemisionesFirebase(forzar) {
+  var ahora = Date.now();
+  if (!forzar && _remisionesFbCache && (ahora - _remisionesFbCacheTime) < FB_CACHE_TTL_MS) {
+    return Promise.resolve(_remisionesFbCache);
+  }
+  if (_remisionesFbPromesa) return _remisionesFbPromesa;
+  if (!db) return Promise.resolve(_remisionesFbCache || {});
+
+  _remisionesFbPromesa = db.ref('control_remisiones/remisiones').once('value')
+    .then(function(snap) {
+      var raw = snap.val() || {};
+      var idx = {};
+      Object.keys(raw).forEach(function(folio) {
+        var f = raw[folio];
+        if (!f) return;
+        idx[normalizarFolio(folio)] = {
+          folio: folio, cliente: f.cliente, fecha: f.fecha, importe_neto: f.total
+        };
+      });
+      _remisionesFbCache = idx;
+      _remisionesFbCacheTime = Date.now();
+      _remisionesFbPromesa = null;
+      return idx;
+    })
+    .catch(function(err) {
+      console.warn('Control de Remisiones: no se pudo precargar —', err.message);
+      _remisionesFbPromesa = null;
+      return _remisionesFbCache || {};
+    });
+  return _remisionesFbPromesa;
+}
+
 function prefetchMicrosipDocumentos(forzar) {
   var ahora = Date.now();
   if (!forzar && _msDocsCache && (ahora - _msDocsCacheTime) < MS_CACHE_TTL_MS) {
@@ -7994,7 +8032,11 @@ function conectarFolioMicrosip(inpFolio, getClienteInput) {
       if (doc) return { doc: doc, origen: 'Microsip' };
       return prefetchFacturasFirebase().then(function(idxFb) {
         var docFb = idxFb[clave];
-        return docFb ? { doc: docFb, origen: 'Control de Facturas' } : null;
+        if (docFb) return { doc: docFb, origen: 'Control de Facturas' };
+        return prefetchRemisionesFirebase().then(function(idxRem) {
+          var docRem = idxRem[clave];
+          return docRem ? { doc: docRem, origen: 'Control de Remisiones' } : null;
+        });
       });
     }).then(function(resultado) {
       if (resultado) {
@@ -8009,7 +8051,7 @@ function conectarFolioMicrosip(inpFolio, getClienteInput) {
         }
       } else {
         info.style.color = '#b26a00';
-        info.innerHTML = '&#9888; Folio no encontrado en Microsip ni en Control de Facturas (verifica o captura el cliente manualmente)';
+        info.innerHTML = '&#9888; Folio no encontrado en Microsip, Control de Facturas ni Control de Remisiones (verifica o captura el cliente manualmente)';
       }
     });
   }
@@ -8201,7 +8243,10 @@ function setupAC(inp, list) {
 }
 
 // ══ REGISTRAR ═════════════════════════════════════════════════
+var _registrandoBitacora = false; // evita crear bitácoras duplicadas por doble clic
+
 function registrarBitacora() {
+  if (_registrandoBitacora) return; // ya se está guardando una, ignora el clic repetido
   var rep   = document.getElementById('inp-repartidor').value;
   var uni   = document.getElementById('inp-unidad').value;
   var kmI   = parseInt(document.getElementById('inp-km-inicio').value) || 0;
@@ -8253,6 +8298,10 @@ function registrarBitacora() {
     });
   });
   if (!ok) return;
+  _registrandoBitacora = true;
+  var btnIniciar = document.getElementById('btn-iniciar-ruta');
+  if (btnIniciar) { btnIniciar.disabled = true; btnIniciar.textContent = 'Guardando...'; }
+
   var id = Date.now().toString();
   var horaI = document.getElementById('inp-hora-inicio').value;
   generarFolioBitacora(function(folioGenerado) {
@@ -8261,7 +8310,10 @@ function registrarBitacora() {
                 kmFin:null, kmRecorridos:null, notas:'' };
     _currentBitacora = obj;
     // 1. Guardar bitácora INMEDIATAMENTE (sin esperar fotos)
-    guardar(id, obj, function() {
+    guardar(id, obj, function(err) {
+      _registrandoBitacora = false;
+      if (btnIniciar) { btnIniciar.disabled = false; btnIniciar.textContent = '✅ Iniciar Ruta'; }
+      if (err) return; // el error ya se mostró dentro de guardar()
       document.getElementById('conf-folio').textContent = folioGenerado;
       document.getElementById('conf-rep').textContent = rep;
       document.getElementById('conf-uni').textContent = uni;
@@ -8319,15 +8371,15 @@ function generarFolioBitacora(cb) {
 function guardar(id, data, cb) {
   if (db) {
     db.ref('bitacoras/' + id).set(data, function(err) {
-      if (err) { alert('Error Firebase: ' + err.message); return; }
-      cb();
+      if (err) alert('Error Firebase: ' + err.message);
+      cb(err || null);
     });
   } else {
     var local = JSON.parse(localStorage.getItem('shs_bitacoras') || '{}');
     local[id] = data;
     localStorage.setItem('shs_bitacoras', JSON.stringify(local));
     _bitacoras[id] = data;
-    cb();
+    cb(null);
   }
 }
 
@@ -8932,6 +8984,51 @@ function imprimirById(id) {
   var b = _bitacoras[id];
   if (b) imprimirBitacora(b);
 }
+function diagramaVehiculoHTML() {
+  var sideSVG = function(mirror) {
+    var g = mirror ? '<g transform="scale(-1,1) translate(-170,0)">' : '<g>';
+    return '<svg width="170" height="95" viewBox="0 0 170 95" style="overflow:visible">' + g +
+      '<line x1="6" y1="76" x2="164" y2="76" stroke="#999" stroke-width="1.3"/>' +
+      '<rect x="62" y="15" width="100" height="53" fill="none" stroke="#333" stroke-width="1.5"/>' +
+      '<polygon points="8,70 8,43 24,43 38,22 62,22 62,70" fill="none" stroke="#333" stroke-width="1.5"/>' +
+      '<line x1="8" y1="70" x2="158" y2="70" stroke="#333" stroke-width="1.5"/>' +
+      '<line x1="28" y1="43" x2="58" y2="43" stroke="#333" stroke-width="0.9"/>' +
+      '<circle cx="32" cy="76" r="11" fill="none" stroke="#333" stroke-width="1.5"/><circle cx="32" cy="76" r="3.5" fill="none" stroke="#333"/>' +
+      '<circle cx="138" cy="76" r="11" fill="none" stroke="#333" stroke-width="1.5"/><circle cx="138" cy="76" r="3.5" fill="none" stroke="#333"/>' +
+      '</g></svg>';
+  };
+  var frontSVG =
+    '<svg width="100" height="95" viewBox="0 0 100 95" style="overflow:visible">' +
+      '<rect x="14" y="10" width="72" height="52" fill="none" stroke="#333" stroke-width="1.5"/>' +
+      '<line x1="14" y1="30" x2="86" y2="30" stroke="#333" stroke-width="0.9"/>' +
+      '<rect x="18" y="36" width="14" height="7" fill="none" stroke="#333" stroke-width="1.1"/>' +
+      '<rect x="68" y="36" width="14" height="7" fill="none" stroke="#333" stroke-width="1.1"/>' +
+      '<rect x="10" y="65" width="80" height="7" fill="none" stroke="#333" stroke-width="1.3"/>' +
+      '<circle cx="26" cy="81" r="8" fill="none" stroke="#333" stroke-width="1.5"/>' +
+      '<circle cx="74" cy="81" r="8" fill="none" stroke="#333" stroke-width="1.5"/>' +
+    '</svg>';
+  var rearSVG =
+    '<svg width="100" height="95" viewBox="0 0 100 95" style="overflow:visible">' +
+      '<rect x="14" y="10" width="72" height="52" fill="none" stroke="#333" stroke-width="1.5"/>' +
+      '<line x1="50" y1="10" x2="50" y2="62" stroke="#333" stroke-width="1"/>' +
+      '<rect x="18" y="34" width="8" height="3" fill="#333"/><rect x="74" y="34" width="8" height="3" fill="#333"/>' +
+      '<rect x="10" y="65" width="80" height="7" fill="none" stroke="#333" stroke-width="1.3"/>' +
+      '<circle cx="26" cy="81" r="8" fill="none" stroke="#333" stroke-width="1.5"/>' +
+      '<circle cx="74" cy="81" r="8" fill="none" stroke="#333" stroke-width="1.5"/>' +
+    '</svg>';
+  function bloque(svg, etiqueta) {
+    return '<div style="text-align:center">' + svg + '<div style="font-size:10px;color:#888;margin-top:2px">' + etiqueta + '</div></div>';
+  }
+  return '<div style="margin:10px 0 14px">' +
+    '<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#888;margin-bottom:6px">Mapa de la Unidad &mdash; marque con una X cualquier golpe, ray&oacute;n o abolladura en cada lado</div>' +
+    '<div style="display:flex;gap:14px;align-items:flex-end;justify-content:space-between;border:1px solid #dde3ec;border-radius:8px;padding:12px;background:#fafcff;flex-wrap:wrap">' +
+      bloque(frontSVG, 'Frente') +
+      bloque(sideSVG(false), 'Lado Izquierdo') +
+      bloque(sideSVG(true),  'Lado Derecho') +
+      bloque(rearSVG, 'Atr&aacute;s') +
+    '</div></div>';
+}
+
 function imprimirBitacora(b) {
   var paradas = b.paradas || [];
   var asIcon = {ENTREGA:'[ENT]',COBRANZA:'[COB]',INSTALACION:'[INS]',PENDIENTE:'[PEN]'};
@@ -8988,12 +9085,16 @@ function imprimirBitacora(b) {
     '.firma{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:28px}' +
     '.fb{border-top:1px solid #999;padding-top:8px;text-align:center;font-size:11px;color:#666}' +
     '.footer{margin-top:18px;text-align:center;font-size:10px;color:#aaa;border-top:1px solid #eee;padding-top:10px}' +
+    '.pagebreak{page-break-before:always}' +
+    '.chk-table td{vertical-align:middle}' +
+    '.chk-box{display:inline-block;width:13px;height:13px;border:1.5px solid #666;margin-right:5px;vertical-align:middle}' +
+    '.leyenda{background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:12px 14px;font-size:11.5px;line-height:1.6;margin:14px 0}' +
     '@media print{' +
       '@page{size:letter;margin:12mm 10mm}' +
       'thead{display:table-header-group}' +
       'tfoot{display:table-footer-group}' +
       'tr{page-break-inside:avoid;break-inside:avoid}' +
-      '.top,.grid,.kmrow,.firma{page-break-inside:avoid}' +
+      '.top,.grid,.kmrow,.firma,.leyenda{page-break-inside:avoid}' +
       'h2{page-break-after:avoid}' +
     '}' +
     '</style></head><body>' +
@@ -9007,6 +9108,51 @@ function imprimirBitacora(b) {
     (devs.length ? '<h2>Devoluciones</h2><table><thead><tr><th>#</th><th>Clave</th><th>Artículo</th><th>Cant.</th><th>U.M.</th><th>Causa</th></tr></thead><tbody>'+devs.map(function(d,i){ return '<tr><td>'+(i+1)+'</td><td style="font-family:monospace">'+d.clave+'</td><td>'+d.nombre+'</td><td>'+d.cantidad+'</td><td>'+d.umed+'</td><td>'+d.causa+'</td></tr>'; }).join('')+'</tbody></table>' : '') +
     '<div class="firma"><div class="fb">Firma del Repartidor<br><br><strong>'+b.repartidor+'</strong></div><div class="fb">Recibido / Autorizado<br><br>&nbsp;</div></div>' +
     '<div class="footer">Bit&aacute;cora generada el '+(b.timestamp ? new Date(b.timestamp).toLocaleString('es-MX') : b.fecha)+' - Surtidora de Higienicos y Servicios</div>' +
+
+    // ══ SEGUNDA HOJA: CHEQUEO DE UNIDAD (mismo folio, misma impresión) ══
+    '<div class="pagebreak"></div>' +
+    '<div class="top"><div><h1>Hoja de Chequeo de Unidad</h1><div class="sub">Surtidora de Higienicos y Servicios</div></div>' +
+    '<div class="folio"><div style="font-size:16px;font-weight:800;color:#1565c0">Folio: '+(b.folio||'&mdash;')+'</div><div><strong>Fecha:</strong> '+b.fecha+'</div></div></div>' +
+    '<div class="grid"><div class="gi"><label>Unidad</label><span>'+b.unidad+'</span></div><div class="gi"><label>Chofer que recibe</label><span>'+b.repartidor+'</span></div><div class="gi"><label>Km al Salir</label><span>'+(b.kmInicio||'--')+'</span></div></div>' +
+    '<h2>Puntos a Revisar</h2>' +
+    '<table class="chk-table"><thead><tr><th style="width:34%">Punto</th><th style="width:16%">Bien</th><th style="width:16%">Falta</th><th style="width:16%">Da&ntilde;ado</th><th>Observaciones</th></tr></thead><tbody>' +
+      ['Laminado / Carrocer\u00eda (rayones, golpes, abolladuras)', 'Tarjeta de Circulaci\u00f3n', 'Gato Hidr\u00e1ulico', 'Llanta de Refacci\u00f3n', 'P\u00f3liza de Seguro'].map(function(item){
+        return '<tr><td>'+item+'</td>' +
+          '<td style="text-align:center"><span class="chk-box"></span></td>' +
+          '<td style="text-align:center"><span class="chk-box"></span></td>' +
+          '<td style="text-align:center"><span class="chk-box"></span></td>' +
+          '<td style="color:#ddd;font-size:10px">________________________</td></tr>';
+      }).join('') +
+    '</tbody></table>' +
+    diagramaVehiculoHTML() +
+    '<div class="leyenda"><strong>Responsiva de la unidad:</strong> El chofer que firma de recibido en este documento declara haber revisado, junto con el supervisor que entrega, el estado general de la unidad descrito arriba (laminado/carrocer&iacute;a, tarjeta de circulaci&oacute;n, gato hidr&aacute;ulico, llanta de refacci&oacute;n y p&oacute;liza de seguro) al momento de recibirla. Por lo anterior, se hace responsable de cualquier golpe, rayón o da&ntilde;o a la l&aacute;mina de la unidad que se presente durante el periodo en que la traiga bajo su resguardo, salvo caso fortuito o de fuerza mayor debidamente reportado a la empresa el mismo d&iacute;a en que ocurra.</div>' +
+    '<div style="margin:14px 0"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#888;margin-bottom:4px">Notas</div>' +
+      '<div style="border:1px solid #dde3ec;border-radius:6px;padding:10px;min-height:50px;font-size:11px;line-height:2.2;color:#ccc">________________________________________________________________<br>________________________________________________________________</div></div>' +
+    '<div class="firma"><div class="fb">Firma de quien RECIBE la unidad (Chofer)<br><br><strong>'+b.repartidor+'</strong></div><div class="fb">Firma de quien ENTREGA la unidad (Supervisor)<br><br>&nbsp;</div></div>' +
+    '<div class="footer">Hoja de chequeo generada el '+(b.timestamp ? new Date(b.timestamp).toLocaleString('es-MX') : b.fecha)+' - Surtidora de Higienicos y Servicios &mdash; Folio '+(b.folio||'')+'</div>' +
+
+    // ══ TERCERA HOJA: CHEQUEO DE RETORNO A BODEGA (mismo folio) ══
+    '<div class="pagebreak"></div>' +
+    '<div class="top"><div><h1>Chequeo de Retorno a Bodega</h1><div class="sub">Surtidora de Higienicos y Servicios</div></div>' +
+    '<div class="folio"><div style="font-size:16px;font-weight:800;color:#1565c0">Folio: '+(b.folio||'&mdash;')+'</div><div><strong>Fecha:</strong> '+b.fecha+'</div></div></div>' +
+    '<div class="grid"><div class="gi"><label>Unidad</label><span>'+b.unidad+'</span></div><div class="gi"><label>Chofer que entrega</label><span>'+b.repartidor+'</span></div><div class="gi"><label>Km al Regresar</label><span>'+(b.kmFin ? Number(b.kmFin).toLocaleString()+' km' : '________'  )+'</span></div></div>' +
+    '<h2>Verificaci&oacute;n al Regreso (comparar contra la salida)</h2>' +
+    '<table class="chk-table"><thead><tr><th style="width:34%">Punto</th><th style="width:20%">Igual que a la salida</th><th style="width:20%">Con novedad</th><th>Descripci&oacute;n de la novedad</th></tr></thead><tbody>' +
+      ['Laminado / Carrocer\u00eda (rayones, golpes, abolladuras)', 'Tarjeta de Circulaci\u00f3n', 'Gato Hidr\u00e1ulico', 'Llanta de Refacci\u00f3n', 'P\u00f3liza de Seguro'].map(function(item){
+        return '<tr><td>'+item+'</td>' +
+          '<td style="text-align:center"><span class="chk-box"></span></td>' +
+          '<td style="text-align:center"><span class="chk-box"></span></td>' +
+          '<td style="color:#ddd;font-size:10px">________________________</td></tr>';
+      }).join('') +
+    '</tbody></table>' +
+    diagramaVehiculoHTML() +
+    '<div class="leyenda"><strong>Cierre de responsiva:</strong> &#x2610; La unidad se recibi&oacute; de vuelta en las mismas condiciones en que fue entregada el d&iacute;a de hoy (ver Hoja de Chequeo de Unidad, mismo folio). &nbsp;&nbsp; &#x2610; Se encontr&oacute; alguna novedad o da&ntilde;o descrito en la tabla de arriba; se turna a Gerencia para su revisi&oacute;n y, de proceder, se aplicar&aacute; la responsiva firmada por el chofer al momento de recibir la unidad.</div>' +
+    '<div style="margin:14px 0"><strong style="font-size:11px;text-transform:uppercase;color:#888">Hora de llegada de la unidad:</strong> <span style="display:inline-block;min-width:160px;border-bottom:1px solid #999;margin-left:6px">&nbsp;</span></div>' +
+    '<div style="margin:14px 0"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#888;margin-bottom:4px">Notas</div>' +
+      '<div style="border:1px solid #dde3ec;border-radius:6px;padding:10px;min-height:50px;font-size:11px;line-height:2.2;color:#ccc">________________________________________________________________<br>________________________________________________________________</div></div>' +
+    '<div class="firma"><div class="fb">Firma de quien ENTREGA la unidad (Chofer)<br><br><strong>'+b.repartidor+'</strong></div><div class="fb">Firma de quien RECIBE la unidad (Supervisor)<br><br>&nbsp;</div></div>' +
+    '<div class="footer">Chequeo de retorno &mdash; Folio '+(b.folio||'')+' - Surtidora de Higienicos y Servicios</div>' +
+
     '<script>setTimeout(function(){window.print();},400);<\/script></body></html>';
   var w = window.open('','_blank','width=760,height=680');
   w.document.write(html);

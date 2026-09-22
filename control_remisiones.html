@@ -372,6 +372,7 @@ document.addEventListener('DOMContentLoaded', function(){
           <input type="date" id="fRemHasta">
         </div>
       </div>
+      <div class="total-strip" id="remisionesResumen"></div>
     </div>
 
     <div class="card">
@@ -804,6 +805,24 @@ function localISO(d){
   return `${y}-${m}-${day}`;
 }
 function todayISO(){ return localISO(new Date()); }
+function ayerISO(){ const d = new Date(); d.setDate(d.getDate()-1); return localISO(d); }
+function hace7DiasISO(){ const d = new Date(); d.setDate(d.getDate()-7); return localISO(d); }
+// Quita ceros a la izquierda de la parte numerica del folio (A000156 -> A156)
+// para estandarizar como se guarda, sin importar si viene de Microsip, Excel o captura manual.
+function normalizarFolio(folio){
+  const s = String(folio||'').trim().toUpperCase();
+  const m = s.match(/^([A-Z]*)0*(\d+)$/);
+  return m ? (m[1]+m[2]) : s;
+}
+// La API de Microsip a veces manda el folio con un sufijo de estado:
+// "-C" (cancelada) o "-P" (normal). El sufijo nunca se guarda como parte
+// del folio -- solo indica si esa remision debe eliminarse de nuestra base.
+function extraerEstadoFolio(folioRaw){
+  const s = String(folioRaw||'').trim().toUpperCase();
+  const m = s.match(/^(.*)-([CP])$/);
+  if(!m) return {folio: normalizarFolio(s), cancelada:false};
+  return {folio: normalizarFolio(m[1]), cancelada: m[2]==='C'};
+}
 function parseMonto(v){
   // Soporta valores ya numéricos y strings formateados tipo "3,542.45" o "$3,542.45".
   if(v==null || v==='') return 0;
@@ -918,7 +937,7 @@ function renderApiSyncStatus(estado){
   if(!estado){ el.textContent = 'Aún no se ha sincronizado con la API.'; return; }
   const hora = new Date(estado.ultimo).toLocaleString('es-MX');
   if(estado.ok){
-    el.innerHTML = `✅ Última sincronización: ${hora} — ${estado.nuevas} remisión(es) nueva(s) agregada(s).`;
+    el.innerHTML = `✅ Última sincronización: ${hora} — ${estado.nuevas} remisión(es) nueva(s) agregada(s)${estado.canceladas?`, ${estado.canceladas} cancelada(s) eliminada(s)`:''}.`;
   } else {
     el.innerHTML = `<span style="color:var(--red-600);">⚠️ Falló la última sincronización (${hora}): ${estado.error} — revisa URL, token o CORS con el equipo de sistemas.</span>`;
   }
@@ -952,6 +971,13 @@ async function sincronizarConMicrosip(silencioso){
     return;
   }
   const fechaFin = todayISO();
+  // Se consulta una semana hacia atras (no solo ayer): una remision puede
+  // llegar marcada "-C" (cancelada) varios dias despues de haberse creado,
+  // y hay que volver a verla en ese rango para poder eliminarla. El dedup
+  // por folio evita duplicar las que ya existen, asi que repetir la consulta
+  // sobre dias ya sincronizados no genera duplicados, solo permite detectar
+  // cancelaciones tardias.
+  const fechaIniConsulta = hace7DiasISO();
   try{
     const resp = await fetch(`${PROXY}?metodo=REMISIONES_MICROSIP`, {
       method: 'POST',
@@ -959,7 +985,7 @@ async function sincronizarConMicrosip(silencioso){
       body: JSON.stringify({
         baseUrl: API_CONFIG.baseUrl,
         token: API_CONFIG.token,
-        fecha_ini: FECHA_MINIMA_CARGA,
+        fecha_ini: fechaIniConsulta,
         fecha_fin: fechaFin
       })
     });
@@ -968,9 +994,18 @@ async function sincronizarConMicrosip(silencioso){
     const items = data.items || [];
     const updates = {};
     let nuevas = 0;
+    let canceladas = 0;
     items.forEach(it=>{
-      const folio = String(it.folio||'').trim();
+      // El proxy ya limpia el folio y manda "cancelada" resuelto; se vuelve a
+      // interpretar aqui tambien por si el folio llegara crudo (compatibilidad).
+      const parsedFolio = extraerEstadoFolio(it.folio);
+      const folio = parsedFolio.folio;
+      const cancelada = it.cancelada === true || parsedFolio.cancelada;
       if(!folio) return;
+      if(cancelada){
+        if(REMISIONES[folio]){ updates[folio] = null; canceladas++; }
+        return; // una remision cancelada nunca se inserta como nueva
+      }
       if(REMISIONES[folio]) return; // ya existe, no se toca (misma regla que la carga por Excel)
       const fecha = it.fecha || todayISO();
       if(fecha < FECHA_MINIMA_CARGA) return;
@@ -986,9 +1021,9 @@ async function sincronizarConMicrosip(silencioso){
       };
       nuevas++;
     });
-    if(nuevas>0) await refRemisiones.update(updates);
-    await refApiSyncEstado.set({ultimo: Date.now(), ok:true, nuevas});
-    if(!silencioso) toast(`Sincronización OK — ${nuevas} remisión(es) nueva(s).`);
+    if(nuevas>0 || canceladas>0) await refRemisiones.update(updates);
+    await refApiSyncEstado.set({ultimo: Date.now(), ok:true, nuevas, canceladas});
+    if(!silencioso) toast(`Sincronización OK — ${nuevas} remisión(es) nueva(s)${canceladas?`, ${canceladas} cancelada(s) eliminada(s)`:''}.`);
   }catch(err){
     await refApiSyncEstado.set({ultimo: Date.now(), ok:false, error: err.message});
     if(!silencioso) toast('Error al sincronizar: '+err.message);
@@ -1164,7 +1199,7 @@ function parseDiario(rows){
     const total = parseMonto(row[cols.total]);
     if(!fechaISO && neto===0 && total===0) continue;
     parsed.push({
-      folio: String(folioRaw).trim(),
+      folio: normalizarFolio(folioRaw),
       fecha: fechaISO || todayISO(),
       cliente: String(clienteRaw||'').trim(),
       importeNeto: neto,
@@ -1343,6 +1378,27 @@ function renderRemisiones(){
 
   const body = document.getElementById('remisionesBody');
   document.getElementById('remisionesEmpty').style.display = list.length? 'none':'block';
+
+  /* Resumen del filtro actual */
+  const resumen = {
+    n: list.length,
+    monto: list.reduce((s,r)=> s + (Number(r.total)||0), 0),
+    sinClas: list.filter(r=>!r.tipo).length,
+    credito: list.filter(r=>r.tipo==='credito').length,
+    contado: list.filter(r=>r.tipo==='contado').length,
+    pagadas: list.filter(r=>r.pagada).length,
+    pendientes: list.filter(r=>!r.pagada).length,
+    montoPend: list.filter(r=>!r.pagada).reduce((s,r)=> s + (Number(r.total)||0), 0)
+  };
+  document.getElementById('remisionesResumen').innerHTML = `
+    <div>Remisiones en el filtro<b>${resumen.n}</b></div>
+    <div>Monto total<b>${fmtMoney(resumen.monto)}</b></div>
+    <div>Sin clasificar<b>${resumen.sinClas}</b></div>
+    <div>Crédito<b>${resumen.credito}</b></div>
+    <div>Contado<b>${resumen.contado}</b></div>
+    <div>Pendientes de pago<b>${resumen.pendientes}</b></div>
+    <div>Pagadas<b>${resumen.pagadas}</b></div>
+    <div>Saldo pendiente<b>${fmtMoney(resumen.montoPend)}</b></div>`;
 
   body.innerHTML = list.map(r=>{
     let tipoBadge = '<span class="badge pend">Sin clasificar</span>';

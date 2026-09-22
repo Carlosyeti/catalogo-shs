@@ -229,6 +229,7 @@ document.addEventListener('DOMContentLoaded', function(){
   <button data-tab="credito">📇 Crédito</button>
   <button data-tab="caja">💰 Caja</button>
   <button data-tab="reportes">📊 Reportes</button>
+  <span id="versionBadge" title="Versión del archivo abierto" style="align-self:center;padding:0 14px;color:rgba(255,255,255,.55);font-size:11px;font-weight:600;white-space:nowrap;">v31-OPT</span>
 </nav>
 
 <main>
@@ -336,6 +337,7 @@ document.addEventListener('DOMContentLoaded', function(){
         <div class="field"><label>Desde</label><input type="date" id="fFacDesde"></div>
         <div class="field"><label>Hasta</label><input type="date" id="fFacHasta"></div>
       </div>
+      <div class="total-strip" id="facturasResumen"></div>
     </div>
     <div class="card">
       <div class="table-wrap">
@@ -347,6 +349,7 @@ document.addEventListener('DOMContentLoaded', function(){
         </table>
       </div>
       <div class="empty" id="facturasEmpty" style="display:none;">No hay facturas con estos filtros.</div>
+      <div class="small-note" id="facturasAvisoRecorte" style="display:none;margin-top:8px;"></div>
     </div>
   </section>
 
@@ -586,6 +589,14 @@ function localISO(d){
   return `${y}-${m}-${day}`;
 }
 function todayISO(){ return localISO(new Date()); }
+function ayerISO(){ const d = new Date(); d.setDate(d.getDate()-1); return localISO(d); }
+// Quita ceros a la izquierda de la parte numerica del folio (A000156 -> A156)
+// para estandarizar como se guarda, sin importar si viene de Microsip, Excel o captura manual.
+function normalizarFolio(folio){
+  const s = String(folio||'').trim().toUpperCase();
+  const m = s.match(/^([A-Z]*)0*(\d+)$/);
+  return m ? (m[1]+m[2]) : s;
+}
 function parseMonto(v){
   if(v==null || v==='') return 0;
   if(typeof v === 'number') return v;
@@ -610,19 +621,34 @@ function fmtHoraCarga(ts){
   return `${fecha} <span class="small-note">${hora}</span>`;
 }
 function normFolio(f){ return String(f||'').trim().toUpperCase(); }
-function bitacorasQueCoinciden(folio){
-  const nf = normFolio(folio);
-  const matches = [];
+
+/* ÍNDICE DE BITÁCORAS — folio => [bitácoras]
+   Antes se recorrían TODAS las bitácoras y sus paradas por cada fila dibujada,
+   lo que hacía la búsqueda lentísima. Ahora el índice se arma una sola vez
+   cuando llega el snapshot y cada fila es una consulta directa. */
+let BITACORAS_IDX = new Map();
+function reconstruirIndiceBitacoras(){
+  const idx = new Map();
+  const agregar = (folio, reg)=>{
+    const nf = normFolio(folio);
+    if(!nf) return;
+    let arr = idx.get(nf);
+    if(!arr){ arr = []; idx.set(nf, arr); }
+    if(!arr.some(x=>x.id===reg.id)) arr.push(reg);
+  };
   Object.entries(BITACORAS).forEach(([id,b])=>{
     if(!b || !Array.isArray(b.paradas)) return;
-    const coincide = b.paradas.some(p=>{
-      if(p.folio && normFolio(p.folio)===nf) return true;
-      if(Array.isArray(p.folios) && p.folios.some(f=>normFolio(f)===nf)) return true;
-      return false;
+    const reg = {id, ...b};
+    b.paradas.forEach(p=>{
+      if(!p) return;
+      if(p.folio) agregar(p.folio, reg);
+      if(Array.isArray(p.folios)) p.folios.forEach(f=>agregar(f, reg));
     });
-    if(coincide) matches.push({id, ...b});
   });
-  return matches;
+  BITACORAS_IDX = idx;
+}
+function bitacorasQueCoinciden(folio){
+  return BITACORAS_IDX.get(normFolio(folio)) || [];
 }
 function fmtTranscurrido(ms){
   const horas = ms/3600000;
@@ -663,8 +689,15 @@ function esFolioRemision(folio){
   // en su propio TAB de Caja) — nunca deben contarse aquí para evitar duplicar el dinero.
   return /^rf/i.test(String(folio||'').trim());
 }
+// Solo los folios que empiezan con "A" son facturas de verdad. Los que
+// empiezan con R (remisiones) o P (pedidos/otros documentos de Microsip)
+// no deben aparecer aquí ni contarse en los totales — a petición expresa:
+// "solo quiero ver facturas que inician con A".
+function esFolioFactura(folio){
+  return /^a/i.test(String(folio||'').trim());
+}
 function facturasValidas(){
-  return Object.values(FACTURAS).filter(f=>!esFolioRemision(f.folio));
+  return Object.values(FACTURAS).filter(f=>esFolioFactura(f.folio));
 }
 async function siguienteFolio(refCounter, prefijo){
   const result = await refCounter.transaction(curr => (curr||0)+1);
@@ -798,6 +831,11 @@ async function sincronizarConMicrosip(silencioso){
     return;
   }
   const fechaFin = todayISO();
+  // Solo se consulta desde ayer: el dedup por folio (mas abajo) ya evita
+  // duplicar facturas viejas, y asi cada corrida deja de re-consultar todo
+  // el historial desde FECHA_MINIMA_CARGA (mas lento y expuesto a rangos
+  // viejos que a veces truenan del lado de la API de Microsip).
+  const fechaIniConsulta = ayerISO();
   try{
     const resp = await fetch(`${PROXY}?metodo=FACTURAS_MICROSIP`, {
       method: 'POST',
@@ -805,7 +843,7 @@ async function sincronizarConMicrosip(silencioso){
       body: JSON.stringify({
         baseUrl: API_CONFIG.baseUrl,
         token: API_CONFIG.token,
-        fecha_ini: FECHA_MINIMA_CARGA,
+        fecha_ini: fechaIniConsulta,
         fecha_fin: fechaFin
       })
     });
@@ -815,8 +853,8 @@ async function sincronizarConMicrosip(silencioso){
     const updates = {};
     let nuevas = 0;
     items.forEach(it=>{
-      const folio = String(it.folio||'').trim();
-      if(!folio || esFolioRemision(folio)) return;
+      const folio = normalizarFolio(it.folio);
+      if(!folio || !esFolioFactura(folio)) return;
       if(FACTURAS[folio]) return; // ya existe, no se toca (misma regla que la carga por Excel)
       const fecha = it.fecha || todayISO();
       if(fecha < FECHA_MINIMA_CARGA) return;
@@ -853,6 +891,7 @@ refFacturas.on('value', snap=>{
 });
 refBitacoras.on('value', snap=>{
   BITACORAS = snap.val() || {};
+  reconstruirIndiceBitacoras();
   renderFacturas();
   renderAvisoBitacora();
 });
@@ -1001,7 +1040,7 @@ function parseDiario(rows){
       continue;
     }
     if(String(folioRaw).toLowerCase().startsWith('total')) break;
-    if(esFolioRemision(folioRaw)) continue; // los RF ya se controlan en Caja del sistema de Remisiones
+    if(!esFolioFactura(folioRaw)) continue; // solo se cargan folios que empiezan con A
     let fechaVal = row[cols.fecha];
     let fechaISO = null;
     if(fechaVal instanceof Date) fechaISO = localISO(fechaVal);
@@ -1018,7 +1057,7 @@ function parseDiario(rows){
       continue; // protección: ignora facturas anteriores a la fecha mínima configurada
     }
     parsed.push({
-      folio: String(folioRaw).trim(),
+      folio: normalizarFolio(folioRaw),
       fecha: fechaISO || todayISO(),
       cliente: String(clienteRaw||'').trim(),
       importeNeto: neto,
@@ -1389,12 +1428,20 @@ function renderCompulsaHist(){
 /* ============================================================
    2) FACTURAS — tabla y clasificación
    ============================================================ */
+/* El buscador se dispara con debounce: al escribir "DANISCO" antes se redibujaba
+   la tabla 7 veces (una por tecla); ahora sólo una vez al dejar de teclear. */
+let _tFacBusca = null;
+function renderFacturasDebounced(){
+  clearTimeout(_tFacBusca);
+  _tFacBusca = setTimeout(renderFacturas, 250);
+}
 ['fFacBusca','fFacTipo','fFacConcluidas','fFacDesde','fFacHasta'].forEach(id=>{
-  document.getElementById(id).addEventListener('input', renderFacturas);
+  document.getElementById(id).addEventListener('input', renderFacturasDebounced);
   document.getElementById(id).addEventListener('change', renderFacturas);
 });
 
 function renderFacturas(){
+  const _t0 = performance.now();
   const busca = document.getElementById('fFacBusca').value.trim().toLowerCase();
   const tipoF = document.getElementById('fFacTipo').value;
   const conclF = document.getElementById('fFacConcluidas').value;
@@ -1415,7 +1462,38 @@ function renderFacturas(){
   const body = document.getElementById('facturasBody');
   document.getElementById('facturasEmpty').style.display = list.length? 'none':'block';
 
-  body.innerHTML = list.map(f=>{
+  /* Resumen del filtro actual — una sola pasada sobre la lista */
+  const c = {efectivo:0, cheque:0, tarjeta:0, transferencia:0, credito:0};
+  let monto = 0, sinClas = 0, montoSinClas = 0;
+  for(const f of list){
+    const t = Number(f.total)||0;
+    monto += t;
+    if(f.tipo && c[f.tipo]!==undefined) c[f.tipo]++;
+    if(!f.tipo){ sinClas++; montoSinClas += t; }
+  }
+  document.getElementById('facturasResumen').innerHTML = `
+    <div>Facturas en el filtro<b>${list.length}</b></div>
+    <div>Monto total<b>${fmtMoney(monto)}</b></div>
+    <div>Sin clasificar<b>${sinClas}</b></div>
+    <div>Efectivo<b>${c.efectivo}</b></div>
+    <div>Cheque<b>${c.cheque}</b></div>
+    <div>Tarjeta<b>${c.tarjeta}</b></div>
+    <div>Transferencia<b>${c.transferencia}</b></div>
+    <div>Crédito<b>${c.credito}</b></div>
+    <div>Monto sin clasificar<b>${fmtMoney(montoSinClas)}</b></div>`;
+
+  /* Sólo se dibujan las primeras MAX_FILAS. Los contadores de arriba siempre
+     reflejan el filtro completo, así que el conteo no cambia. */
+  const MAX_FILAS = 150;
+  const recortada = list.length > MAX_FILAS;
+  const visibles = recortada ? list.slice(0, MAX_FILAS) : list;
+  const avisoEl = document.getElementById('facturasAvisoRecorte');
+  if(avisoEl){
+    avisoEl.style.display = recortada ? 'block' : 'none';
+    if(recortada) avisoEl.innerHTML = `Mostrando las ${MAX_FILAS} más recientes de ${list.length}. Usa el buscador o las fechas para acotar — los totales de arriba sí consideran las ${list.length}.`;
+  }
+
+  body.innerHTML = visibles.map(f=>{
     let tipoBadge = '<span class="badge pend">Sin clasificar</span>';
     if(f.tipo==='efectivo') tipoBadge = '<span class="badge efectivo">Efectivo</span>';
     if(f.tipo==='cheque') tipoBadge = '<span class="badge cheque">Cheque</span>';
@@ -1459,6 +1537,11 @@ function renderFacturas(){
       </td>
     </tr>`;
   }).join('');
+
+  /* Diagnóstico: cuánto tardó en dibujarse. Sirve para comparar entre computadoras. */
+  const _ms = Math.round(performance.now() - _t0);
+  const _badge = document.getElementById('versionBadge');
+  if(_badge) _badge.textContent = `v31-OPT · ${_ms} ms`;
 }
 
 async function clasificarFactura(folio, tipo){
@@ -1526,7 +1609,7 @@ async function confirmarFactura(folio){
    ============================================================ */
 document.getElementById('manFecha').value = todayISO();
 document.getElementById('btnAgregarManual').addEventListener('click', async ()=>{
-  const folio = document.getElementById('manFolio').value.trim();
+  const folio = normalizarFolio(document.getElementById('manFolio').value);
   const cliente = document.getElementById('manCliente').value.trim();
   const importe = parseFloat(document.getElementById('manImporte').value);
   const forma = document.getElementById('manForma').value;

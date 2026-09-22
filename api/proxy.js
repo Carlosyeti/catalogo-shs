@@ -45,6 +45,26 @@ export default async function handler(req, res) {
     return repairJSON(text) || [];
   }
 
+  // Quita ceros a la izquierda del folio (A000156 -> A156) del lado del
+  // servidor, para que el dedup por folio del cliente funcione aunque una
+  // pestana vieja siga corriendo JS sin esta normalizacion.
+  function normalizarFolioServidor(folio) {
+    const s = String(folio || '').trim().toUpperCase();
+    const m = s.match(/^([A-Z]*)0*(\d+)$/);
+    return m ? (m[1] + m[2]) : s;
+  }
+
+  // La API de remisiones a veces agrega " - C" (cancelada) o " - P" (normal)
+  // al folio. Se resuelve aqui, del lado del servidor, para que el folio que
+  // reciben TODOS los clientes (viejos o nuevos) ya venga limpio, y para que
+  // el estado de cancelada no dependa de que el navegador sepa interpretarlo.
+  function procesarFolioRemisionServidor(folioRaw) {
+    const s = String(folioRaw || '').trim().toUpperCase();
+    const m = s.match(/^(.*?)\s*-\s*([CP])$/);
+    if (!m) return { folio: normalizarFolioServidor(s), cancelada: false };
+    return { folio: normalizarFolioServidor(m[1]), cancelada: m[2] === 'C' };
+  }
+
   function toNum(v) {
     if (v === undefined || v === null || v === '' || v === 0) return 0;
     const limpio = String(v).replace(/\D/g, '');
@@ -350,7 +370,7 @@ export default async function handler(req, res) {
             Descripcion: "COMPRA ONLINE",
             MetodoPago: "Pago manual",
             EstatusPago: "Pendiente",
-            Almacen: "CEDIS COLIMA",
+            Almacen: "CEDIS VILLA DE ALVAREZ",
             CP_inv_inicial: 0,
             CP_pagos: 0,
             CP_pagos_letra: "",
@@ -554,6 +574,7 @@ export default async function handler(req, res) {
       const response = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
       if (!response.ok) return res.status(response.status).json({ error: 'HTTP ' + response.status + ' — revisa el token o el rango de fechas' });
       const data = await response.json();
+      if (Array.isArray(data.items)) data.items = data.items.map(it => ({ ...it, folio: normalizarFolioServidor(it.folio) }));
       return res.status(200).json(data);
     }
 
@@ -565,6 +586,10 @@ export default async function handler(req, res) {
       const response = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
       if (!response.ok) return res.status(response.status).json({ error: 'HTTP ' + response.status + ' — revisa el token o el rango de fechas' });
       const data = await response.json();
+      if (Array.isArray(data.items)) data.items = data.items.map(it => {
+        const { folio, cancelada } = procesarFolioRemisionServidor(it.folio);
+        return { ...it, folio, cancelada };
+      });
       return res.status(200).json(data);
     }
 
