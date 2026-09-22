@@ -614,8 +614,15 @@ function esFolioRemision(folio){
   // en su propio TAB de Caja) — nunca deben contarse aquí para evitar duplicar el dinero.
   return /^rf/i.test(String(folio||'').trim());
 }
+// Solo los folios que empiezan con "A" son facturas de verdad. Los que
+// empiezan con R (remisiones) o P (pedidos/otros documentos de Microsip)
+// no deben aparecer aquí ni contarse en los totales — a petición expresa:
+// "solo quiero ver facturas que inician con A".
+function esFolioFactura(folio){
+  return /^a/i.test(String(folio||'').trim());
+}
 function facturasValidas(){
-  return Object.values(FACTURAS).filter(f=>!esFolioRemision(f.folio));
+  return Object.values(FACTURAS).filter(f=>esFolioFactura(f.folio));
 }
 async function siguienteFolio(refCounter, prefijo){
   const result = await refCounter.transaction(curr => (curr||0)+1);
@@ -772,7 +779,7 @@ async function sincronizarConMicrosip(silencioso){
     let nuevas = 0;
     items.forEach(it=>{
       const folio = normalizarFolio(it.folio);
-      if(!folio || esFolioRemision(folio)) return;
+      if(!folio || !esFolioFactura(folio)) return;
       if(FACTURAS[folio]) return; // ya existe, no se toca (misma regla que la carga por Excel)
       const fecha = it.fecha || todayISO();
       if(fecha < FECHA_MINIMA_CARGA) return;
@@ -958,7 +965,7 @@ function parseDiario(rows){
       continue;
     }
     if(String(folioRaw).toLowerCase().startsWith('total')) break;
-    if(esFolioRemision(folioRaw)) continue; // los RF ya se controlan en Caja del sistema de Remisiones
+    if(!esFolioFactura(folioRaw)) continue; // solo se cargan folios que empiezan con A
     let fechaVal = row[cols.fecha];
     let fechaISO = null;
     if(fechaVal instanceof Date) fechaISO = localISO(fechaVal);
