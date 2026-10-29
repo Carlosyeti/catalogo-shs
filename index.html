@@ -282,6 +282,8 @@ button,input,select,textarea{font-family:inherit}
 .btn-modal{background:var(--azul);color:white;border:none;border-radius:12px;padding:14px 32px;font-weight:800;font-size:15px;cursor:pointer}
 
 /* ── Responsivo ── */
+/* En computadora la vista se muestra al 80% (como el zoom 80% del navegador). El panel de compra y los avisos quedan al 100%. En celular todo queda al 100%. */
+@media (min-width:821px){ .header,.layout{zoom:.8} body{padding-top:62px} }
 @media (min-width:1101px){ .btn-whatsapp{display:none !important} }
 @media (max-width:1100px){
   .layout{grid-template-columns:200px minmax(0,1fr)}
