@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pendientes – Telemarketing 1</title>
+  <style>
+
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+    
+    :root {
+      --navy: #0d1b2a;
+      --navy2: #1b2d42;
+      --navy3: #243b55;
+      --accent: #e8a020;
+      --accent2: #f5c842;
+      --teal: #00b4d8;
+      --green: #22c55e;
+      --red: #ef4444;
+      --orange: #f97316;
+      --bg: #f0f4f8;
+      --card: #ffffff;
+      --text: #1e293b;
+      --text2: #64748b;
+      --border: #e2e8f0;
+      --shadow: 0 4px 20px rgba(13,27,42,0.08);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+    
+    /* SIDEBAR */
+    .sidebar {
+      position:fixed; left:0; top:0; width:260px; height:100vh;
+      background: linear-gradient(160deg, var(--navy) 0%, var(--navy2) 60%, var(--navy3) 100%);
+      display:flex; flex-direction:column; padding:0; z-index:100;
+      box-shadow: 4px 0 30px rgba(0,0,0,0.3);
+    }
+    .sidebar-logo {
+      padding: 28px 24px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .sidebar-logo .brand { font-size:10px; font-weight:700; letter-spacing:3px; color:var(--accent); text-transform:uppercase; margin-bottom:4px; }
+    .sidebar-logo h2 { font-size:16px; font-weight:700; color:#fff; line-height:1.3; }
+    .sidebar-logo .module-tag { display:inline-block; margin-top:8px; background:rgba(232,160,32,0.2); color:var(--accent); font-size:10px; font-weight:600; padding:3px 8px; border-radius:20px; letter-spacing:1px; text-transform:uppercase; }
+    .sidebar-nav { padding:20px 0; flex:1; }
+    .nav-section { padding: 6px 24px 4px; font-size:9px; font-weight:700; letter-spacing:2px; color:rgba(255,255,255,0.3); text-transform:uppercase; }
+    .nav-item { display:flex; align-items:center; gap:12px; padding:11px 24px; cursor:pointer; transition:all 0.2s; position:relative; color:rgba(255,255,255,0.6); font-size:13px; font-weight:500; }
+    .nav-item:hover, .nav-item.active { color:#fff; background:rgba(255,255,255,0.07); }
+    .nav-item.active::before { content:''; position:absolute; left:0; top:0; height:100%; width:3px; background:var(--accent); border-radius:0 2px 2px 0; }
+    .nav-item .icon { font-size:16px; width:20px; text-align:center; }
+    .sidebar-footer { padding:16px 24px; border-top:1px solid rgba(255,255,255,0.08); }
+    .sidebar-footer .date-badge { font-size:11px; color:rgba(255,255,255,0.4); }
+    
+    /* MAIN */
+    .main { margin-left:260px; min-height:100vh; display:flex; flex-direction:column; }
+    .topbar { background:var(--card); border-bottom:1px solid var(--border); padding:16px 32px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
+    .topbar h1 { font-size:20px; font-weight:700; color:var(--text); }
+    .topbar .subtitle { font-size:12px; color:var(--text2); margin-top:2px; }
+    .content { padding:28px 32px; flex:1; }
+    
+    /* CARDS */
+    .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:28px; }
+    .stat-card { background:var(--card); border-radius:14px; padding:20px; box-shadow:var(--shadow); border:1px solid var(--border); position:relative; overflow:hidden; }
+    .stat-card::after { content:''; position:absolute; right:-20px; top:-20px; width:80px; height:80px; border-radius:50%; background:currentColor; opacity:0.05; }
+    .stat-card .stat-num { font-size:32px; font-weight:800; line-height:1; margin-bottom:4px; }
+    .stat-card .stat-label { font-size:12px; color:var(--text2); font-weight:500; }
+    .stat-card .stat-icon { position:absolute; right:16px; top:16px; font-size:28px; opacity:0.15; }
+    
+    /* FORMS */
+    .form-card { background:var(--card); border-radius:16px; padding:28px; box-shadow:var(--shadow); border:1px solid var(--border); margin-bottom:28px; }
+    .form-card h3 { font-size:16px; font-weight:700; margin-bottom:20px; display:flex; align-items:center; gap:8px; }
+    .form-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap:16px; }
+    .form-group { display:flex; flex-direction:column; gap:6px; }
+    .form-group label { font-size:11px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; color:var(--text2); }
+    .form-group input, .form-group select, .form-group textarea { 
+      padding:10px 14px; border:2px solid var(--border); border-radius:10px; font-family:'Outfit',sans-serif;
+      font-size:13px; color:var(--text); background:var(--bg); transition:all 0.2s; outline:none;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color:var(--teal); background:#fff; }
+    .form-group textarea { resize:vertical; min-height:80px; }
+    
+    /* AUTOCOMPLETE */
+    .autocomplete-wrap { position:relative; }
+    .autocomplete-list { 
+      position:absolute; top:100%; left:0; right:0; background:#fff; border:2px solid var(--teal);
+      border-top:none; border-radius:0 0 10px 10px; max-height:200px; overflow-y:auto; z-index:200;
+      box-shadow:0 10px 30px rgba(0,0,0,0.12);
+    }
+    .autocomplete-list div { padding:10px 14px; cursor:pointer; font-size:13px; transition:background 0.1s; }
+    .autocomplete-list div:hover { background:var(--bg); }
+    .autocomplete-list div mark { background:none; color:var(--teal); font-weight:700; }
+    
+    /* BUTTONS */
+    .btn { padding:11px 22px; border-radius:10px; font-family:'Outfit',sans-serif; font-size:13px; font-weight:600; cursor:pointer; border:none; transition:all 0.2s; display:inline-flex; align-items:center; gap:8px; }
+    .btn-primary { background:var(--navy); color:#fff; }
+    .btn-primary:hover { background:var(--navy2); transform:translateY(-1px); box-shadow:0 6px 20px rgba(13,27,42,0.3); }
+    .btn-success { background:var(--green); color:#fff; }
+    .btn-success:hover { filter:brightness(1.1); }
+    .btn-accent { background:var(--accent); color:var(--navy); }
+    .btn-accent:hover { background:var(--accent2); }
+    .btn-outline { background:transparent; color:var(--text); border:2px solid var(--border); }
+    .btn-outline:hover { border-color:var(--navy); color:var(--navy); }
+    .btn-sm { padding:6px 14px; font-size:12px; border-radius:8px; }
+    .btn-danger { background:var(--red); color:#fff; }
+    
+    /* TABLE */
+    .table-card { background:var(--card); border-radius:16px; padding:24px; box-shadow:var(--shadow); border:1px solid var(--border); }
+    .table-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+    .table-header h3 { font-size:16px; font-weight:700; }
+    .table-filters { display:flex; gap:10px; flex-wrap:wrap; }
+    .filter-select { padding:8px 12px; border:2px solid var(--border); border-radius:8px; font-family:'Outfit',sans-serif; font-size:12px; color:var(--text); background:var(--bg); cursor:pointer; outline:none; }
+    .filter-select:focus { border-color:var(--teal); }
+    table { width:100%; border-collapse:collapse; }
+    th { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--text2); padding:10px 12px; text-align:left; border-bottom:2px solid var(--border); white-space:nowrap; }
+    td { padding:12px 12px; font-size:13px; border-bottom:1px solid var(--border); vertical-align:middle; }
+    tr:last-child td { border-bottom:none; }
+    tr:hover td { background:rgba(0,180,216,0.03); }
+    
+    /* BADGES */
+    .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; }
+    .badge-pending { background:#fef3c7; color:#92400e; }
+    .badge-done { background:#dcfce7; color:#166534; }
+    .badge-process { background:#dbeafe; color:#1e40af; }
+    
+    /* TIPO BADGES */
+    .tipo-badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:600; }
+    .tipo-1 { background:#e0f2fe; color:#0369a1; }
+    .tipo-2 { background:#fce7f3; color:#be185d; }
+    .tipo-3 { background:#fff7ed; color:#c2410c; }
+    .tipo-4 { background:#f0fdf4; color:#166534; }
+    .tipo-5 { background:#faf5ff; color:#7e22ce; }
+    .tipo-6 { background:#fff1f2; color:#be123c; }
+    .tipo-7 { background:#f0f9ff; color:#075985; }
+    
+    /* MODAL */
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:500; display:flex; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(4px); }
+    .modal { background:#fff; border-radius:20px; padding:32px; width:100%; max-width:520px; box-shadow:0 30px 80px rgba(0,0,0,0.2); }
+    .modal h3 { font-size:18px; font-weight:700; margin-bottom:20px; }
+    .modal-actions { display:flex; gap:12px; justify-content:flex-end; margin-top:24px; }
+    
+    /* EMPTY STATE */
+    .empty-state { text-align:center; padding:60px 20px; color:var(--text2); }
+    .empty-state .empty-icon { font-size:48px; margin-bottom:12px; opacity:0.4; }
+    .empty-state p { font-size:14px; }
+    
+    /* ALERT */
+    .toast { position:fixed; bottom:24px; right:24px; background:var(--navy); color:#fff; padding:14px 22px; border-radius:12px; font-size:13px; font-weight:500; z-index:1000; transform:translateY(100px); opacity:0; transition:all 0.3s; box-shadow:0 10px 40px rgba(0,0,0,0.3); display:flex; align-items:center; gap:10px; }
+    .toast.show { transform:translateY(0); opacity:1; }
+    .toast.success { background:var(--green); }
+    .toast.error { background:var(--red); }
+    
+    @media (max-width:900px) {
+      .sidebar { width:200px; }
+      .main { margin-left:200px; }
+      .content { padding:20px; }
+    }
+
+  .vendedora-header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy3) 100%);
+    color:#fff; padding:20px 32px; display:flex; align-items:center; gap:16px;
+    border-bottom: 3px solid var(--accent);
+  }
+  .vendedora-avatar {
+    width:48px;height:48px;border-radius:50%;background:var(--accent);
+    display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:var(--navy);
+    flex-shrink:0;
+  }
+  .vendedora-header h1 { font-size:20px; font-weight:800; }
+  .vendedora-header p { font-size:12px; opacity:0.7; margin-top:2px; }
+  
+  .conn-banner { display:none; position:fixed; top:0; left:0; right:0; background:#ef4444; color:#fff;
+    text-align:center; padding:8px; font-size:12px; font-weight:600; z-index:9999; }
+  .conn-banner.online { background:#22c55e; }
+
+  </style>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+<div class="conn-banner" id="conn-banner">📡 Sin conexión — verificando...</div>
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="brand">Surtidora</div>
+    <h2>Higiénicos y Servicios</h2>
+    <span class="module-tag">Telemarketing 1</span>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-section">Menú</div>
+    <div class="nav-item active" onclick="showSection('nuevo')"><span class="icon">＋</span>Nuevo Pendiente</div>
+    <div class="nav-item" onclick="showSection('lista')"><span class="icon">📋</span>Mis Pendientes</div>
+    <div class="nav-item" onclick="showSection('concluidos')"><span class="icon">✅</span>Concluidos</div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="date-badge" id="current-date"></div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="vendedora-header">
+    <div class="vendedora-avatar">1</div>
+    <div>
+      <h1>Telemarketing 1</h1>
+      <p>Portal de gestión de pendientes con clientes</p>
+    </div>
+  </div>
+
+  <div id="sec-nuevo" class="content">
+    <div class="form-card">
+      <h3>📝 Registrar Nuevo Pendiente</h3>
+      <div class="form-grid">
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>🔍 Buscar Cliente</label>
+          <div class="autocomplete-wrap">
+            <input type="text" id="inp-cliente" placeholder="Escribe el nombre del cliente..." autocomplete="off">
+            <div class="autocomplete-list" id="list-cliente" style="display:none"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Tipo de Pendiente</label>
+          <select id="inp-tipo">
+            <option value="">— Selecciona —</option>
+            <option value="1">1. Instalación de equipo de limpieza</option>
+            <option value="2">2. Garantía – recoger producto</option>
+            <option value="3">3. Entrega pendiente (almacén)</option>
+            <option value="4">4. Revisión de equipo de limpieza</option>
+            <option value="5">5. Cambio por error de captura (ventas)</option>
+            <option value="6">6. Compra de bidones a clientes</option>
+            <option value="7">7. Recolección de bidones pendientes</option>
+            <option value="8">8. Entrega pendiente por faltante existencia (Compras)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Prioridad</label>
+          <select id="inp-prioridad">
+            <option value="regular">Regular</option>
+            <option value="urgente">🔴 Urgente</option>
+            <option value="vuelta">🔵 Vuelta por el rumbo</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>Descripción / Observaciones (opcional)</label>
+          <textarea id="inp-desc" placeholder="Detalla el pendiente, cantidad de producto, número de equipo, etc..."></textarea>
+        </div>
+      </div>
+      <div style="margin-top:20px;display:flex;gap:12px;">
+        <button class="btn btn-primary" onclick="registrarPendiente()">✓ Registrar Pendiente</button>
+        <button class="btn btn-outline" onclick="limpiarForm()">✕ Limpiar</button>
+      </div>
+    </div>
+    <div class="table-card">
+      <div class="table-header">
+        <h3>⏳ Mis Pendientes Activos</h3>
+        <span id="badge-activos" style="background:var(--accent);color:var(--navy);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;"></span>
+      </div>
+      <div id="tabla-recientes"></div>
+    </div>
+  </div>
+
+  <div id="sec-lista" class="content" style="display:none">
+    <div class="table-card">
+      <div class="table-header">
+        <h3>📋 Todos Mis Pendientes</h3>
+        <div class="table-filters">
+          <select class="filter-select" id="fil-tipo" onchange="renderLista()">
+            <option value="">Todos los tipos</option>
+            <option value="1">Instalación</option>
+            <option value="2">Garantía</option>
+            <option value="3">Entrega</option>
+            <option value="4">Revisión</option>
+            <option value="5">Error captura</option>
+            <option value="6">Compra bidones</option>
+            <option value="7">Recolección bidones</option>
+          </select>
+          <select class="filter-select" id="fil-estado" onchange="renderLista()">
+            <option value="">Todos los estados</option>
+            <option value="pendiente">Solo pendientes</option>
+            <option value="concluido">Solo concluidos</option>
+          </select>
+        </div>
+      </div>
+      <div id="tabla-lista"></div>
+    </div>
+  </div>
+
+  <div id="sec-concluidos" class="content" style="display:none">
+    <div class="stats-grid">
+      <div class="stat-card" style="color:var(--green)">
+        <div class="stat-num" id="cnt-concluidos">0</div>
+        <div class="stat-label">Pendientes Concluidos</div>
+        <div class="stat-icon">✅</div>
+      </div>
+      <div class="stat-card" style="color:var(--orange)">
+        <div class="stat-num" id="cnt-pendientes">0</div>
+        <div class="stat-label">Pendientes Activos</div>
+        <div class="stat-icon">⏳</div>
+      </div>
+      <div class="stat-card" style="color:var(--teal)">
+        <div class="stat-num" id="cnt-efectividad">0%</div>
+        <div class="stat-label">Efectividad</div>
+        <div class="stat-icon">📊</div>
+      </div>
+    </div>
+    <div class="table-card">
+      <div class="table-header"><h3>✅ Pendientes Concluidos</h3></div>
+      <div id="tabla-concluidos"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h3 id="modal-title"></h3>
+    <div id="modal-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+
+  // ═══════════════════════════════════════════════════════════════
+// CONFIGURACIÓN FIREBASE — Pegue sus credenciales de Firebase aquí
+// Obténgalas en: https://console.firebase.google.com → su proyecto
+// → Configuración del proyecto → Sus apps → Config
+// ═══════════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            "AIzaSyDGBgicmvOge196PiSgmIHhseQUGMiko-E",
+  authDomain:        "surtidora-de-higienicos.firebaseapp.com",
+  databaseURL:       "https://surtidora-de-higienicos-default-rtdb.firebaseio.com",
+  projectId:         "surtidora-de-higienicos",
+  storageBucket:     "surtidora-de-higienicos.firebasestorage.app",
+  messagingSenderId: "232648877023",
+  appId:             "1:232648877023:web:9e8a4a743b68f4e16d9a6a"
+};
+
+// ── Inicialización ──────────────────────────────────────────────
+try { firebase.initializeApp(firebaseConfig); } catch(e) {}
+const db = firebase.database();
+let _cache = {};
+
+// Conexión en tiempo real — se actualiza en todas las pantallas automáticamente
+db.ref('pendientes').on('value', snap => {
+  _cache = snap.val() || {};
+  if(typeof refreshUI === 'function') refreshUI();
+}, err => console.error('Firebase error:', err));
+
+function getPendientes() {
+  return Object.values(_cache);
+}
+
+function savePendientes(data) {
+  // Escribe colección completa (compatibilidad)
+  const obj = {};
+  data.forEach(p => { if(p && p.id) obj[p.id] = p; });
+  db.ref('pendientes').set(obj);
+}
+
+function fbAdd(p) {
+  return db.ref('pendientes/' + p.id).set(p);
+}
+
+function fbUpdate(id, changes) {
+  return db.ref('pendientes/' + id).update(changes);
+}
+
+const TIPOS = {
+    1: 'Instalación de equipo',
+    2: 'Garantía (recoger producto)',
+    3: 'Entrega pendiente (almacén)',
+    4: 'Revisión de equipo',
+    5: 'Cambio por error de captura',
+    6: 'Compra de bidones',
+    7: 'Recolección de bidones',
+    8: 'Entrega pendiente por faltante existencia (Compras)'
+  };
+  
+  const TIPO_COLORS = {1:'tipo-1',2:'tipo-2',3:'tipo-3',4:'tipo-4',5:'tipo-5',6:'tipo-6',7:'tipo-7',8:'tipo-1'};
+  
+  function genId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2,5);
+  }
+  
+  function formatDate(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleDateString('es-MX', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  }
+  
+  function showToast(msg, type='success') {
+    const t = document.getElementById('toast');
+    t.textContent = (type==='success'?'✓ ':type==='error'?'✗ ':'ℹ ') + msg;
+    t.className = 'toast show ' + type;
+    setTimeout(()=>{ t.className='toast'; },3000);
+  }
+  
+  function updateDate() {
+    const el = document.getElementById('current-date');
+    if(el) {
+      const now = new Date();
+      el.textContent = now.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    }
+  }
+  
+  // Autocomplete
+function showPrioridad(p) {
+  if(p==='urgente') return '<span style="color:var(--red);font-weight:700;font-size:12px">🔴 Urgente</span>';
+  if(p==='vuelta') return '<span style="color:#2563eb;font-weight:700;font-size:12px">🔵 Vuelta por el rumbo</span>';
+  return '<span style="color:var(--text2);font-size:12px">Regular</span>';
+}
+
+function setupAutocomplete(inputId, listId, clientList, onSelect) {
+    const input = document.getElementById(inputId);
+    const list = document.getElementById(listId);
+    if(!input || !list) return;
+    
+    input.addEventListener('input', function() {
+      const val = this.value.trim().toUpperCase();
+      list.innerHTML = '';
+      if(val.length < 2) { list.style.display='none'; return; }
+      const matches = clientList.filter(c => c.toUpperCase().includes(val)).slice(0,12);
+      if(!matches.length) { list.style.display='none'; return; }
+      matches.forEach(c => {
+        const div = document.createElement('div');
+        const idx = c.toUpperCase().indexOf(val);
+        div.innerHTML = c.substring(0,idx) + '<mark>' + c.substring(idx,idx+val.length) + '</mark>' + c.substring(idx+val.length);
+        div.addEventListener('mousedown', e => {
+          e.preventDefault();
+          input.value = c;
+          list.style.display='none';
+          if(onSelect) onSelect(c);
+        });
+        list.appendChild(div);
+      });
+      list.style.display='block';
+    });
+    
+    input.addEventListener('blur', ()=> setTimeout(()=>{ list.style.display='none'; },150));
+    document.addEventListener('click', e => { if(!input.contains(e.target) && !list.contains(e.target)) list.style.display='none'; });
+  }
+
+
+const VENDEDORA = 'TELEMARKETING 1';
+const CLIENTES = ["ZEPEDA CISNERO NORMA ALEJANDRA", "ZARATE RUELAS GINA ARACELI", "ZAMORA RINCON CHRISTIAN", "ZAMORA MEJIA EVELYN LIZETTE", "ZAIDA", "XYZ LLANTAS Y SERVICIOS S.A.P.I DE C.V.", "VIRGINIA CAMPOS HERNANDEZ", "VILLALVAZO MARTINEZ MANUEL", "VILLAFAÑA EVA DEL CARMEN", "VILLA Y PATIÑO MARIA DEL CARMEN", "VILLA HERMOSA GRANJAS S.A. DE C.V.", "VICTOR ORTEGA LOPEZ", "VICTOR MANUEL FLORES BORUNDA", "VETERINARIA HUELLITAS", "VETERINARIA HAUSTER", "VERA RODRIGUEZ NORA GABRIELA", "VELASCO VILLA HECTOR ARTURO", "VELASCO ROCHA CAMPRA", "VAZQUEZ PELAYO GEORGINA DAMARIS", "VAZQUEZ GARCIA ALICIA MIREYA", "VARGAS BAUTISTA ROSA", "VAQUERO DIAZ ANDRES", "VALENCIA PEÑA JAVIER", "VALENCIA OCHOA JOSE ENCARNACION", "VALENCIA MIRANDA JORGE ANTONIO", "VALENCIA GONZALEZ DANIEL", "VACA VIERA GEMA VIRIDIANA", "UREÑA SANCHEZ JAVIER", "UNIVERSIDAD DE COLIMA ( FACULTAD ECONOMIA)", "UNIVERSIDAD CONTEMPORANEA DE LAS AMERICAS S.C.", "UNIVER", "UNION MEDICA QUIRURGICA DE COLIMA", "UNICEPC", "UMIKER COMPANY", "ULISES MENDIVIL ARMENTA", "TRUJILLO TRUJILLO ANNA ELISA", "TRASNPORTES REFRIGERADOS VALLE NUEVO S.A. DE C.V.", "TOTAL TRADE", "TOSCANO LARIOS AMED JASAM", "TORRES SALAZAR MANOLA", "TORRES MORENO HERMES ARMANDO", "TORO MURRIETA PAOLA PATRICIA", "TOMOGRAFIA AXIAL", "TLAPALERIA RUELAS", "TINTOS MENDOZA JUAN PEDRO", "TINTORERIA PACIFICO EXPRESS (VIKY)", "TINTOMATIC SARA VARGAS", "TIENDAS HEXA, S.A. DE C.V.", "TIENDA SORIANA S.A. DE C.V.", "TERRAZA LA CHOPERIA", "TERIYAKI", "TECNOLOGICO DE COLIMA", "TECNOLOGIA EN AIRE S.A. DE C.V.", "Sra. SARAHI (Manzanillo)", "Sagui (Hotel coranda)", "SUSHI CATAN", "SUPPLY ONLINE, S.A. DE C.V.", "SUCESORES DE RAMON MAGAÑA VIZCAINO", "SUARCREM HOLDING", "SOSA ORTIZ VICENTE", "SOSA GARCIA LETICIA", "SONIA/ ELENA", "SOCORRO MENDOZA", "SOCIEDAD HOTELERA Y DIVISAS DEL PACIFICO", "SOCIEDAD DE PRODUCCION EN AMBIENTE CONTROLADO", "SOCIEDAD ADMINISTRADORA DE COLIMA", "SISTEMAS ELECTRONICOS DE POTENCIA S.A. DE C.V.", "SISTEMA PARA EL DESARROLLO INTEGRAL DE LA FAMILIA EN EL MUNICIPIO DE COMALA, COLIMA", "SISTEMA PARA EL DESARROLLO INTEGRAL DE LA FAMILIA DEL MPIO DE PIHUAMO JALISCO", "SISTEMA INTEGRAL DE TRANSPORTE DE COLIMA S.A DE C.V.", "SISTEMA ESTATAL PARA EL DESARROLLO INTEGRAL DE LA FAMILIA EN COLIMA", "SILVERIO MENDOZA AGUILAR", "SILVA TEJEDA IRA VIRIDIANA", "SILVA LUNA MA. DOLORES", "SILVA ALCOCER MA. GUADALUPE", "SIEMPRE CON GANAS", "SICAR", "SHUYING WU", "SHRIMP & SHELL", "SHIFT CORP SA DE CV", "SERVICIOS LOS SAUCES", "SERVICIOS INTEGRALES VILLALIMP, S.A. DE C.V.", "SERVICIOS INSTITUCIONALES, S.A. DE C.V.", "SERVICIOS INMOBILIARIOS IROA S.A. DE C.V.", "SERVICIOS DRILLING S.A. DE C.V.", "SERVICIO PROYECTO Y CLIMAS S.A. DE C.V.", "SERVICIO LA PETATERA", "SERVICIO IXTLAHUACAN", "SERVICIO DIOSA DE LA VILLA", "SERVICIO CULTURAL DEL INFANTE SC", "SERVICIO COLIMAN AUTOMOTRIZ S.A. DE C.V.", "SERVICIO COLIMAN", "SERVICIO CAMPESTRE EL LLANO S.A. DE C.V.", "SERRATOS ROGELIO DINORAH GABRIELA", "SERRATOS PALOMAR JUAN CARLOS", "SEPSA,  SERVICIOS INTEGRALES", "SEPSA", "SEMINARIO MAYOR", "SEGURIDAD PRIVADA DE ALTO IMPACTO S.A. DE .C.V.", "SEGURIDAD MULTIMODAL S.A. DE C.V.", "SECUNDARIA N° 6 MOISES SAENZ", "SECUNDARIA No.5 TECNICA", "SECRETARIA DE MARINA (HOSPITAL NAVAL DE MANZANILLO)", "SECRETARIA DE EDUCACION PUBLICA SIN TIPO DE SOCIEDAD.", "SDN C.G. 20/a. ZONA MILITAR", "SAUCEDO RIVAS  PEDRO", "SARA MARGARITA VARGAS ENRRIGUEZ", "SANTOS SANCHEZ FRANCISCO JAVIER", "SANTANA LINARES MIGUEL", "SANTANA LINARES FELIPE DE JESUS", "SANDOVAL CAMPOS GERONIMO", "SANCHEZ ZEPEDA VALENTIN", "SANCHEZ VARGAS ELIZABETH", "SANCHEZ TOSCANO HILDA BEATRIZ", "SANCHEZ REYES RETANA CARLOS TERESO", "SANCHEZ MALDONADO FRANCISCO", "SANCHEZ ALVAREZ GERMAN", "SANBORN HERMANOS SA", "SANABRIA MAGAÑA KARLA TERESA", "SAMUEL MUÑIZ FLETES", "SALIDO SANCHEZ  MARIA DE LOS ANGELES", "SALAZAR CORTES CARMELINA", "RUVALCABA GUZMAN BLANCA ISABEL", "RT &  DG ASESORIA DEPORTIVA", "ROSETE CRIADO ANA LUISA", "ROSALBA ANGUIANO ESTRADA", "ROSA MARIA FUENTES LOPEZ", "ROMERO CARDENAS LILLY PAULINA", "RODRIGUEZ SILVA JOSE LUIS", "RODRIGUEZ CORPORACION HOTELERA, S.A. DE C.V.", "ROCHA RAMIREZ GINA ARACELI", "RINCON AGUILAR LUIS", "RIEGOS BOMBAS Y ELECTRIFICACIONES", "REYES MONTEFORT BEATRIZ", "REYES MARTINEZ MA GUADALUPE", "RETOS ELECTRONICOS, S.A. DE C.V.", "RETOS ELECTRONICOS S.A. DE C.V.", "RESTAURANTE LA TUXPEÑA", "RESTAURANT MONTROI", "RESTAURANT EL SABOR", "REPARTOS RAPIDOS DE COLIMA, S.A. DE C.V.", "REFRIGUZMAN S.A. DE C.V.", "REAL MOTEL", "RAMOS VILLA JUAN CARLOS", "RAMON CERVANTES GUZMAN", "RAMON ANDRADE", "RAMIREZ OROZCO ROBERTO", "RAMIREZ ORDAZ LUIS ALBERTO", "RAMIREZ LARIOS MA. EUGENIA", "RAMIREZ GONZALEZ MIGUEL ANGEL", "RAMIREZ GEORGE VICTORIANO", "RAFAEL AMIGO DE LALO", "RADIO LEVY", "RADILLO RAMIREZ DORA ANGELICA", "QUINTERO LOPEZ JOSE ANGEL", "QUIMICOS Y CONSUMIBLES INSTITUCIONALES", "QUANTUM GRUPO EDUCATIVO DE OCCIDENTE", "QUALITAS COMPAÑIA DE SEGUROS", "PUERCOESPINES TEATRO A.C.", "PROYETERRA S.C.", "PROVEEDORA AGRICOLA DE TECOMAN", "PROMOTORA HOTELERA DE COLIMA", "PROMOLEVY S.A. DE C.V.", "PRODUCTOS INDUSTRIALIZADOS TECOMAN S.A DE C.V.", "PRODUCTOS DE BELLEZA", "PRODUCTOS COSTEÑOS", "PRODUCTORES DE GRANOS Y SEMILLAS S.P.R. DE R.L.", "PRODUCTORA MARITIMA DE OCCIDENTE SA. DE C.V.", "PRODUCE ARQUITECTURA S.A. DE C.V.", "PROCURADURIA FEDERAL DEL CONSUMIDOR", "PROCOSE", "PRINCESS AND KINGS", "PRIMARIA BASILIO VADILLO", "PRECIADO ALCARAZ CARLOS", "PRADO SILVA MARIO", "POTOSINOS EXPRESS PACK S.A DE C.V.", "POPUL-AUTO DE MAZATLAN", "PONCE DISTRIBUCIONES DE GUADALAJARA, S.A. DE C.V.", "PONCE DISTRIBUCIONES DE GUADALAJARA S.A. DE C.V.", "POLLOS A LA LEÑA CABAÑAZ", "PODER COLOR S.A DE C.V.", "PLASCENCIA SERRATOS CYNTHIA DINORAH", "PIZZA KOKET", "PINTURAS Y DERIVADOS DE OCCIDENTE S.A. DE C.V.", "PIMENTEL OROZCO CECILIO", "PHARMA AMIGO", "PEÑA GUTIERREZ NADIA", "PEREZ SERRANO RAMON", "PEREZ DE LA TORRE GUILLERMINA", "PEREZ CORTES MARCO ANTONIO", "PEREZ  DE LA TORRE GUILLERMINA", "PENINSULAR FITNESS", "PCO PAPELERIAS S.A. DE C.V.", "PATRONATO COL. INF. NIÑO SERGIO A.C.", "PASARIN Y ASOCIADOS, S.C.", "PARTIDO ACCION NACIONAL", "PARROQUIA DE LA SANTISIMA TRINIDAD", "PARRA BUELVAS RAMON", "PARQUE REGIONAL", "PAPAYAS SAN ANGEL, S.P.R. DE R.L.", "PALACIOS MONTES SILVERIO", "PADILLA ACERO JAVIER", "OZ AUTOMOTRIZ DE COLIMA, S. DE R.L. DE C.V.", "OTONIEL SOSA SOTO", "OSCAR PIMENTEL BERMUDEZ", "OSCAR GUILLERMO AVILA GONZALEZ", "OSCAR ALEJANDRO VERDUZCO RODRIGUEZ", "ORTIZ YAÑEZ MARTHA", "OROZCO TORRES ROMUALDO", "OROZCO MENDEZ ELVIA MARISA", "ORNELAS ARREOLA JOSE DE JESUS", "ORGANIZACIONES DE PRODUCTORES DE CAFE COLIMENSE S.A. DE C.V.", "OPERADORA MEXICANA DE RESTAURANTES BJL", "OPERADORA LOS MOLCAJETES DE VILLA S.A. DE C.V.", "OPERADORA JAYASA, S.A. DE C.V.", "OPERADORA HOTELERA QMO S.A. DE C.V.", "OPERADORA HOTELERA FRAGA S.A. DE C.V.", "OPERADORA DE CINES Y TEATROS EN EL ESTADO DE COLIMA", "ONUS COMERCIAL SA DE CV", "OMAR ALFREDO GUTIERREZ GOMEZ", "OLIVERA MADRID JOSE LUIS", "OLIVERA CAMACHO MA. MARGARITA", "OINK BBQ", "OGANDO PEREZ ROSA MARIA", "OFIMEDIA PAPELERIA Y CONSUMIBLES S.A. DE C.V.", "OFICINA DIPUTADO MIGUEL AGUAYO", "OCON CRUZ ELBA ADRIANA", "OCHOA VERDUZCO GUILLERMINA", "OCHOA PERALTA ANA JOSEFINA", "OCHOA BAYARDO ALBERTO JOB", "NUTRIPROTEOMICS", "NUEVO MAYOREO DE BONETERIA S.A. DE C.V.", "NUEVA WAL MART DE MEXICO S DE R.L. DE C.V.", "NORMA VIVIANA TAMAYO BARAJAS", "NOCHES DE ANTAÑO", "NISSAN", "NESTOR FERNANDO HERNANDEZ FLORES", "NEOCSA", "NEGOCIOS TERRENALES S.A. DE C.V.", "NAVARRO LUNA FERNANDO", "NAVA GONZALEZ JOSE ANTONIO", "NAVA ANA CRISTINA (farmacia G.I.)", "NARVAEZ WILSON BLANCA ROSA", "NANOMAR", "NANCY KARINA MORA AVILA", "Madre catalina", "MUÑOZ NOVELA J. JESUS", "MUÑOZ NOVELA J.  JESUS", "MULTISERVICIOS INTEGRALES DE CUYUTLAN S. DE R.L. DE C.V.", "MOTOS REGIAS", "MOTEL VILLAVERA", "MOTEL LEMON SUITES", "MOTEL AQUA H2O", "MORENO PEÑA MA. CONCEPCION", "MORAN PEREZ DE LEON MARTHA BEATRIZ", "MONICA BARAJAS", "MOBIMATIX S.A. DE C.V.", "MIGUEL ANGEL LLANOS MACHUCA", "MIGUEL ANGEL CERVERA GALVAN", "MICHEL RUIZ FELIPE DE JESUS", "MICHEL RAMIREZ CARLOTA", "MICHEL MAGAÑA FELIPA TRINIDAD", "MESINA VERDUZCO TANIA ELIZABETH", "MERCADO HERRERA MARIA IBETTE", "MENDOZA SALGADO MARIA DEL SOCORRO", "MENDOZA GOMEZ ROSA NELLY", "MENDOZA AVALOS JOEL", "MENDEZ AVALOS JOEL", "MEJIA GONZALEZ NAPOLEON", "MEDICA UNION", "MAX MONRROY AMARO", "MATEIMPRESOS S.A. DE C.V.", "MAS LIMPIEZA OCCIDENTE SA DE CV", "MARY (CASA GRANDE)", "MARTINEZ SOLORZANO PABLO", "MARTINEZ ESPINDOLA ALICIA", "MARTINEZ BONILLA CARMEN ARELI", "MARITZA ACEVES SOSA", "MARITIMA Y SERVICIOS", "MARISCOS SILVA DE COLIMA S.A. DE C.V.", "MARIO OCHOA", "MARIO ESTRADA BERNABE", "MARIA DE LOURDES NAVARRO LLAMAS", "MARIA DE LOS ANGELES LOPEZ JANEIRO", "MARGARITO MONTEJANO CORONA", "MARGARITA OLIVERA", "MAREA ROJA", "MARCO ANTONIO ALCARAZ  OCHOA", "MARATUN", "MANUEL (TAQUERIA)", "MAGAÑA CHAVEZ MANUEL ALEJANDRO", "MAGAÑA CEBALLOS ANA CELIA", "MADERIVADOS TABACHICHES S.A. DE C.V.", "MACIAS CERVANTES EDUARDO LUIS", "MACHUCA LOPEZ IRMA MARGARITA", "MA. GUADALUPE CUEVAS MORFIN", "MA. EUGENIA ZAMORA GOMEZ", "MA. DE JESÚS MUÑOZ CORTÉS", "MA. DE JESUS DOMINGUEZ GONZALEZ (VENDE PRODUCTO)", "LUIS RIGOBERTO RETES STEPHENS", "LUIS BERNARDO RAIGOSA SERRANO", "LUCIERNAGAS", "LOURDES GUADALUPE GARCIA RUIZ", "LOS PORTALES DE SUCHITLAN", "LOS NARANJOS CAMPESTRE", "LOPEZ RAZGADO JINTHY MARIA", "LOPEZ MURILLO MA. RAMONA", "LOPEZ LOPEZ ADRIAN", "LOPEZ CUEVAS ROSALVA", "LOGISTICA Y TRASLADOS BG-TC", "LOGISTICA SIBARITA", "LLERENAS GOMEZ MA. GABRIELA", "LLANTERA URZUA", "LLAMAS MERCADO LILIANA DESSIRE", "LICEO COLIMA A.C.", "LEE NELSON HENRY", "LAVANDERIA MILAS", "LAVANDERIA CAROLINA (ESPIRITU SANTO)", "LAVANDERIA BURBU CLEAN III", "LAS CAVAS DE DON JOSE", "LABORATORIO TORRES", "LABORATORIO QUIMICOS VARGAS S.C.", "LABORATORIO EN ALIMENTOS Y CLINICO TORRES S.C.", "LABORATORIO EN ALIMENTO Y CLINICO TORRES, S.C.", "LA PARRILLA CAMPESTRE", "LA PARANERA", "LA GUAYABA Y LA TOSTADA", "LA CUMPARSITA", "LA CANTONA", "KNUD ERIK JORGENSEN GOMEZ", "JULIA BARREDA PRECIADO", "JUGOS MONY", "JUCAR HOTELERA", "JUAN CARLOS ZUÑIGA LAZARO", "JUAN CAMPOS SERRATO", "JOSEFA VELAZQUEZ MICHEL", "JOSE LUIS GARCIA SOLACHE", "JOSE LUIS ESTEVEZ ABALO", "JOSE IGNACIO ARCEO LOPEZ", "JOSE ERNESTO PEÑA LOPEZ", "JOSE CONCEPCION FIGUEROA RODRIGUEZ", "JMJG CONSTRUCTORA", "JESUS OCEGUEDA GOMEZ", "JESUS DE LA ROSA MARTINEZ", "JAZMIN GUADALUPE VAZQUEZ JIMENEZ (EMPLEADA)", "JAVIER PADILLA ACERO", "JAVIER OTERO JUSTO", "JARDIN DE NIÑOS ROSA MUÑOZ MUÑOZ", "JARDIN DE NIÑOS RAFAELA SUAREZ", "JARDIN DE NIÑOS MARTHA ANDRADE DEL ROSAL", "JARDIN DE NIÑOS MARGARITA MADRID FUENTES", "JARDIN DE NIÑOS MA. CONCEPCION ORTIZ SILVA", "JARDIN DE NIÑOS JOSEFINA SANTANA GONZALEZ", "JARDIN DE NIÑOS GABRIELA MISTRAL T.M.", "JARDIN DE NIÑOS FERNANDO MORENO PEÑA", "JARDIN DE NIÑOS CELSA VIRGEN PEREZ", "JAQUE MERCADOTECNIA", "JAC GB AUTOMOTRIZ DE COLIMA", "J/N MARGARITA MADRID FUENTES", "J/N JOSEFINA SANTANA GONZALEZ", "J/N ISAURA PAMPLONA", "J.N. NIÑOS HEROES CHAPULTEPEC", "J. MERCEDES ARROYO GUTIERREZ", "ISENCO (Normal de colima)", "IRVIN CIBER", "IRVIN BECERRA", "INSUMOS PARA LA PRODUCTIVIDAD S.A. DE C.V.", "INSTITUTO SUPERIOR AUTONOMO DE OCCIDENTE", "INSTITUTO LIC. BENITO JUAREZ, A.C.", "INSTITUTO DE MARKETING Y TURISMO S. C.", "INSTITUTO DE LAS MUJERES PARA EL MUNICIPIO DE COLIMA", "INSTITUTO DE EDUCACION Y CULTURA DE OCCIDENTE", "INSTITUTO CULTURAL DEL INFANTE S.C.", "INSTITUTO CAMBRIDGE DE COLIMA", "INST. DE TRANS. ACC. A LA INF. PUB. Y PROTEC. DE DATOS DEL EDO. DE COL.", "INMOBILIARIA XACOBEO", "INMOBILIARIA PINOTECO", "INMOBILIARIA INVERSOL, S.A. DE C.V.", "INFRA S.A. DE C.V.", "INDUSTRIAS PORTER, S.A. DE C.V", "INCODE", "IMPLEMENTACION DE LA TECNOLOGIA EN EDUCACION PREPARATORIA S.C.", "IMPACTO ELECTRIFICACIONES S.A. DE C.V.", "ILIANA ALCANTAR RUIZ", "IGLESIAS YAÑEZ ESTEBAN", "IGLESIAS AMEZCUA ROGELIO DE JESUS", "IGLESIA CENTRO DE FE COLIMA", "IE MARBE S.A. DE C.V.", "HYUNDAI", "HUGO CESAR LARA GUDIÑO", "HUGO CESAR  LARA GUDIÑO", "HOTEL MINA", "HOTEL MEXICALI", "HOTEL CARACOLES", "HOTEL CANDILES", "HOTEL AMERICA", "HORTA CHAVEZ EMMANUEL", "HOME DEPOT MEXICO S RL DE CV", "HIGH VALUE PRODUCERS S DE RL", "HIDROELECTRICIDAD DEL PACIFICO, S. DE R.L. DE C.V.", "HIDRAULICA Y PAILERIA DE JALISCO S.A. DE C.V.", "HERRERA RAMOS ARNOLDO", "HERNANDEZ VERDUZCO SALVADOR JAIME", "HERNANDEZ NAVARRO JOSEFINA", "HERNANDEZ CARCAMO EDGAR NOE", "HERNANDEZ BUENO OSCAR JAVIER", "HEMAC TELEINFORMATICA S.A. DE C.V.", "HECTOR RAMON GONZALEZ GARCIA", "HECTOR MORENO ALCARAZ", "GUZMAN SANCHEZ ANA CECILIA", "GUZMAN GOMEZ BRENDA JUDITH", "GUTIERREZ RODRIGUEZ MA DEL ROSARIO", "GUTIERREZ HERMOSILLO ASESORES, S.C.", "GUSTAVO RINCON ROMERO", "GUARDADO SANDOVAL MARIA SILVIA", "GUADALUPE GARCIA GRANADOS", "GRUPO VERDE DE LA CONSTRUCCION, S.A. DE C.V.", "GRUPO SIETE DE COLIMA S DE R.L. DE C.V.", "GRUPO ROTELO", "GRUPO RODIGOM", "GRUPO RETES", "GRUPO PARISINA S.A. DE C.V.", "GRUPO MOTORMEXA COLIMA", "GRUPO M.C. AGUILAR", "GRUPO JOVALDI", "GRUPO INDUSTRIAL PROAVICOL", "GRUPO FINTERRA SA DE CV SOFOM ENR", "GRUPO DESARROLLO INFRAESTRUCTURA S.A. DE C.V.", "GRUPO DE TRABAJO POTRERO DE ENMEDIO SC DE RL DE CV", "GRUPO DE ATENCION PEDIATRICA, S.C.", "GRUPO ARCE DE COLIMA, S.A. DE C.V.", "GRUPO ARCE DE COLIMA S.A. DE C.V.", "GRUFUNE S.A. DE C.V.", "GRUFUNE  S.A. DE C.V.", "GROUP FAMILY LA 10", "GRIJALBA SOTELO JULISA", "GREKA ARQUITECTOS S.A. DE C.V.", "GRAN FESTIVALL", "GONZALEZ PEREZ ANGEL ROBERTO", "GONZALEZ NOVELA RICARDO", "GONZALEZ MIRANDA JOSE MACARIO", "GONZALEZ JACOBO CARMEN GABRIELA", "GONZALEZ DIEGO RAYMUNDO", "GONZALEZ AVIÑA Y ASOCIADOS S.C.", "GIMNASIO THE BOW", "GASTRONOMIA LA BUENA MESA S.A DE C.V.", "GASOTEC SA DE CV", "GASOLINERA EL LLANO (CESAR AVILA)", "GASOLINERA CAMINO REAL", "GAS MENGUC", "GAS CONFIA", "GAS  MENGUC", "GAS   MENGUC", "GARIBAY TAMAYO DANIELA", "GARIBAY PLASENCIA JESUS NAZARIO", "GARIBAY DIAZ JUAN ALVARO", "GARCIA ZARATE AMALIA HERLINDA", "GARCIA SUAREZ PATRICIA (CARNITAS SAHUAYO)", "GARCIA SUAREZ ALICIA", "GARCIA ORTIZ ENRIQUE", "GARCIA OLIVAR MONICA MARCELA", "GARCIA OCAMPO CONSUELO BERENICE", "GARCIA LLERENAS MARIA OFELIA", "GARCIA HERNANDEZ JESSICA JOHANA", "GALVEZ SOLIS MELANIA LISBETH", "GALARZA RAMOS JESUS RAMON", "GAITAN MC DONOUGH MARIA DE LOURDES", "GAITAN GONZALEZ ELIGIO VICENTE", "GABY CUEVAS", "GABRIELA GOMEZ ESPINOSA", "GABRIELA ANDREA ROJAS FERNANDEZ", "FUNERARIA MENDOZA", "FUNERARIA MAGAÑA", "FUNERARIA GRUPO LA PAZ", "FREGOSO DENIZ AURORA", "FRANCISCO VARGAS ENRRIGUEZ", "FRANCISCO JAVIER OTERO LOPEZ", "FRAGA MENDEZ ELIZABETH", "FORMACION DE EJECUTIVOS EXITOSOS", "FLORES SANTOS Y ASOCIADOS S.C.", "FLORES PEREZ VICTOR MANUEL", "FLOR GUADALUPE ROMERO ESCALERA", "FLETERA COLIMAN, S.A. DE C.V.", "FJBM SOCESORES S.A. DE C.V.", "FIT ENERGY", "FISFAC", "FINANCIERA INDEPENDENCIA S.A. DE C.V.", "FIGUEROA GUTIERREZ BRENDA", "FERRETERIA JEROMAR", "FERNANDO ROSAS", "FERNANDEZ TRUJILLO JOSE EDUARDO", "FERMIN ALEMAN  (loncheria)", "FELIX (CENTRO MEDICO)", "FAUSTINO GERARDO CASTILLO  LEON", "FARMACIAS BENAVIDES S.A.B. DE C.V.", "FARIAS FLORES ZAIDA GUADALUPE", "EXCELENCIA EDUCATIVA BILINGUE DE COLIMA", "EULEN MEXICO DE SERVICOS S.A. DE C.V.", "ESTRADA MARTINEZ VLADIMIR", "ESTANCIAS INFANTILES DEL GOBIERNO DEL ESTADO DE COLIMA", "ESTACION DE SERVICIO VALLE NUEVO", "ESTACION DE SERVICIO COLIMAR", "ESPECIALIDADES COSMETICAS Y MAGISTRALES", "ESCUELAS", "ESCUELA SECUNDARIATECNICA NO. 23", "ESCUELA SECUNDARIA TORRES QUINTERO T.M.", "ESCUELA SECUNDARIA GENERAL MARIO ANGUIANO MORENO", "ESCUELA SECUNDARIA ENRIQUE CORONA MORFIN", "ESCUELA PRIMARIA MA. CONCEPCION FARIAS PEREZ DE LEON T.V.", "ESCUELA PRIMARIA LIBERTAD TV", "ESCUELA PRIMARIA JOSE RUIZ VILLALVAZO T.V.", "ESCUELA PRIMARIA JESUS SILVERIO CAVAZOS CEBALLOS", "ESCUELA PRIMARIA IGNACIO MANUEL ALTAMIRANO", "ESCUELA PRIMARIA HELIODORO SILVA PALACIOS TV", "ESCUELA PRIMARIA GRISELDA ALVAREZ PONCE DE LEON TURNO COMPLETO", "ESCUELA PRIMARIA GREGORIO MACEDO LOPEZ TM", "ESCUELA PRIMARIA DE LOS TRABAJADORES T.M.", "ESCUELA PRIMARIA CLUB DE LEONES COLIMA CINCO T.V.", "ESCUELA PRIMARIA 15 DE MAYO T.V.", "ESCUELA DR. SALVADOR ALLENDE", "ESCUELA  PRIMARIA  JOSE  RUIZ  VILLALVAZO  T.M.", "ESC. SEC. TEC. No 12 BENEMERITO DE LAS AMERICAS", "ESC. SEC. TEC. #29 \"SUSANA ORTIZ SILVA\"", "ESC. SEC. TEC N°6 MOISES SAENZ GARZA", "ESC. SEC. MANUEL ALVAREZ  T.V.", "ESC. SEC. JOSE VASCONCELOS T.V.", "ESC. SEC. GRAL. GREGORIO TORRES QUINTERO", "ESC. PRIMARIA RAFAELA SUAREZ TC", "ESC. PRIMARIA MARGARITA MAZA DE JUAREZ T.C", "ESC. PRIMARIA JOSE RUIZ VILLALVAZO T.V.", "ESC. PRIMARIA BASILIO VADILLO T.M.", "ESC. PRIM. VICENTE GUERRERO T.C.", "ESC. PRIM. VALENTIN GOMEZ FARIAS", "ESC. PRIM. MIGUEL GOMEZ SANDOVAL", "ENERGIA Y COMPONENTES DE NORTEAMERICA SA DE CV", "ENERGAS DEL CENTRO S.A. DE C.V.", "EMPLEADO DE BALEROS Y RETENES", "EMBUTIDOS Y LACTEOS DE COLIMA S.A. DE C.V.", "EL REY DEL POLLO", "EL PECHUGON (Rosticeria)", "EL JARDIN DE LA CASITA DE CRISTY", "EFRAIN BENITEZ CISNEROS", "EFRAIN AGUILAR LOPEZ", "EDUARDO JUAREZ MENDOZA", "EDUARDO ARCEO ALVAREZ", "ECOS DE LA COSTA", "DYNAMIK GYMS", "DURAN OCHOA MARIA ELVA", "DURAN FERNANDEZ MARIA GUADALUPE", "DURAN CASTILLO EDGAR OMAR", "DON PEDRO", "DISTRIBUIDORA DE ACEROS DE COLIMA S.A. DE C.V.", "DIGNOSTICO MEDICO POR IMAGEN", "DIAZ CRESENCIA", "DESIGN CONSTRUCCIONES S.A. DE C.V.", "DESARROLLO MANGLE MAR PACIFICO", "DEPOSITO EL VALOR, S.A. DE C.V.", "DELGADO MORAN ZAIDA LIZETH", "DE LA TORRE ESCOBOSA RAFAEL", "DE LA ROCHA ORNELAS JOSE", "DE LA MADRID DE LA TORRE MARIO", "DE LA BORBOLLA VERDUZCO JOSE ANTONIO", "DB CARRIERS S.A. DE C.V.", "DAVILA PRECIADO LILIA ISABEL", "DAVALOS SANCHEZ ABEL", "DANIELA CERVANTES", "CREURMACK", "CRESCENCIA DIAZ PINEDA", "COVARRUBIAS SANCHEZ JOSE MIGUEL", "CORTES ALDACO JUAN PABLO", "CORPORATIVO EMPRESARIAL BYGG", "CORPOLEVY S. DE R.L. DE C.V.", "CORONADO VALLE GRISELDA", "CONTROLADORA HACIENDA SAN ANTONIO S.A. DE C.V.", "CONTRERAS SANTOS ROSA JEANNETTE", "CONTRERAS GOMEZ PEDRO", "CONTRERAS CASTILLO JOSE MANUEL", "CONSTRUCTORA VILLA DE COLIMA S.A. DE C.V.", "CONSTITUCION DE 1857 SEC. 8", "CONSEJO NACIONAL DE FOMENTO EDUCATIVO", "CONSEJO DE LA JUDICATURA FEDERAL", "CONGELADOS DE TECOMAN, S.A. DE C.V.", "CONDETTO S.A. DE C.V.", "CONCEPCION GARIBAY (autobaños)", "COMPLEJO LIMONERO LA ESCONDIDA, S.A. DE C.V.", "COMPLEJO CAÑERO LA ESCONDIDA S PR  DE RL", "COMPLEJO AGRICOLA EL DELIRIO SPR DE RL", "COMPAÑIA IMPORTADORA DE MUEBLES Y ACCESORIOS CIMA SA DE CV", "COMIALEX S.A. DE C.V.", "COMERCIALIZADORA GREEN TECH, S.A. DE C.V.", "COMERCIAL LLANTERA TAPATIA, S.A. DE C.V.", "COMBUSTIBLES SALAGUA", "COMBUSTIBLES EL ESPINAL S.A. DE C.V.", "COLIMAUTOS, S.A. DE C.V.", "COLIMAN", "COLIMA AUTOMOTRIZ", "COLEGIO INGLES", "COLEGIO GANDHI", "COLEGIO ANAHUAC DE COLIMA S.C.", "CODINA OCHOA JOSE LUIS", "COBIAN CARRILLO ELVIRA", "CLUB DE GOLF DE COLIMA", "CLINICA DE SERVICIOS MEDICOS COLIMAN", "CLINICA CORDOBA", "CLAVESA INMOBILIARIA S.A. DE C.V.", "CITROLIM", "CITROJUGO", "CHRISTIAN ALEJANDRO VILLASEÑOR GONZALEZ", "CHAVEZ GUTIERREZ HECTOR MANUEL", "CHAVEZ ALVAREZ DORA GUADALUPE", "CERVANTES GUTIERREZ MA. CRISTINA", "CERESO", "CENTRO ESPECIALIDADES MEDICAS DEL PACIFICO DE TECOMAN, S.A. DE C.V.", "CENTRO EDUCATIVO CON PRINCIPIOS", "CENTRO DE FORMACION EDUCATIVA BILINGUE", "CENTRO DE ESTUDIOS SUPERIORES DEL PUERTO", "CENTRO DE COMPUTACION PARA EL TRABAJO", "CENTRO DE CANCEROLOGIA", "CENTRO DE  FORMACIÓN EDUCATIVA BILINGUE", "CENTRO COMERCIAL PLAZA ZAPOTLAN", "CENTRAL TOUR DE COLIMA", "CENTRAL DE AUTOBUSES DE COLIMA", "CENADURIA MORELOS", "CENADURIA MECHE", "CEMEX CONCRETOS S.A. DE C.V.", "CEJA TORRES SAMIRA MARGARITA", "CEBALLOS ROCHA MARGARITA", "CEBALLOS RAMIREZ MARIA ERENDIRA", "CAZARES CORONA ELIA ISAURA", "CAVSA MOTORS", "CAVSA COLIMA AUTOMOTRIZ", "CASTELLON PEREZ JUAN JESUS", "CASTAÑEDA MORAN MANUEL ALBERTO", "CASA DE PIEDRA", "CARSOL COLIMA", "CARREON GALLARDO TANIA EUNICE", "CARNICERIA EL TORREON, S.A. DE C.V.", "CARLOS JESUS GUTIERREZ CARRILLO", "CARLOS ALBERTO MAGAÑA HERNANDEZ (EMPLEADO)", "CARDENAS ZAMORA GLORIA PATRICIA", "CAPELLANIA DEL ESPIRITU SANTO", "CAMPRA VELASCO ROCHA", "CAMARENA BERRA JUAN IGNACIO", "CAMARA MEXICANA DE LA INDUSTRIA DE LA CONSTRUCCION", "CAJI ADVENTURE S.A. DE C.V.", "CAJA POPULAR MEXICANA, S.C. DE AP. DE R.L. DE C.V.", "CAJA POPULAR MEXICANA, S.C. DE A.P. DE R.L DE C.V.", "CAJA POPULAR MEXICANA S.C. DE A.P. DE R.L. DE C. V.", "CAJA  LA PROVIDENCIA", "CABRERA AGUILAR MELCHOR ALBERTO", "C.S.E. ESC. SEC. NUEVA CREACION T.M.", "BUSTAMANTE  PADILLA GABRIEL", "BRISAS DEL MAR VILLAS Y TURISMO, S.A. DE C.V.", "BRENDA VAZQUEZ", "BRACAMONTES CEBALLOS JOSE VIDAL", "BOMBAS Y MOTORES DE COLIMA S.A. DE C.V.", "BOLPPAC S DE P.R. DE R.L.", "BLUMGART DEL TORO ROGELIO", "BERTHA ALICIA PEREZ BENAVIDES", "BERBER BIRRUETA ANTONIA", "BEDOLLA VALENCIA LUZ EDITH", "BEBIDAS MUNDIALES", "BEATRIZ SILVA", "BEATRIZ GOMEZ (FABRICA DE HIELO)", "BAUTISTA REYES ANGELINA", "BAUTISTA DIAZ ERICA IRASEMA", "BARRAGAN ALUMINIO Y ACABADOS S.A. DE C.V.", "BAREZZITO", "BARBOZA VILLALVAZO CARLOS URIEL", "BAR LA MILAGROSA", "BAPECO", "BANCO FINTERRA S.A. INSTITUCION DE BANCA MULTIPLE", "BANCO AZTECA SA INSTITUCION DE BANCA MULTIPLE", "BANANAS PREMIUN FARIAS S.P.R. DE R.L.", "AVILA GONZALEZ JUAN CARLOS", "AUTOMOTRIZ MOTORMEXA COLIMA", "AUTOMOTORES DE COLIMA, S.A. DE C.V.", "AUTOBUSES PURHEPEHAS S.A DE C.V.", "AUTOBAÑOS MIRANDA", "AUTOBAÑOS MADRIGAL", "AUTO SERVICIOS COSTEÑO", "AUDELINA LLAMAS BUENO", "ASPERSORAS AGRICOLAS DE COLIMA S.A. DE C.V.", "ASOCIACION DE CONDOMINOS Y ARRENDATARIOS DE PLAZA COUNTRY", "ASOCIACION DE CONDOMINOS DE PLAZA COUNTRY", "ASOCIACION DE BENEFICIENCIA PRIVADA DE COLIMA", "ASOCIACION DE BENEFICENCIA PRIVADA DE COLIMA IAP", "ASOC. DE USUA. DEL MOD. PEÑITAS DEL DTO. DE RIEGO No 053 EDO DE COL AC", "ASFALTOS GUADALAJARA S.A.P.I. DE C.V.", "ARREOLA PEREZ MAIRA", "ARMSTRONG ARMORED DE MEXICO", "AREA CERO CUATRO S.A. DE C.V.", "ARDICA CONSTRUCCIONES S.A. DE C.V.", "ARCHIVO HISTORICO DEL MUNICIPIO DE COLIMA", "ARANDANOS DE COLIMA SAPI DE CV", "ARAIZA IMELDA", "ARAIZA FLORES IMELDA", "ARACELY MEDINA", "ARACELI MEDINA", "ARACELI CRUZ MERCADO", "ANGELA AMERICA RAMOS MANCILLA", "ANAYA SALAZAR JOSE LUIS", "ANA LILIA RODRIGUEZ (Abarrotes)", "AMEZCUA VELAZQUEZ LILIA TERESA", "AMELIA LOPEZ MANCILLA", "ALVARO MOLINA VIVIANO", "ALVAREZ RAMIREZ ROSALVA", "ALVAREZ CARDENAS EMMA", "ALVA", "ALLVENTO CONSTRUCCIONES S.A. DE C.V.", "ALICIA GUTIERREZ DIAZ", "ALFONSO PEREZ RAMIREZ", "ALEJANDRO RUEDA LOPEZ", "ALEJANDRO PINTO", "ALCE CONSORCIO INMOBILIARIO, S.A. DE C.V.", "ALCARAZ ALVAREZ JORGE MANUEL", "ALCANTAR ARCEGA WENDY", "ALBERGUE LOS LIMONES", "ALBERGUE CAMINO A LA FELICIDAD A.C.", "ALATORRE CARRANZA ERNESTO", "AKTIVE SPORT GYM", "AHUMADA VIVEROS BENJAMIN", "AGUIRRE VILLALPANDO ERIKA KARINA", "AGUAYO NARANJO LORENA ISABEL", "AGUAS BUÑUELO ARMANDO", "AGROSERVICIOS DE COLIMA, S.A. DE C.V.", "AGROPECUARIA TERRANOVA S.A. DE C.V.", "AGROPECUARIA FER S.A. DE C.V.", "AGRICULTURA POR CONTRATO EN BIOCLIMA", "AGRICOLA EL SIFON S DE P.R. DE R.L.", "ADMINISTRACION PORTARIA", "ADMINISTRACION EL NUEVO COLIMA SA DE CV E INVERCOL SA DE CV", "ACEITES ESENCIALES DE LIMON DE TECOMAN, S.A. DE C.V.", "ABARROTES RULAS", "ABARROTERA DEL DUERO", "A Q NANISHE", "KARINA TERESA BARBA SHIMIZU", "GAS MENGUC", "AUTOMOTRIZ RANCAGUA", "LABORATORIO QUIMICOS VARGAS S.C."];
+
+
+let _currentSection = 'nuevo';
+
+function refreshUI() {
+  if(_currentSection==='nuevo') renderRecientes();
+  else if(_currentSection==='lista') renderLista();
+  else if(_currentSection==='concluidos') renderConcluidos();
+}
+function showSection(sec) {
+  ['nuevo','lista','concluidos'].forEach(s => {
+    document.getElementById('sec-'+s).style.display = s===sec?'block':'none';
+  });
+  _currentSection = sec;
+  document.querySelectorAll('.nav-item').forEach((el,i) => {
+    el.classList.toggle('active', ['nuevo','lista','concluidos'][i]===sec);
+  });
+  if(sec==='lista') renderLista();
+  if(sec==='concluidos') renderConcluidos();
+  if(sec==='nuevo') renderRecientes();
+}
+
+function registrarPendiente() {
+  const cliente = document.getElementById('inp-cliente').value.trim();
+  const tipo = document.getElementById('inp-tipo').value;
+  const desc = document.getElementById('inp-desc').value.trim();
+  const prioridad = document.getElementById('inp-prioridad').value;
+  if(!cliente) { showToast('Selecciona un cliente','error'); return; }
+  if(!tipo) { showToast('Selecciona el tipo de pendiente','error'); return; }
+  fbAdd({ id:genId(), cliente, tipo:parseInt(tipo), desc, prioridad,
+    vendedora:VENDEDORA, fecha:new Date().toISOString(),
+    estado:'pendiente', notasLogistica:'', fechaConcluido:null });
+  showToast('Pendiente registrado exitosamente');
+  limpiarForm();
+  renderRecientes();
+}
+
+function limpiarForm() {
+  document.getElementById('inp-cliente').value='';
+  document.getElementById('inp-tipo').value='';
+  document.getElementById('inp-desc').value='';
+  document.getElementById('inp-prioridad').value='regular';
+}
+
+function getMios() { return getPendientes().filter(p=>p.vendedora===VENDEDORA); }
+
+function renderRecientes() {
+  const activos = getMios().filter(p=>p.estado==='pendiente');
+  const badge = document.getElementById('badge-activos');
+  if(badge) badge.textContent = activos.length + ' activos';
+  renderTable(activos.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)), 'tabla-recientes', false);
+}
+
+function renderLista() {
+  const tipo = document.getElementById('fil-tipo').value;
+  const estado = document.getElementById('fil-estado').value;
+  let items = getMios().sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  if(tipo) items=items.filter(p=>p.tipo==tipo);
+  if(estado) items=items.filter(p=>p.estado===estado);
+  renderTable(items, 'tabla-lista', true);
+}
+
+function renderConcluidos() {
+  const all = getMios();
+  const concluidos = all.filter(p=>p.estado==='concluido');
+  const pendientes = all.filter(p=>p.estado==='pendiente');
+  document.getElementById('cnt-concluidos').textContent=concluidos.length;
+  document.getElementById('cnt-pendientes').textContent=pendientes.length;
+  const ef = all.length?Math.round(concluidos.length/all.length*100):0;
+  document.getElementById('cnt-efectividad').textContent=ef+'%';
+  renderTable(concluidos.sort((a,b)=>new Date(b.fechaConcluido)-new Date(a.fechaConcluido)),'tabla-concluidos',true);
+}
+
+function renderTable(items, cid, showStatus) {
+  const c=document.getElementById(cid);
+  if(!items.length){c.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><p>No hay pendientes registrados</p></div>';return;}
+  c.innerHTML='<table><thead><tr><th>Cliente</th><th>Tipo</th><th>Prioridad</th>'+(showStatus?'<th>Estado</th>':'')+'<th>Registrado</th>'+(showStatus?'<th>Concluido</th>':'')+'<th></th></tr></thead><tbody>'+
+  items.map(p=>`<tr class="pendiente-row">
+    <td><strong>${p.cliente}</strong></td>
+    <td><span class="tipo-badge ${TIPO_COLORS[p.tipo]}">${TIPOS[p.tipo]}</span></td>
+    <td>${showPrioridad(p.prioridad)}</td>
+    ${showStatus?`<td>${p.estado==='concluido'?'<span class="badge badge-done">✓ Concluido</span>':'<span class="badge badge-pending">⏳ Pendiente</span>'}</td>`:''}
+    <td style="color:var(--text2);font-size:12px">${formatDate(p.fecha)}</td>
+    ${showStatus?`<td style="color:var(--text2);font-size:12px">${formatDate(p.fechaConcluido)}</td>`:''}
+    <td><button class="btn btn-outline btn-sm" onclick="verDetalle('${p.id}')">Ver</button></td>
+  </tr>`).join('')+'</tbody></table>';
+}
+
+function verDetalle(id) {
+  const p=getPendientes().find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('modal-title').textContent='📋 Detalle del Pendiente';
+  document.getElementById('modal-body').innerHTML=`
+    <div style="display:grid;gap:12px;">
+      <div><span style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700;">Cliente</span><p style="font-weight:600;font-size:15px;margin-top:2px">${p.cliente}</p></div>
+      <div><span style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700;">Tipo</span><p style="margin-top:4px"><span class="tipo-badge ${TIPO_COLORS[p.tipo]}">${TIPOS[p.tipo]}</span></p></div>
+      <div><span style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700;">Estado</span><p style="margin-top:4px">${p.estado==='concluido'?'<span class="badge badge-done">✓ Concluido por Logística</span>':'<span class="badge badge-pending">⏳ En espera de Logística</span>'}</p></div>
+      <div><span style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700;">Descripción</span><p style="margin-top:2px;color:var(--text2)">${p.desc||'—'}</p></div>
+      <div><span style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700;">Registrado</span><p style="margin-top:2px;color:var(--text2)">${formatDate(p.fecha)}</p></div>
+      ${p.estado==='concluido'?`<div style="background:#f0fdf4;border-radius:10px;padding:14px;">
+        <span style="font-size:11px;text-transform:uppercase;color:#166534;font-weight:700;">✅ Notas de Logística</span>
+        <p style="margin-top:4px;color:#166534">${p.notasLogistica||'—'}</p>
+        <p style="margin-top:4px;font-size:11px;color:var(--text2)">Concluido: ${formatDate(p.fechaConcluido)}</p>
+      </div>`:''}
+    </div>
+  `;
+  document.getElementById('modal').style.display='flex';
+}
+
+function closeModal() { document.getElementById('modal').style.display='none'; }
+
+setupAutocomplete('inp-cliente','list-cliente',CLIENTES);
+
+// Monitor de conexión
+db.ref('.info/connected').on('value', snap => {
+  const banner = document.getElementById('conn-banner');
+  if(!banner) return;
+  if(snap.val() === true) {
+    banner.style.display = 'none';
+  } else {
+    banner.style.display = 'block';
+    banner.className = 'conn-banner';
+    banner.textContent = '⚠️ Sin conexión a internet — los datos no se están sincronizando';
+  }
+});
+
+updateDate();
+renderRecientes();
+</script>
+</body>
+</html>

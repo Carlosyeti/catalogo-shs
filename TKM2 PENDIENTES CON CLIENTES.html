@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pendientes – Telemarketing 2</title>
+  <style>
+
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+    
+    :root {
+      --navy: #0d1b2a;
+      --navy2: #1b2d42;
+      --navy3: #243b55;
+      --accent: #e8a020;
+      --accent2: #f5c842;
+      --teal: #00b4d8;
+      --green: #22c55e;
+      --red: #ef4444;
+      --orange: #f97316;
+      --bg: #f0f4f8;
+      --card: #ffffff;
+      --text: #1e293b;
+      --text2: #64748b;
+      --border: #e2e8f0;
+      --shadow: 0 4px 20px rgba(13,27,42,0.08);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+    
+    /* SIDEBAR */
+    .sidebar {
+      position:fixed; left:0; top:0; width:260px; height:100vh;
+      background: linear-gradient(160deg, var(--navy) 0%, var(--navy2) 60%, var(--navy3) 100%);
+      display:flex; flex-direction:column; padding:0; z-index:100;
+      box-shadow: 4px 0 30px rgba(0,0,0,0.3);
+    }
+    .sidebar-logo {
+      padding: 28px 24px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .sidebar-logo .brand { font-size:10px; font-weight:700; letter-spacing:3px; color:var(--accent); text-transform:uppercase; margin-bottom:4px; }
+    .sidebar-logo h2 { font-size:16px; font-weight:700; color:#fff; line-height:1.3; }
+    .sidebar-logo .module-tag { display:inline-block; margin-top:8px; background:rgba(232,160,32,0.2); color:var(--accent); font-size:10px; font-weight:600; padding:3px 8px; border-radius:20px; letter-spacing:1px; text-transform:uppercase; }
+    .sidebar-nav { padding:20px 0; flex:1; }
+    .nav-section { padding: 6px 24px 4px; font-size:9px; font-weight:700; letter-spacing:2px; color:rgba(255,255,255,0.3); text-transform:uppercase; }
+    .nav-item { display:flex; align-items:center; gap:12px; padding:11px 24px; cursor:pointer; transition:all 0.2s; position:relative; color:rgba(255,255,255,0.6); font-size:13px; font-weight:500; }
+    .nav-item:hover, .nav-item.active { color:#fff; background:rgba(255,255,255,0.07); }
+    .nav-item.active::before { content:''; position:absolute; left:0; top:0; height:100%; width:3px; background:var(--accent); border-radius:0 2px 2px 0; }
+    .nav-item .icon { font-size:16px; width:20px; text-align:center; }
+    .sidebar-footer { padding:16px 24px; border-top:1px solid rgba(255,255,255,0.08); }
+    .sidebar-footer .date-badge { font-size:11px; color:rgba(255,255,255,0.4); }
+    
+    /* MAIN */
+    .main { margin-left:260px; min-height:100vh; display:flex; flex-direction:column; }
+    .topbar { background:var(--card); border-bottom:1px solid var(--border); padding:16px 32px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
+    .topbar h1 { font-size:20px; font-weight:700; color:var(--text); }
+    .topbar .subtitle { font-size:12px; color:var(--text2); margin-top:2px; }
+    .content { padding:28px 32px; flex:1; }
+    
+    /* CARDS */
+    .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:28px; }
+    .stat-card { background:var(--card); border-radius:14px; padding:20px; box-shadow:var(--shadow); border:1px solid var(--border); position:relative; overflow:hidden; }
+    .stat-card::after { content:''; position:absolute; right:-20px; top:-20px; width:80px; height:80px; border-radius:50%; background:currentColor; opacity:0.05; }
+    .stat-card .stat-num { font-size:32px; font-weight:800; line-height:1; margin-bottom:4px; }
+    .stat-card .stat-label { font-size:12px; color:var(--text2); font-weight:500; }
+    .stat-card .stat-icon { position:absolute; right:16px; top:16px; font-size:28px; opacity:0.15; }
+    
+    /* FORMS */
+    .form-card { background:var(--card); border-radius:16px; padding:28px; box-shadow:var(--shadow); border:1px solid var(--border); margin-bottom:28px; }
+    .form-card h3 { font-size:16px; font-weight:700; margin-bottom:20px; display:flex; align-items:center; gap:8px; }
+    .form-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap:16px; }
+    .form-group { display:flex; flex-direction:column; gap:6px; }
+    .form-group label { font-size:11px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; color:var(--text2); }
+    .form-group input, .form-group select, .form-group textarea { 
+      padding:10px 14px; border:2px solid var(--border); border-radius:10px; font-family:'Outfit',sans-serif;
+      font-size:13px; color:var(--text); background:var(--bg); transition:all 0.2s; outline:none;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color:var(--teal); background:#fff; }
+    .form-group textarea { resize:vertical; min-height:80px; }
+    
+    /* AUTOCOMPLETE */
+    .autocomplete-wrap { position:relative; }
+    .autocomplete-list { 
+      position:absolute; top:100%; left:0; right:0; background:#fff; border:2px solid var(--teal);
+      border-top:none; border-radius:0 0 10px 10px; max-height:200px; overflow-y:auto; z-index:200;
+      box-shadow:0 10px 30px rgba(0,0,0,0.12);
+    }
+    .autocomplete-list div { padding:10px 14px; cursor:pointer; font-size:13px; transition:background 0.1s; }
+    .autocomplete-list div:hover { background:var(--bg); }
+    .autocomplete-list div mark { background:none; color:var(--teal); font-weight:700; }
+    
+    /* BUTTONS */
+    .btn { padding:11px 22px; border-radius:10px; font-family:'Outfit',sans-serif; font-size:13px; font-weight:600; cursor:pointer; border:none; transition:all 0.2s; display:inline-flex; align-items:center; gap:8px; }
+    .btn-primary { background:var(--navy); color:#fff; }
+    .btn-primary:hover { background:var(--navy2); transform:translateY(-1px); box-shadow:0 6px 20px rgba(13,27,42,0.3); }
+    .btn-success { background:var(--green); color:#fff; }
+    .btn-success:hover { filter:brightness(1.1); }
+    .btn-accent { background:var(--accent); color:var(--navy); }
+    .btn-accent:hover { background:var(--accent2); }
+    .btn-outline { background:transparent; color:var(--text); border:2px solid var(--border); }
+    .btn-outline:hover { border-color:var(--navy); color:var(--navy); }
+    .btn-sm { padding:6px 14px; font-size:12px; border-radius:8px; }
+    .btn-danger { background:var(--red); color:#fff; }
+    
+    /* TABLE */
+    .table-card { background:var(--card); border-radius:16px; padding:24px; box-shadow:var(--shadow); border:1px solid var(--border); }
+    .table-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+    .table-header h3 { font-size:16px; font-weight:700; }
+    .table-filters { display:flex; gap:10px; flex-wrap:wrap; }
+    .filter-select { padding:8px 12px; border:2px solid var(--border); border-radius:8px; font-family:'Outfit',sans-serif; font-size:12px; color:var(--text); background:var(--bg); cursor:pointer; outline:none; }
+    .filter-select:focus { border-color:var(--teal); }
+    table { width:100%; border-collapse:collapse; }
+    th { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--text2); padding:10px 12px; text-align:left; border-bottom:2px solid var(--border); white-space:nowrap; }
+    td { padding:12px 12px; font-size:13px; border-bottom:1px solid var(--border); vertical-align:middle; }
+    tr:last-child td { border-bottom:none; }
+    tr:hover td { background:rgba(0,180,216,0.03); }
+    
+    /* BADGES */
+    .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; }
+    .badge-pending { background:#fef3c7; color:#92400e; }
+    .badge-done { background:#dcfce7; color:#166534; }
+    .badge-process { background:#dbeafe; color:#1e40af; }
+    
+    /* TIPO BADGES */
+    .tipo-badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:600; }
+    .tipo-1 { background:#e0f2fe; color:#0369a1; }
+    .tipo-2 { background:#fce7f3; color:#be185d; }
+    .tipo-3 { background:#fff7ed; color:#c2410c; }
+    .tipo-4 { background:#f0fdf4; color:#166534; }
+    .tipo-5 { background:#faf5ff; color:#7e22ce; }
+    .tipo-6 { background:#fff1f2; color:#be123c; }
+    .tipo-7 { background:#f0f9ff; color:#075985; }
+    
+    /* MODAL */
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:500; display:flex; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(4px); }
+    .modal { background:#fff; border-radius:20px; padding:32px; width:100%; max-width:520px; box-shadow:0 30px 80px rgba(0,0,0,0.2); }
+    .modal h3 { font-size:18px; font-weight:700; margin-bottom:20px; }
+    .modal-actions { display:flex; gap:12px; justify-content:flex-end; margin-top:24px; }
+    
+    /* EMPTY STATE */
+    .empty-state { text-align:center; padding:60px 20px; color:var(--text2); }
+    .empty-state .empty-icon { font-size:48px; margin-bottom:12px; opacity:0.4; }
+    .empty-state p { font-size:14px; }
+    
+    /* ALERT */
+    .toast { position:fixed; bottom:24px; right:24px; background:var(--navy); color:#fff; padding:14px 22px; border-radius:12px; font-size:13px; font-weight:500; z-index:1000; transform:translateY(100px); opacity:0; transition:all 0.3s; box-shadow:0 10px 40px rgba(0,0,0,0.3); display:flex; align-items:center; gap:10px; }
+    .toast.show { transform:translateY(0); opacity:1; }
+    .toast.success { background:var(--green); }
+    .toast.error { background:var(--red); }
+    
+    @media (max-width:900px) {
+      .sidebar { width:200px; }
+      .main { margin-left:200px; }
+      .content { padding:20px; }
+    }
+
+  .vendedora-header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy3) 100%);
+    color:#fff; padding:20px 32px; display:flex; align-items:center; gap:16px;
+    border-bottom: 3px solid var(--accent);
+  }
+  .vendedora-avatar {
+    width:48px;height:48px;border-radius:50%;background:var(--accent);
+    display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:var(--navy);
+    flex-shrink:0;
+  }
+  .vendedora-header h1 { font-size:20px; font-weight:800; }
+  .vendedora-header p { font-size:12px; opacity:0.7; margin-top:2px; }
+  
+  .conn-banner { display:none; position:fixed; top:0; left:0; right:0; background:#ef4444; color:#fff;
+    text-align:center; padding:8px; font-size:12px; font-weight:600; z-index:9999; }
+  .conn-banner.online { background:#22c55e; }
+
+  </style>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+<div class="conn-banner" id="conn-banner">📡 Sin conexión — verificando...</div>
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="brand">Surtidora</div>
+    <h2>Higiénicos y Servicios</h2>
+    <span class="module-tag">Telemarketing 2</span>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-section">Menú</div>
+    <div class="nav-item active" onclick="showSection('nuevo')"><span class="icon">＋</span>Nuevo Pendiente</div>
+    <div class="nav-item" onclick="showSection('lista')"><span class="icon">📋</span>Mis Pendientes</div>
+    <div class="nav-item" onclick="showSection('concluidos')"><span class="icon">✅</span>Concluidos</div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="date-badge" id="current-date"></div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="vendedora-header">
+    <div class="vendedora-avatar">2</div>
+    <div>
+      <h1>Telemarketing 2</h1>
+      <p>Portal de gestión de pendientes con clientes</p>
+    </div>
+  </div>
+
+  <div id="sec-nuevo" class="content">
+    <div class="form-card">
+      <h3>📝 Registrar Nuevo Pendiente</h3>
+      <div class="form-grid">
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>🔍 Buscar Cliente</label>
+          <div class="autocomplete-wrap">
+            <input type="text" id="inp-cliente" placeholder="Escribe el nombre del cliente..." autocomplete="off">
+            <div class="autocomplete-list" id="list-cliente" style="display:none"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Tipo de Pendiente</label>
+          <select id="inp-tipo">
+            <option value="">— Selecciona —</option>
+            <option value="1">1. Instalación de equipo de limpieza</option>
+            <option value="2">2. Garantía – recoger producto</option>
+            <option value="3">3. Entrega pendiente (almacén)</option>
+            <option value="4">4. Revisión de equipo de limpieza</option>
+            <option value="5">5. Cambio por error de captura (ventas)</option>
+            <option value="6">6. Compra de bidones a clientes</option>
+            <option value="7">7. Recolección de bidones pendientes</option>
+            <option value="8">8. Entrega pendiente por faltante existencia (Compras)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Prioridad</label>
+          <select id="inp-prioridad">
+            <option value="regular">Regular</option>
+            <option value="urgente">🔴 Urgente</option>
+            <option value="vuelta">🔵 Vuelta por el rumbo</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>Descripción / Observaciones (opcional)</label>
+          <textarea id="inp-desc" placeholder="Detalla el pendiente, cantidad de producto, número de equipo, etc..."></textarea>
+        </div>
+      </div>
+      <div style="margin-top:20px;display:flex;gap:12px;">
+        <button class="btn btn-primary" onclick="registrarPendiente()">✓ Registrar Pendiente</button>
+        <button class="btn btn-outline" onclick="limpiarForm()">✕ Limpiar</button>
+      </div>
+    </div>
+    <div class="table-card">
+      <div class="table-header">
+        <h3>⏳ Mis Pendientes Activos</h3>
+        <span id="badge-activos" style="background:var(--accent);color:var(--navy);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;"></span>
+      </div>
+      <div id="tabla-recientes"></div>
+    </div>
+  </div>
+
+  <div id="sec-lista" class="content" style="display:none">
+    <div class="table-card">
+      <div class="table-header">
+        <h3>📋 Todos Mis Pendientes</h3>
+        <div class="table-filters">
+          <select class="filter-select" id="fil-tipo" onchange="renderLista()">
+            <option value="">Todos los tipos</option>
+            <option value="1">Instalación</option>
+            <option value="2">Garantía</option>
+            <option value="3">Entrega</option>
+            <option value="4">Revisión</option>
+            <option value="5">Error captura</option>
+            <option value="6">Compra bidones</option>
+            <option value="7">Recolección bidones</option>
+          </select>
+          <select class="filter-select" id="fil-estado" onchange="renderLista()">
+            <option value="">Todos los estados</option>
+            <option value="pendiente">Solo pendientes</option>
+            <option value="concluido">Solo concluidos</option>
+          </select>
+        </div>
+      </div>
+      <div id="tabla-lista"></div>
+    </div>
+  </div>
+
+  <div id="sec-concluidos" class="content" style="display:none">
+    <div class="stats-grid">
+      <div class="stat-card" style="color:var(--green)">
+        <div class="stat-num" id="cnt-concluidos">0</div>
+        <div class="stat-label">Pendientes Concluidos</div>
+        <div class="stat-icon">✅</div>
+      </div>
+      <div class="stat-card" style="color:var(--orange)">
+        <div class="stat-num" id="cnt-pendientes">0</div>
+        <div class="stat-label">Pendientes Activos</div>
+        <div class="stat-icon">⏳</div>
+      </div>
+      <div class="stat-card" style="color:var(--teal)">
+        <div class="stat-num" id="cnt-efectividad">0%</div>
+        <div class="stat-label">Efectividad</div>
+        <div class="stat-icon">📊</div>
+      </div>
+    </div>
+    <div class="table-card">
+      <div class="table-header"><h3>✅ Pendientes Concluidos</h3></div>
+      <div id="tabla-concluidos"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h3 id="modal-title"></h3>
+    <div id="modal-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+
+  // ═══════════════════════════════════════════════════════════════
+// CONFIGURACIÓN FIREBASE — Pegue sus credenciales de Firebase aquí
+// Obténgalas en: https://console.firebase.google.com → su proyecto
+// → Configuración del proyecto → Sus apps → Config
+// ═══════════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            "AIzaSyDGBgicmvOge196PiSgmIHhseQUGMiko-E",
+  authDomain:        "surtidora-de-higienicos.firebaseapp.com",
+  databaseURL:       "https://surtidora-de-higienicos-default-rtdb.firebaseio.com",
+  projectId:         "surtidora-de-higienicos",
+  storageBucket:     "surtidora-de-higienicos.firebasestorage.app",
+  messagingSenderId: "232648877023",
+  appId:             "1:232648877023:web:9e8a4a743b68f4e16d9a6a"
+};
+
+// ── Inicialización ──────────────────────────────────────────────
+try { firebase.initializeApp(firebaseConfig); } catch(e) {}
+const db = firebase.database();
+let _cache = {};
+
+// Conexión en tiempo real — se actualiza en todas las pantallas automáticamente
+db.ref('pendientes').on('value', snap => {
+  _cache = snap.val() || {};
+  if(typeof refreshUI === 'function') refreshUI();
+}, err => console.error('Firebase error:', err));
+
+function getPendientes() {
+  return Object.values(_cache);
+}
+
+function savePendientes(data) {
+  // Escribe colección completa (compatibilidad)
+  const obj = {};
+  data.forEach(p => { if(p && p.id) obj[p.id] = p; });
+  db.ref('pendientes').set(obj);
+}
+
+function fbAdd(p) {
+  return db.ref('pendientes/' + p.id).set(p);
+}
+
+function fbUpdate(id, changes) {
+  return db.ref('pendientes/' + id).update(changes);
+}
+
+const TIPOS = {
+    1: 'Instalación de equipo',
+    2: 'Garantía (recoger producto)',
+    3: 'Entrega pendiente (almacén)',
+    4: 'Revisión de equipo',
+    5: 'Cambio por error de captura',
+    6: 'Compra de bidones',
+    7: 'Recolección de bidones',
+    8: 'Entrega pendiente por faltante existencia (Compras)'
+  };
+  
+  const TIPO_COLORS = {1:'tipo-1',2:'tipo-2',3:'tipo-3',4:'tipo-4',5:'tipo-5',6:'tipo-6',7:'tipo-7',8:'tipo-1'};
+  
+  function genId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2,5);
+  }
+  
+  function formatDate(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleDateString('es-MX', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  }
+  
+  function showToast(msg, type='success') {
+    const t = document.getElementById('toast');
+    t.textContent = (type==='success'?'✓ ':type==='error'?'✗ ':'ℹ ') + msg;
+    t.className = 'toast show ' + type;
+    setTimeout(()=>{ t.className='toast'; },3000);
+  }
+  
+  function updateDate() {
+    const el = document.getElementById('current-date');
+    if(el) {
+      const now = new Date();
+      el.textContent = now.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    }
+  }
+  
+  // Autocomplete
+function showPrioridad(p) {
+  if(p==='urgente') return '<span style="color:var(--red);font-weight:700;font-size:12px">🔴 Urgente</span>';
+  if(p==='vuelta') return '<span style="color:#2563eb;font-weight:700;font-size:12px">🔵 Vuelta por el rumbo</span>';
+  return '<span style="color:var(--text2);font-size:12px">Regular</span>';
+}
+
+function setupAutocomplete(inputId, listId, clientList, onSelect) {
+    const input = document.getElementById(inputId);
+    const list = document.getElementById(listId);
+    if(!input || !list) return;
+    
+    input.addEventListener('input', function() {
+      const val = this.value.trim().toUpperCase();
+      list.innerHTML = '';
+      if(val.length < 2) { list.style.display='none'; return; }
+      const matches = clientList.filter(c => c.toUpperCase().includes(val)).slice(0,12);
+      if(!matches.length) { list.style.display='none'; return; }
+      matches.forEach(c => {
+        const div = document.createElement('div');
+        const idx = c.toUpperCase().indexOf(val);
+        div.innerHTML = c.substring(0,idx) + '<mark>' + c.substring(idx,idx+val.length) + '</mark>' + c.substring(idx+val.length);
+        div.addEventListener('mousedown', e => {
+          e.preventDefault();
+          input.value = c;
+          list.style.display='none';
+          if(onSelect) onSelect(c);
+        });
+        list.appendChild(div);
+      });
+      list.style.display='block';
+    });
+    
+    input.addEventListener('blur', ()=> setTimeout(()=>{ list.style.display='none'; },150));
+    document.addEventListener('click', e => { if(!input.contains(e.target) && !list.contains(e.target)) list.style.display='none'; });
+  }
+
+
+const VENDEDORA = 'TELEMARKETING 2';
+const CLIENTES = ["ZHOLA", "YAHIR ALBERTO SOTO ARREOLA", "XOCHITL LIZETH ZEPEDA CARRILLO", "VARGAS PRIETO MARIA GUADALUPE", "UNIVERSIDAD MULTITECNICA PROFESIONAL", "UNIVERSIDAD DE COLIMA - FMVZ", "TRINIDAD DE LA ROCHA ORNELAS", "TRANSPORTES TURISTICOS BAYARDO", "TELEVISION POR CABLE DE TAMAZULA", "SUPER SERVICIO URZUA", "SUPER SERVICIO CAMIONERO DON RAMON", "SRA. MONICA CORTES", "SINDY MARITZA ORTEGA ROJAS", "SINDICATO NACIONAL DE TRABAJADORES DE LA EDUCACION", "SILVA JIMENEZ JOSE", "SICREA ESPACIOS S.A. DE C.V.", "SIBRA ARRENDADORA", "SERVICIOS Y LUBRICANTES JOYCAR", "SERVICIOS Y LLANTAS ROGUE", "SERVICIOS SOCIALES FUNERAL", "SERVICIOS REY COLIMAN", "SERVICIOS PEREYRA", "SERVICIOS INTEGRALES RETIMAR", "SERVICIOS INTEGRALES DE BIOSEGURIDAD SANITARIA", "SERVICIO COMERCIAL DEL CENTRO", "SERVICIO CAMPO REAL", "SERVICIO CAMINO REAL", "SERVICIO ARMERIA", "SALVADOR NOE REYES GOMEZ", "ROSA MARIA VAZQUEZ RODRIGUEZ", "RODAMIENTOS Y ACCESORIOS", "ROBERTO ULISES LARA LEPE", "RICARDO GERONIMO LARIOS ROJAS", "RICARDO DE LA MORA OROZCO", "RED STARR", "QR FITNESS", "PROYECTOS Y CONSTRUCCIONES SALVER", "PROVEEDORA DE BANANOS DEL PACIFICO", "PROMOTORA Y OPERADORA TURISTICA RINCON DE LOS ANGELES", "PROFESIONALES DE LIMPIEZA", "PRODUCTOS RANCHO MONTECRISTO", "PLANEACION Y ESTRATEGIA EMPRESARIAL", "PERLITA REYNOSO", "PERLA ELIZABETH SOTO REYNOSO", "PEDRO COVARRUBIAS ESCAMILLA", "OZONCRA", "OSDY ALEJANDRO MEJIA GALLARDO", "ORLANDO JOSE ROCHA DE LA ROCHA", "NOE LOPEZ CASTAÑEDA", "MORADA DE AGUA BRAVA", "MIREN DIGITAL", "MEDICINA AVANZADA DE COLIMA", "MAYRA DANIELA GARCIA BARRETO", "MAYORISTAS ASOCIADOS EN SERVICIO CELULAR", "MAS CELULAR", "MARY CRUZ ANGUIANO SILVA", "MARIA GABRIELA DELGADO RODRIGUEZ", "MARIA ESTELA MAYORAL ISLAS", "MARIA ELENA ESCALERA OCHOA", "MARGARITA HORTENSIA MORENO MARTINEZ", "MANTENIMIENTOS ESPECIALIZADOS", "MA. DEL CARMEN PASILLAS JACOBO", "LUNA DEL MAR MANZANILLO", "LUIS DAVID SORIA FUENTES", "LOURDES NAVARRO", "LOS CUATRO BRAVOS", "LIMPIACERO", "LAVANDERIA ALGO", "LA ESCONDIDA TECOMAN", "KARMINA YETZABETH MARQUEZ PERALTA", "KAREN SARAHY HERNANDEZ ESPINOZA", "KAMEJ", "KAL TIRE", "JULIETA YOLANDA COBIAN ALCARAZ", "JUAN FERNANDO VELASCO AGUIRRE", "JOSE MAXIMILIANO RETANA LOPEZ", "JOSE GUADALUPE AGUILAR OLMEDO", "JOSE CARLOS VILLARREAL CARDENAS", "JOSE ALVAREZ  Y MENDEZ", "JOSE ALBERTO GALLARDO LANDELL", "JORGE VENCES PEREZ", "JORGE PADILLA CASTILLO", "JORGE LUIS HERNANDEZ DE NIZ", "JORGE ARMANDO TORREZ PEREZ", "JESUS ENRIQUE TERRONES FUENTES", "JESUS ARTURO UDAL AMAYA ROSADO", "J. FROYLAN PULGARIN ALDAMA (EMPLEADO)", "IVAN LEAL (taqueria el asadero)", "INTEGRATED  PORT MANEUVERS GLOBALMIP", "INSTITUTO MARCELA DOMENE", "INSTITUTO JOSE MARTI", "INGENIO QUESERIA, S.A. DE C.V.", "HUGO SALVADOR SOLIS SOTO", "HUGO ALEJANDRO CASTILLO JUAREZ", "HOTELERA COLIMENSE", "HOTEL COSTEÑO DE COLIMA", "HECTOR FELIPE LUNA GARCIA Y CIA SC", "HECTOR ARTURO BECERRA RODRIGUEZ", "GUSTAVO ROBLEDO RAMIREZ", "GUILLERMO ROSALES BRUN", "GUDSAN PADEL CLUB", "GUARDERIA INFANTIL JOSE AMADOR VELASCO", "GUADAVAL SERVICIOS S.A. DE C.V.", "GRUPO MASCOSCOL", "GRUPO GARSAN DEL PACIFICO", "GRUPO FRUTIORO S.P.R. DE R.L.", "GRUPO DG FRESH", "GOBIERNO DEL ESTADO DE COLIMA", "GOBIERNO DEL ESTADO", "GIOVANNI'S COLIMA", "GASOLINERA GLORIETA DEL CHARRO", "GASOLINERA FELIPE SEVILLA", "GASOLINERA COMALA", "GAS SANFER", "GARCIA & AGUIRRE HOTELES", "GALBHER", "FRANCISCO OROPESA ARRECHEA", "FRANCISCO JAVIER OLDENBOURG CEBALLOS", "FORTUNA PADEL CLUB", "FATIMA JOSELIN QUIROZ OROZCO (EMPLEADO)", "FARMACIAS DE SIMILARES S.A.DE C.V.", "FARMACIAS DE SIMILARES  S.A. DE C.V.", "FARMACIAS DE SIMILARES", "FARMACIAS DE  SIMILARES", "FARMACIAS  DE SIMILARES S.A. DE C.V.", "FARMACIAS  DE SIMILARES", "FARMACIAS  DE  SIMILARES", "FARMACIAS  DE   SIMILARES", "FARMACIAS   DE  SIMILARES", "EXTRUSIONES G.M.", "EXPERIENCE TAO", "EVA ALVAREZ ELICEA", "ESTRELLA LIZETH GOMEZ VENEGAS", "ESTACION SANTA BARBARA DE COLIMA", "ENERGIA Y COMPONENTES DE NORTEAMERICA", "ENERGETICOS MONTELLANO", "EMPRESAS UNIDAS COLIMAN", "EMILIO VELASCO ROSETE", "EL PECHUGON", "EDITORA DIARIO DE COLIMA", "DUEÑO DEL MAR WOODWARD GROUP INTERNATIONAL LOGISTICS SERVICES THINK GLOBAL S.C.", "DMT ROCK BAR", "DISTRIBUCION INTERCERAMIC", "DISPER CIUDAD GUZMAN", "DIRECTO DE LA COSTA", "DIANA YOSELIN SILVERIO MEZA", "DIANA LAURA BAYARDO CANALES", "DIANA JAZMIN ACEVEDO LOPEZ", "DEPORTES PERROS 06", "DAVID ANTONIO MAQUEO DAMIAN", "DANISCO MEXICANA", "CRISTHIAN YAZIR MEDINA CARRILLO", "CONSULTORIA Y ASESORIA EN PREVENCION DE RIESGOS", "COMISION FEDERAL DE ELECTRICIDAD", "COMERCIALIZADORA DEPOSITO EL VALOR", "COMERCIALIZADORA  TOTAL TRADE S.A. DE C.V.", "COMBUSTIBLES BUENA ESPERANZA", "COMALA TIENE SUERTE", "COLIMA SUPER RENTAL CAR", "COLEGIO COMALA", "CLUB CAMPESTRE COLIMENSE", "CLINICA AMOSLI", "CLAUDIA CUETO ARROYO", "CITLALLI ROJO BEJARANO", "CFE GENERACION IV", "CFE GENERACION II", "CESAR JAVIER ROCHA DE LA ROCHA", "CESAR FIGUEROA MOJICA", "CERVECERIA ARTESANAL DE COLIMA S.A.P.I. DE C.V.", "CENTRO INTERNACIONAL DE CAPACITACIÓN CÓDIGO AZUL", "CENTRO INFANTIL GANDHI", "CENTRO DE ESPECIALIDADES, CLINICA CORDOBA", "CENTRO DE DESARROLLO INFANTIL GANDHI", "CENTRAL LLANTERA HACSA", "CENTRAL DE AUTOBUSES DE COLIMA, S.A. DE C.V.", "CENDI TIERRA Y LIBERTAD", "CAROLINA MUNGUIA LEDESMA", "CAJA POPULAR MEXICANA, SC DE AP DE RL DE C.V", "CAJA POPULAR MEXICANA, S.C. DE A.P. DE RL. DE C.V.", "CAJA POPULAR MEXICANA, S.C. DE A.P. DE R.L. DE CV.", "CAJA POPULAR MEXICANA, S.C. DE A.P. DE R.L. DE C.V.", "CAJA POPULAR MEXICANA, S.C. DE A.P DE R.L. DE C.V.", "CAJA POPULAR MEXICANA S.C. DE A.P. DE R.L. DE C.V.", "CAJA POPULAR 15 DE MAYO", "BRIZEIDA EDITH HERNANDEZ CEBALLOS", "BRISAS DEL MAR VILLAS Y TURISMO", "BP LOS TAMARINDOS", "BMC DE COLIMA", "BLISS COMUNIDAD DE APRENDIZAJE", "BIO PAPPEL", "BERTHA REYES MAGAÑA", "BEBIENDO", "BANAMARES", "AVICOLA Y GANADERA DE JALISCO", "AUTOMOTRIZ RANCAGUA", "AUTOMOTRIZ  RANCAGUA", "ASOCIACION DE AYUDA", "ARRENDADORA RARO", "ARMOT SEGURIDAD PRIVADA Y SERVICIOS INSTITUCIONALES", "ANA PAOLA JAIME OROPESA", "AMERICA GIOVANA GONZALEZ MARTINEZ", "ALMENDRA", "ALEJANDRO BARRERA CASTELLANOS", "AGRIORG BANANERA", "ADMINISTRACION EL NUEVO COLIMA, S..A DE C.V.", "\"GASOLINERA LOS OLIVOS\",", "FARMACIAS DE  SIMILARES", "FARMACIAS   DE  SIMILARES", "FARMACIAS   DE   SIMILARES", "FARMACIAS DE SIMILARES", "FARMACIAS  DE  SIMILARES", "FARMACIAS   DE   SIMILARES", "FARMACIAS DE SIMILARES"];
+
+
+let _currentSection = 'nuevo';
+
+function refreshUI() {
+  if(_currentSection==='nuevo') renderRecientes();
+  else if(_currentSection==='lista') renderLista();
+  else if(_currentSection==='concluidos') renderConcluidos();
+}
+function showSection(sec) {
+  ['nuevo','lista','concluidos'].forEach(s => {
+    document.getElementById('sec-'+s).style.display = s===sec?'block':'none';
+  });
+  _currentSection = sec;
+  document.querySelectorAll('.nav-item').forEach((el,i) => {
+    el.classList.toggle('active', ['nuevo','lista','concluidos'][i]===sec);
+  });
+  if(sec==='lista') renderLista();
+  if(sec==='concluidos') renderConcluidos();
+  if(sec==='nuevo') renderRecientes();
+}
+
+function registrarPendiente() {
+  const cliente = document.getElementById('inp-cliente').value.trim();
+  const tipo = document.getElementById('inp-tipo').value;
+  const desc = document.getElementById('inp-desc').value.trim();
+  const prioridad = document.getElementById('inp-prioridad').value;
+  if(!cliente) { showToast('Selecciona un cliente','error'); return; }
+  if(!tipo) { showToast('Selecciona el tipo de pendiente','error'); return; }
+  fbAdd({ id:genId(), cliente, tipo:parseInt(tipo), desc, prioridad,
+    vendedora:VENDEDORA, fecha:new Date().toISOString(),
+    estado:'pendiente', notasLogistica:'', fechaConcluido:null });
+  showToast('Pendiente registrado exitosamente');
+  limpiarForm();
+  renderRecientes();
+}
+
+function limpiarForm() {
+  document.getElementById('inp-cliente').value='';
+  document.getElementById('inp-tipo').value='';
+  document.getElementById('inp-desc').value='';
+  document.getElementById('inp-prioridad').value='regular';
+}
+
+function getMios() { return getPendientes().filter(p=>p.vendedora===VENDEDORA); }
+
+function renderRecientes() {
+  const activos = getMios().filter(p=>p.estado==='pendiente');
+  const badge = document.getElementById('badge-activos');
+  if(badge) badge.textContent = activos.length + ' activos';
+  renderTable(activos.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)), 'tabla-recientes', false);
+}
+
+function renderLista() {
+  const tipo = document.getElementById('fil-tipo').value;
+  const estado = document.getElementById('fil-estado').value;
+  let items = getMios().sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  if(tipo) items=items.filter(p=>p.tipo==tipo);
+  if(estado) items=items.filter(p=>p.estado===estado);
+  renderTable(items, 'tabla-lista', true);
+}
+
+function renderConcluidos() {
+  const all = getMios();
+  const concluidos = all.filter(p=>p.estado==='concluido');
+  const pendientes = all.filter(p=>p.estado==='pendiente');
+  document.getElementById('cnt-concluidos').textContent=concluidos.length;
+  document.getElementById('cnt-pendientes').textContent=pendientes.length;
+  const ef = all.length?Math.round(concluidos.length/all.length*100):0;
+  document.getElementById('cnt-efectividad').textContent=ef+'%';
+  renderTable(concluidos.sort((a,b)=>new Date(b.fechaConcluido)-new Date(a.fechaConcluido)),'tabla-concluidos',true);
+}
+
+function renderTable(items, cid, showStatus) {
+  const c=document.getElementById(cid);
+  if(!items.length){c.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><p>No hay pendientes registrados</p></div>';return;}
+  c.innerHTML='<table><thead><tr><th>Cliente</th><th>Tipo</th><th>Prioridad</th>'+(showStatus?'<th>Estado</th>':'')+'<th>Registrado</th>'+(showStatus?'<th>Concluido</th>':'')+'<th></th></tr></thead><tbody>'+
+  items.map(p=>`<tr class="pendiente-row">
+    <td><strong>${p.cliente}</strong></td>
+    <td><span class="tipo-badge ${TIPO_COLORS[p.tipo]}">${TIPOS[p.tipo]}</span></td>
+    <td>${showPrioridad(p.prioridad)}</td>
+    ${showStatus?`<td>${p.estado==='concluido'?'<span class="badge badge-done">✓ Concluido</span>':'<span class="badge badge-pending">⏳ Pendiente</span>'}</td>`:''}
+    <td style="color:var(--text2);font-size:12px">${formatDate(p.fecha)}</td>
+    ${showStatus?`<td style="color:var(--text2);font-size:12px">${formatDate(p.fechaConcluido)}</td>`:''}
+    <td><button class="btn btn-outline btn-sm" onclick="verDetalle('${p.id}')">Ver</button></td>
+  </tr>`).join('')+'</tbody></table>';
+}
+
+function verDetalle(id) {
+  const p=getPendientes().find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('modal-title').textContent='📋 Detalle del Pendiente';
+  document.getElementById('modal-body').innerHTML=`
+    <div style="display:grid;gap:12px;">
+      <div><span style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700;">Cliente</span><p style="font-weight:600;font-size:15px;margin-top:2px">${p.cliente}</p></div>
+      <div><span style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700;">Tipo</span><p style="margin-top:4px"><span class="tipo-badge ${TIPO_COLORS[p.tipo]}">${TIPOS[p.tipo]}</span></p></div>
+      <div><span style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700;">Estado</span><p style="margin-top:4px">${p.estado==='concluido'?'<span class="badge badge-done">✓ Concluido por Logística</span>':'<span class="badge badge-pending">⏳ En espera de Logística</span>'}</p></div>
+      <div><span style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700;">Descripción</span><p style="margin-top:2px;color:var(--text2)">${p.desc||'—'}</p></div>
+      <div><span style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700;">Registrado</span><p style="margin-top:2px;color:var(--text2)">${formatDate(p.fecha)}</p></div>
+      ${p.estado==='concluido'?`<div style="background:#f0fdf4;border-radius:10px;padding:14px;">
+        <span style="font-size:11px;text-transform:uppercase;color:#166534;font-weight:700;">✅ Notas de Logística</span>
+        <p style="margin-top:4px;color:#166534">${p.notasLogistica||'—'}</p>
+        <p style="margin-top:4px;font-size:11px;color:var(--text2)">Concluido: ${formatDate(p.fechaConcluido)}</p>
+      </div>`:''}
+    </div>
+  `;
+  document.getElementById('modal').style.display='flex';
+}
+
+function closeModal() { document.getElementById('modal').style.display='none'; }
+
+setupAutocomplete('inp-cliente','list-cliente',CLIENTES);
+
+// Monitor de conexión
+db.ref('.info/connected').on('value', snap => {
+  const banner = document.getElementById('conn-banner');
+  if(!banner) return;
+  if(snap.val() === true) {
+    banner.style.display = 'none';
+  } else {
+    banner.style.display = 'block';
+    banner.className = 'conn-banner';
+    banner.textContent = '⚠️ Sin conexión a internet — los datos no se están sincronizando';
+  }
+});
+
+updateDate();
+renderRecientes();
+</script>
+</body>
+</html>
