@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Fechas de facturación · Vendedoras SHS</title>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<style>
+:root{
+  --teal-900:#0b2e2c; --teal-800:#0f3d3a; --teal-700:#146c63; --teal-600:#1a8577; --teal-500:#22a191; --teal-100:#e3f4f1;
+  --amber-500:#d98c2b; --amber-100:#fbedd7;
+  --slate-900:#1b2430; --slate-700:#41505f; --slate-500:#6b7a89; --slate-300:#c6d0d8; --slate-100:#eef2f4;
+  --paper:#f7f8f6; --card:#ffffff; --radius:12px;
+  font-family:'Segoe UI',Roboto,Arial,sans-serif;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--paper);color:var(--slate-900);font-size:14px;}
+header.app{background:linear-gradient(120deg,var(--teal-900),var(--teal-700));color:#fff;padding:18px 20px 16px;}
+header.app h1{margin:0;font-size:19px;font-weight:700;}
+header.app p{margin:2px 0 0;font-size:12px;opacity:.82;}
+.whoRow{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap;}
+.whoRow label{font-size:12px;opacity:.85;}
+.whoRow select{border-radius:7px;border:none;padding:8px 12px;font-size:13px;font-weight:600;}
+.chip{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:6px 13px;font-size:12px;}
+.chip b{font-size:14px;}
+
+main{max-width:760px;margin:0 auto;padding:16px;padding-bottom:60px;}
+.card{background:var(--card);border:1px solid var(--slate-300);border-radius:var(--radius);padding:16px;margin-bottom:14px;}
+.field{display:flex;flex-direction:column;gap:4px;}
+.field label{font-size:11px;font-weight:700;color:var(--slate-700);text-transform:uppercase;}
+input,select{border:1px solid var(--slate-300);border-radius:7px;padding:9px 10px;font-size:14px;font-family:inherit;width:100%;}
+input:focus,select:focus{outline:2px solid var(--teal-500);outline-offset:1px;}
+
+.remCard{background:var(--card);border:1px solid var(--slate-300);border-left:5px solid var(--amber-500);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;}
+.remTop{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+.remCliente{font-size:15px;font-weight:700;color:var(--teal-800);}
+.remMeta{font-size:12px;color:var(--slate-500);margin-top:2px;}
+.remTotal{font-size:16px;font-weight:700;color:var(--slate-900);white-space:nowrap;}
+.badge{display:inline-block;background:var(--amber-100);color:#8a5a12;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;margin-top:4px;}
+.assignRow{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:flex-end;}
+.assignRow .field{flex:1;min-width:150px;}
+button.btn{background:var(--teal-700);color:#fff;border:none;border-radius:7px;padding:10px 18px;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap;}
+button.btn:hover{background:var(--teal-600);}
+button.btn:disabled{opacity:.5;cursor:not-allowed;}
+
+.empty{text-align:center;padding:50px 20px;color:var(--slate-500);}
+.empty .big{font-size:38px;margin-bottom:8px;}
+
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--slate-900);color:#fff;padding:11px 20px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:999;box-shadow:0 6px 18px rgba(0,0,0,.25);}
+#toast.show{opacity:1;transform:translate(-50%,-6px);}
+
+.searchWrap{margin-bottom:14px;}
+
+.miAsignado{background:#fff;border:1px solid var(--slate-300);border-radius:10px;padding:10px 14px;font-size:12.5px;display:flex;justify-content:space-between;margin-bottom:8px;}
+</style>
+</head>
+<body>
+
+<header class="app">
+  <h1>Fechas de facturación</h1>
+  <p>Registra el día en que se va a facturar cada remisión a crédito</p>
+  <div class="whoRow">
+    <label>Vendedora:</label>
+    <select id="vendedoraSelect">
+      <option value="">Selecciona tu nombre...</option>
+      <option value="Jazmín Jiménez">Jazmín Jiménez</option>
+      <option value="Karen Martínez">Karen Martínez</option>
+      <option value="Nancy Cristina">Nancy Cristina</option>
+    </select>
+    <div class="chip">Pendientes de facturar <b id="chipPendientes">0</b></div>
+  </div>
+</header>
+
+<main>
+  <div class="card searchWrap">
+    <div class="field">
+      <label>Buscar cliente o folio</label>
+      <input type="text" id="buscaInput" placeholder="Escribe para filtrar...">
+    </div>
+  </div>
+
+  <div id="lista"></div>
+
+  <div class="card" id="hoyCard" style="display:none;">
+    <h3 style="margin:0 0 8px;font-size:14px;color:var(--teal-800);">Asignadas hoy por ti</h3>
+    <div id="hoyLista"></div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDGBgicmvOge196PiSgmIHhseQUGMiko-E",
+  databaseURL: "https://surtidora-de-higienicos-default-rtdb.firebaseio.com",
+  projectId: "surtidora-de-higienicos",
+  appId: "1:232648877023:web:9e8a4a743b68f4e16d9a6a"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const refRemisiones = db.ref('control_remisiones/remisiones');
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+function localISO(d){
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function todayISO(){ return localISO(new Date()); }
+function fmtMoney(n){ return (Number(n)||0).toLocaleString('es-MX', {style:'currency', currency:'MXN'}); }
+function fmtDate(iso){
+  if(!iso) return '—';
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+function motivoLabel(m){
+  return {precio:'Precio', faltante:'Faltante', factura_mensual:'1 factura mensual', muestra:'Muestra'}[m] || 'Crédito';
+}
+
+// Nombre de vendedora persistido localmente para no tener que seleccionarlo cada vez
+const vendedoraSelect = document.getElementById('vendedoraSelect');
+vendedoraSelect.value = localStorage.getItem('shs_vendedora_nombre') || '';
+vendedoraSelect.addEventListener('change', ()=>{
+  localStorage.setItem('shs_vendedora_nombre', vendedoraSelect.value);
+});
+
+let REMISIONES = {};
+refRemisiones.on('value', snap=>{
+  REMISIONES = snap.val() || {};
+  render();
+});
+
+document.getElementById('buscaInput').addEventListener('input', render);
+
+function render(){
+  const busca = document.getElementById('buscaInput').value.trim().toLowerCase();
+
+  // Pendientes de facturar: crédito, sin fechaCompromiso (fecha de facturación), no pagadas
+  let pendientes = Object.values(REMISIONES).filter(r=>
+    r.tipo==='credito' && !r.fechaCompromiso && !r.pagada && !r.concluida
+  );
+  if(busca) pendientes = pendientes.filter(r=>
+    r.cliente.toLowerCase().includes(busca) || r.folio.toLowerCase().includes(busca)
+  );
+  pendientes.sort((a,b)=> a.cliente.localeCompare(b.cliente) || a.fecha.localeCompare(b.fecha));
+
+  document.getElementById('chipPendientes').textContent =
+    Object.values(REMISIONES).filter(r=>r.tipo==='credito' && !r.fechaCompromiso && !r.pagada && !r.concluida).length;
+
+  const lista = document.getElementById('lista');
+  if(pendientes.length===0){
+    lista.innerHTML = `<div class="card empty">
+      <div class="big">✅</div>
+      <div>No hay remisiones a crédito pendientes de facturar.</div>
+    </div>`;
+  } else {
+    lista.innerHTML = pendientes.map(r=>`
+      <div class="remCard">
+        <div class="remTop">
+          <div>
+            <div class="remCliente">${r.cliente}</div>
+            <div class="remMeta">Folio ${r.folio} · Remisión del ${fmtDate(r.fecha)}</div>
+            <span class="badge">${motivoLabel(r.motivoCredito)}</span>
+          </div>
+          <div class="remTotal">${fmtMoney(r.total)}</div>
+        </div>
+        <div class="assignRow">
+          <div class="field">
+            <label>Día en que se va a facturar esta remisión</label>
+            <input type="date" id="fecha-${r.folio}" min="${todayISO()}">
+          </div>
+          <button class="btn" onclick="guardarFecha('${r.folio}')">Guardar fecha</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Asignadas hoy por la vendedora seleccionada (confirmación visual)
+  const nombre = vendedoraSelect.value;
+  const hoyCard = document.getElementById('hoyCard');
+  if(nombre){
+    const asignadasHoy = Object.values(REMISIONES).filter(r=>
+      r.vendedoraAsigno===nombre && r.fechaAsignacion===todayISO()
+    ).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+    if(asignadasHoy.length){
+      hoyCard.style.display='block';
+      document.getElementById('hoyLista').innerHTML = asignadasHoy.map(r=>
+        `<div class="miAsignado"><span>${r.cliente} · ${r.folio}</span><span>Se factura el ${fmtDate(r.fechaCompromiso)}</span></div>`
+      ).join('');
+    } else {
+      hoyCard.style.display='none';
+    }
+  } else {
+    hoyCard.style.display='none';
+  }
+}
+
+async function guardarFecha(folio){
+  const input = document.getElementById('fecha-'+folio);
+  const fecha = input.value;
+  if(!fecha){ toast('Selecciona una fecha primero.'); return; }
+  const nombre = vendedoraSelect.value;
+  if(!nombre){ toast('Selecciona tu nombre arriba antes de guardar.'); vendedoraSelect.focus(); return; }
+  try{
+    await refRemisiones.child(folio).update({
+      fechaCompromiso: fecha,
+      vendedoraAsigno: nombre,
+      fechaAsignacion: todayISO()
+    });
+    const histRef = refRemisiones.child(folio+'/historialFechas').push();
+    await histRef.set({
+      fecha, quien:'vendedora', vendedora: nombre, reprogramacion:false,
+      timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+    toast('Fecha de facturación guardada para '+folio+' — ya no aparecerá en tu lista.');
+    // La remisión desaparece sola de "pendientes" gracias al listener en tiempo real.
+  }catch(err){
+    toast('Error al guardar: '+err.message);
+  }
+}
+</script>
+</body>
+</html>
