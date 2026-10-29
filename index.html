@@ -15,6 +15,8 @@
 <meta name="description" content="Realiza tu pedido de productos de limpieza de forma fácil y rápida. Surtidora de Higiénicos y Servicios.">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <style>
 /* ── Splash ── */
 .splash{position:fixed;inset:0;background:#ffffff;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.5s ease}
@@ -63,8 +65,6 @@ button,input,select,textarea{font-family:inherit}
 .carrito-ico{position:relative;font-size:24px;display:flex}
 .carrito-badge{position:absolute;top:-8px;right:-10px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--amarillo);color:#14213d;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center}
 
-/* ── Estructura de 3 columnas ── */
-.layout{max-width:none;margin:0;padding:20px 24px;display:grid;grid-template-columns:240px minmax(0,1fr) 300px;gap:18px;align-items:start}
 .sidebar,.lateral{position:sticky;top:96px;display:flex;flex-direction:column;gap:16px}
 
 /* ── Categorías ── */
@@ -281,26 +281,197 @@ button,input,select,textarea{font-family:inherit}
 .modal-folio{background:var(--azul-light);color:var(--azul);font-weight:900;font-size:18px;padding:12px 24px;border-radius:10px;display:inline-block;margin-bottom:20px}
 .btn-modal{background:var(--azul);color:white;border:none;border-radius:12px;padding:14px 32px;font-weight:800;font-size:15px;cursor:pointer}
 
+/* ── Portal: estructura con menú lateral ── */
+.app{display:grid;grid-template-columns:232px minmax(0,1fr);gap:20px;padding:20px 24px;align-items:start}
+.nav{position:sticky;top:96px;display:flex;flex-direction:column;gap:16px}
+.nav-list{background:#fff;border:1px solid var(--borde);border-radius:14px;padding:8px;box-shadow:var(--sombra);display:flex;flex-direction:column;gap:2px}
+.nav-item{position:relative;display:flex;align-items:center;gap:12px;width:100%;padding:11px 12px;border:none;background:none;border-radius:10px;font-size:14px;font-weight:700;color:#2b3a55;cursor:pointer;text-align:left;transition:background .12s}
+.nav-item i{font-size:20px;color:#5b6b85;width:22px;text-align:center}
+.nav-item:hover{background:var(--gris)}
+.nav-item.activo{background:var(--azul-light);color:var(--azul)}
+.nav-item.activo i{color:var(--azul)}
+.nav-item.activo::before{content:"";position:absolute;left:-8px;top:8px;bottom:8px;width:4px;border-radius:0 4px 4px 0;background:var(--azul)}
+.nav-sep{height:1px;background:var(--borde);margin:6px 8px}
+.nav-ayuda{background:#fff;border:1px solid var(--borde);border-radius:14px;padding:16px;box-shadow:var(--sombra)}
+.nav-ayuda .ayuda-top{display:flex;gap:10px;align-items:center}
+.nav-ayuda h4{font-size:14px;font-weight:900}
+.nav-ayuda p{font-size:12px;color:var(--texto-suave);font-weight:600}
+.btn-azul{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;height:42px;margin-top:12px;border:none;border-radius:10px;background:var(--azul);color:#fff;font-size:13.5px;font-weight:800;cursor:pointer}
+.btn-azul:hover{background:var(--azul-dark)}
+.main{min-width:0}
+.vista{display:none}
+.vista.activa{display:block}
+.tienda{display:grid;grid-template-columns:220px minmax(0,1fr) 290px;gap:18px;align-items:start}
+.vista-titulo{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.vista-titulo h2{font-size:24px;font-weight:900}
+.vista-titulo p{font-size:13.5px;color:var(--texto-suave);font-weight:600;margin-top:2px}
+
+/* ── Encabezado: buscador con botón y carrito con total ── */
+.buscador input{padding-right:110px}
+.btn-buscar{position:absolute;right:5px;top:5px;bottom:5px;padding:0 22px;border:none;border-radius:9px;background:var(--azul);color:#fff;font-size:14px;font-weight:800;cursor:pointer}
+.btn-buscar:hover{background:var(--azul-dark)}
+.carrito-txt{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15}
+.carrito-txt small{font-size:12.5px;font-weight:700;opacity:.9}
+.carrito-txt strong{font-size:16px;font-weight:900}
+
+/* ── Inicio ── */
+.hero-saludo h1 span{color:var(--amarillo)}
+.hero-saludo .hero-sub{font-size:19px;font-weight:800;margin-top:6px;opacity:1}
+.acciones{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:16px}
+.accion{display:flex;align-items:center;gap:14px;padding:18px;background:#fff;border:1px solid var(--borde);border-radius:14px;box-shadow:var(--sombra);cursor:pointer;text-align:left;transition:border-color .12s,box-shadow .12s}
+.accion:hover{border-color:var(--azul);box-shadow:0 6px 22px rgba(20,33,61,.1)}
+.accion .chip{width:54px;height:54px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0}
+.accion strong{flex:1;font-size:15px;font-weight:900;line-height:1.25;color:var(--texto)}
+.accion .ti-arrow-right{font-size:22px;color:var(--azul)}
+.chip.azul{background:#e3ecff;color:var(--azul)}
+.chip.azul-solido{background:var(--azul);color:#fff}
+.chip.verde{background:#e2f6e7;color:#1b8a3b}
+.chip.verde-solido{background:var(--btn-verde);color:#fff}
+.chip.ambar{background:#fff2d6;color:#b26b00}
+.chip.ambar-solido{background:#f7a823;color:#fff}
+.chip.morado{background:#ece8ff;color:#5b43d6}
+.chip.rojo{background:#fde7e7;color:#c0392b}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:14px}
+.kpi>div{min-width:0}
+.kpi{display:flex;align-items:center;gap:16px;padding:18px;background:#fff;border:1px solid var(--borde);border-radius:14px;box-shadow:var(--sombra)}
+.kpi .chip{width:60px;height:60px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0}
+.kpi-num{font-size:26px;font-weight:900;color:var(--texto);line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi-lbl{font-size:13.5px;font-weight:700;color:var(--texto-suave);margin-top:2px}
+.panel{background:#fff;border:1px solid var(--borde);border-radius:14px;box-shadow:var(--sombra);padding:18px 20px;margin-top:16px}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.panel-head h3{font-size:18px;font-weight:900}
+.link{background:none;border:none;color:var(--azul);font-size:13.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+.link:hover{text-decoration:underline}
+.inicio-bottom{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) minmax(0,.9fr);gap:16px}
+.inicio-bottom .panel{margin-top:16px}
+.frec-lista{display:flex;flex-direction:column}
+.frec-fila{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid #eef1f6}
+.frec-fila:first-child{border-top:none}
+.frec-fila .mini-img{width:56px;height:56px}
+.frec-fila .fn{font-size:12.5px;font-weight:800;line-height:1.3}
+.frec-fila .fp{font-size:12.5px;color:var(--texto-suave);font-weight:700;margin-top:2px}
+.frec-fila .fp b{color:var(--azul);font-weight:900}
+.btn-mini{height:34px;padding:0 14px;border:none;border-radius:8px;background:var(--azul);color:#fff;font-size:12.5px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.btn-mini.verde{background:var(--btn-verde)}
+.btn-mini.borde{background:#fff;color:var(--azul);border:1.5px solid #c9d6f5}
+.btn-mini:hover{filter:brightness(.95)}
+.mes-actual{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mes-actual div{background:var(--gris);border-radius:12px;padding:14px}
+.mes-actual small{display:block;font-size:12px;font-weight:700;color:var(--texto-suave)}
+.mes-actual b{display:block;font-size:20px;font-weight:900;margin-top:4px;font-variant-numeric:tabular-nums}
+
+/* ── Tablas ── */
+.tabla-wrap{overflow-x:auto}
+.tabla{width:100%;border-collapse:collapse;font-size:13.5px}
+.tabla th{text-align:left;font-size:12.5px;font-weight:800;color:#4a5874;background:#f3f6fb;padding:10px 12px;white-space:nowrap}
+.tabla th:first-child{border-radius:8px 0 0 8px}
+.tabla th:last-child{border-radius:0 8px 8px 0}
+.tabla td{padding:11px 12px;border-bottom:1px solid #eef1f6;white-space:nowrap;font-weight:600;color:#2b3a55}
+.tabla tr:last-child td{border-bottom:none}
+.tabla .num{text-align:right;font-variant-numeric:tabular-nums}
+.tabla .folio{font-weight:800;color:var(--texto)}
+.tabla .acc{display:flex;gap:8px;justify-content:flex-end}
+.est{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:800;white-space:nowrap}
+.est i{font-size:14px}
+.est.entregado{background:#e2f6e7;color:#1b7a3d}
+.est.ruta{background:#e3ecff;color:#1e4bcc}
+.est.pendiente{background:#fff2d6;color:#a35f00}
+.est.recibido{background:#ece8ff;color:#5b43d6}
+.est.facturado{background:#e0f2f1;color:#00796b}
+.est.neutro{background:#eef1f6;color:#5b6b85}
+.vacio-panel{text-align:center;padding:30px 10px;color:var(--texto-suave);font-weight:700;font-size:14px}
+.vacio-panel i{display:block;font-size:40px;color:#c3cbd9;margin-bottom:8px}
+.cargando-panel{text-align:center;padding:30px 10px;color:var(--texto-suave);font-weight:700}
+
+/* ── Facturas ── */
+.filtros{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.filtros select,.filtros input{height:40px;border:1px solid var(--borde);border-radius:10px;background:#fff;padding:0 12px;font-size:13.5px;font-weight:700;color:var(--texto);outline:none}
+.filtros input{min-width:200px}
+.meses{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:8px;align-items:end;height:150px;padding-top:10px}
+.mes{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:6px;cursor:pointer}
+.mes .barra{width:100%;max-width:38px;border-radius:6px 6px 2px 2px;background:#c9d6f5;min-height:3px;transition:background .12s}
+.mes:hover .barra,.mes.activo .barra{background:var(--azul)}
+.mes span{font-size:11px;font-weight:800;color:var(--texto-suave)}
+.mes .val{font-size:10.5px;color:var(--texto);font-weight:800;white-space:nowrap}
+
+/* ── Estado de cuenta ── */
+.ec-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.ec-card{background:#fff;border:1px solid var(--borde);border-radius:14px;box-shadow:var(--sombra);padding:18px}
+.ec-card small{display:block;font-size:13px;font-weight:800;color:var(--texto-suave)}
+.ec-card b{display:block;font-size:24px;font-weight:900;margin-top:6px;font-variant-numeric:tabular-nums}
+.ec-card.alerta{border-color:#f5c2c0;background:#fff8f8}
+.ec-card.alerta b{color:#c0392b}
+.uso-credito{height:12px;border-radius:6px;background:#eef1f6;overflow:hidden;margin-top:10px}
+.uso-credito div{height:100%;background:var(--azul);border-radius:6px}
+.aging{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.aging div{background:var(--gris);border-radius:12px;padding:14px}
+.aging small{display:block;font-size:12.5px;font-weight:800;color:var(--texto-suave)}
+.aging b{display:block;font-size:19px;font-weight:900;margin-top:4px;font-variant-numeric:tabular-nums}
+.nota{font-size:12.5px;color:var(--texto-suave);font-weight:600;margin-top:12px;line-height:1.5}
+
+/* ── Direcciones y cuenta ── */
+.dir-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.dir-card{background:#fff;border:1px solid var(--borde);border-radius:14px;box-shadow:var(--sombra);padding:18px;display:flex;gap:14px}
+.dir-card .ti-map-pin{font-size:26px;color:var(--azul)}
+.dir-card h4{font-size:15px;font-weight:900}
+.dir-card p{font-size:13.5px;color:#3d4b66;font-weight:600;line-height:1.5;margin-top:4px}
+.tags{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.tag{font-size:11.5px;font-weight:800;padding:2px 9px;border-radius:10px;background:#e3ecff;color:var(--azul)}
+.tag.verde{background:#e2f6e7;color:#1b7a3d}
+.cuenta-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.cuenta-grid .panel{margin-top:0}
+.dato{display:grid;grid-template-columns:150px minmax(0,1fr);gap:10px;padding:9px 0;border-top:1px solid #eef1f6;font-size:14px}
+.dato:first-of-type{border-top:none}
+.dato span{color:var(--texto-suave);font-weight:700}
+.dato b{font-weight:800;word-break:break-word}
+.info-cuenta .dato{grid-template-columns:28px minmax(0,1fr)}
+.info-cuenta .dato i{font-size:19px;color:var(--azul)}
+
+/* ── Detalle (modal) y aviso ── */
+.detalle-box{background:#fff;border-radius:18px;padding:24px;width:min(560px,92vw);max-height:88vh;overflow-y:auto;text-align:left}
+.detalle-box h3{font-size:20px;font-weight:900;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.detalle-box .dato{grid-template-columns:150px minmax(0,1fr)}
+.detalle-items{margin-top:12px;border-top:2px solid var(--borde);padding-top:10px}
+.detalle-items div{display:flex;justify-content:space-between;gap:10px;font-size:13px;font-weight:600;padding:6px 0;border-bottom:1px solid #eef1f6}
+.detalle-acc{display:flex;gap:10px;margin-top:18px;justify-content:flex-end}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:#14213d;color:#fff;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:400;max-width:90vw;text-align:center}
+.toast.visible{opacity:1;transform:translateX(-50%) translateY(0)}
+
 /* ── Responsivo ── */
 /* En computadora la vista se muestra al 80% (como el zoom 80% del navegador). El panel de compra y los avisos quedan al 100%. En celular todo queda al 100%. */
-@media (min-width:821px){ .header,.layout{zoom:.8} body{padding-top:62px} }
+@media (min-width:821px){ .header,.app{zoom:.8} body{padding-top:62px} }
 @media (min-width:1101px){ .btn-whatsapp{display:none !important} }
+@media (max-width:1400px){
+  .acciones .accion{padding:14px}
+  .inicio-bottom{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .inicio-bottom .info-cuenta{grid-column:1/-1}
+}
 @media (max-width:1100px){
-  .layout{grid-template-columns:200px minmax(0,1fr)}
+  .tienda{grid-template-columns:200px minmax(0,1fr)}
   .lateral{display:none}
   .usuario{max-width:200px}
+  .acciones,.kpis,.ec-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cuenta-grid{grid-template-columns:1fr}
 }
 @media (max-width:820px){
   body{padding-top:118px}
   .header-inner{height:118px;grid-template-columns:auto 1fr auto;grid-template-rows:56px 46px;row-gap:6px;column-gap:12px;padding:6px 14px 10px}
-  .buscador{grid-column:1/-1;grid-row:2;max-width:none}
-  .buscador kbd{display:none}
-  .buscador input{padding-right:16px}
-  .usuario{justify-self:end}
+  .logo{order:1}
+  .usuario{order:2;justify-self:end}
+  .carrito-btn{order:3}
+  .buscador{order:4;grid-column:1/-1;max-width:none}
+  .btn-buscar{padding:0 14px}
   .usuario-txt{-webkit-line-clamp:2;font-size:12px}
   .usuario-avatar{display:none}
-  .carrito-lbl,.carrito-btn .ti-chevron-right{display:none}
-  .layout{grid-template-columns:minmax(0,1fr);padding:12px;gap:12px}
+  .carrito-lbl{display:none}
+  .app{grid-template-columns:minmax(0,1fr);padding:12px;gap:12px}
+  .nav{position:static;min-width:0}
+  .nav-list{flex-direction:row;overflow-x:auto;scrollbar-width:none;padding:6px;gap:6px}
+  .nav-list::-webkit-scrollbar{display:none}
+  .nav-item{width:auto;white-space:nowrap;flex-shrink:0;padding:8px 12px;font-size:13px}
+  .nav-item.activo::before{display:none}
+  .nav-ayuda{display:none}
+  .tienda{grid-template-columns:minmax(0,1fr);gap:12px}
   .sidebar{position:static;min-width:0}
   .promo{display:none}
   .cat-list{flex-direction:row;overflow-x:auto;scrollbar-width:none;padding:6px;gap:6px}
@@ -311,17 +482,36 @@ button,input,select,textarea{font-family:inherit}
   .hero h1{font-size:26px}
   .hero-collage{display:none}
   .toolbar-der label{display:none}
-  .tab{padding:7px 11px;font-size:12px}
   .hero-features div{padding:10px 4px}
   .grid-productos{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
   .producto-icono{height:104px}
   .vista-lista .producto-card{flex-wrap:wrap}
   .vista-lista .producto-controles{width:100%}
+  .acciones{gap:10px}
+  .accion{padding:12px;gap:10px}
+  .accion .chip{width:42px;height:42px;font-size:22px}
+  .accion strong{font-size:13px}
+  .accion .ti-arrow-right{display:none}
+  .kpis{gap:10px}
+  .kpi{padding:12px;gap:10px}
+  .kpi .chip{width:44px;height:44px;font-size:22px}
+  .kpi-num{font-size:19px}
+  .inicio-bottom{grid-template-columns:1fr}
+  .meses{gap:4px}
+  .mes .val{display:none}
+  .dato{grid-template-columns:120px minmax(0,1fr)}
+  .filtros input{min-width:0;flex:1}
 }
 @media (max-width:480px){
   .logo-sub{display:none}
   .logo-text{font-size:26px}
   .hero-features div{width:auto;flex:1}
+  .ec-cards{grid-template-columns:1fr 1fr}
+  .ec-card b{font-size:19px}
+  .kpi{gap:8px;padding:12px 10px}
+  .kpi .chip{width:36px;height:36px;font-size:18px;border-radius:10px}
+  .kpi-num{font-size:16px}
+  .kpi-lbl{font-size:12px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}
 </style>
@@ -349,121 +539,223 @@ button,input,select,textarea{font-family:inherit}
     </div>
     <div class="buscador">
       <i class="ti ti-search" aria-hidden="true"></i>
-      <input type="text" id="busquedaCatalogo" placeholder="Buscar productos... (nombre o código)" oninput="filtrarCatalogo()" autocomplete="off" aria-label="Buscar productos">
-      <kbd>Ctrl + K</kbd>
-    </div>
-    <div class="usuario">
-      <div class="usuario-avatar"><i class="ti ti-user" aria-hidden="true"></i></div>
-      <div class="usuario-txt">
-        ¡Hola, <span id="clienteNombre">...</span>!
-        <div class="usuario-id" id="clienteClave"></div>
-      </div>
+      <input type="text" id="busquedaCatalogo" placeholder="Buscar productos... (nombre o código)  ·  Ctrl + K" oninput="filtrarCatalogo()" onkeydown="if(event.key==='Enter'){buscarAhora()}" autocomplete="off" aria-label="Buscar productos">
+      <button class="btn-buscar" onclick="buscarAhora()">Buscar</button>
     </div>
     <button class="carrito-btn" onclick="abrirCarrito()" aria-label="Abrir carrito">
       <span class="carrito-ico"><i class="ti ti-shopping-cart" aria-hidden="true"></i><span class="carrito-badge" id="carritoCount">0</span></span>
-      <span class="carrito-lbl">Carrito</span>
-      <i class="ti ti-chevron-right" aria-hidden="true"></i>
+      <span class="carrito-txt carrito-lbl"><small>Carrito</small><strong id="carritoTotalHeader">$0.00</strong></span>
     </button>
+    <div class="usuario">
+      <div class="usuario-avatar"><i class="ti ti-user" aria-hidden="true"></i></div>
+      <div class="usuario-txt">
+        <span id="clienteNombre">...</span>
+        <div class="usuario-id" id="clienteClave"></div>
+      </div>
+    </div>
   </div>
 </header>
 
-<div class="layout">
+<div class="app">
 
-  <aside class="sidebar">
-    <nav class="cat-list" id="catTabs" aria-label="Categorías">
-      <div class="cat-skel">Cargando categorías...</div>
+  <aside class="nav">
+    <nav class="nav-list" id="navList" aria-label="Menú">
+      <button class="nav-item solo-portal" data-vista="inicio" onclick="irA('inicio')"><i class="ti ti-home"></i>Inicio</button>
+      <button class="nav-item solo-cliente" data-vista="productos" onclick="irA('productos')"><i class="ti ti-star"></i>Mis productos</button>
+      <button class="nav-item" data-vista="catalogo" onclick="irA('catalogo')"><i class="ti ti-box"></i>Catálogo completo</button>
+      <button class="nav-item solo-portal" data-vista="pedidos" onclick="irA('pedidos')"><i class="ti ti-clipboard-list"></i>Mis pedidos</button>
+      <button class="nav-item solo-portal" data-vista="facturas" onclick="irA('facturas')"><i class="ti ti-file-invoice"></i>Mis facturas</button>
+      <button class="nav-item solo-portal" data-vista="estado" onclick="irA('estado')"><i class="ti ti-report-money"></i>Estado de cuenta</button>
+      <button class="nav-item solo-portal" data-vista="direcciones" onclick="irA('direcciones')"><i class="ti ti-map-pin"></i>Direcciones de entrega</button>
+      <button class="nav-item solo-portal" data-vista="cuenta" onclick="irA('cuenta')"><i class="ti ti-user-circle"></i>Mi cuenta</button>
     </nav>
-    <div class="promo">
-      <strong>Todo para<br><span>tu negocio</span></strong>
-      <p>Limpieza, higiene y desechables con precios para ti.</p>
-      <div class="promo-logo">SHS<span>✓</span></div>
-      <img class="promo-img" src="https://pedidos.surtidorahigienicos.com/mascota.png" alt="">
+    <div class="nav-ayuda">
+      <div class="ayuda-top">
+        <div class="ayuda-ico"><i class="ti ti-headset" aria-hidden="true"></i></div>
+        <div><h4>¿Necesitas ayuda?</h4><p>Habla con tu vendedora</p></div>
+      </div>
+      <button class="btn-azul" onclick="abrirWhatsApp()"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i> Contactar vendedora</button>
     </div>
   </aside>
 
-  <main class="contenido">
+  <main class="main">
     <div id="error-global" class="error-box" style="display:none"></div>
 
-    <section class="hero">
-      <div class="hero-txt">
-        <h1>Encuentra todo<br><span>lo que necesitas</span></h1>
-        <p>Productos de limpieza, higiene y desechables para tu negocio.</p>
-        <div class="hero-features">
-          <div><i class="ti ti-tag" aria-hidden="true"></i>Precios especiales</div>
-          <div><i class="ti ti-shield-check" aria-hidden="true"></i>Compra segura</div>
-          <div><i class="ti ti-truck-delivery" aria-hidden="true"></i>Entrega oportuna</div>
+    <!-- ═══ INICIO ═══ -->
+    <section class="vista" id="vista-inicio">
+      <section class="hero hero-saludo">
+        <div class="hero-txt">
+          <h1>¡Hola, <span id="saludoNombre">...</span>!</h1>
+          <p class="hero-sub">Gracias por confiar en SHS</p>
+          <p>Encuentra tus productos de limpieza, higiene y desechables, y consulta tus compras y tu cuenta.</p>
+          <div class="hero-features">
+            <div><i class="ti ti-tag" aria-hidden="true"></i>Precios especiales</div>
+            <div><i class="ti ti-shield-check" aria-hidden="true"></i>Compra segura</div>
+            <div><i class="ti ti-truck-delivery" aria-hidden="true"></i>Entrega oportuna</div>
+          </div>
         </div>
+        <div class="hero-collage solo" id="heroCollage">
+          <img class="hero-mascota" src="https://pedidos.surtidorahigienicos.com/mascota.png" alt="">
+        </div>
+      </section>
+
+      <div class="acciones">
+        <button class="accion" onclick="irA('catalogo')"><span class="chip azul"><i class="ti ti-shopping-cart"></i></span><strong>Realizar<br>nuevo pedido</strong><i class="ti ti-arrow-right"></i></button>
+        <button class="accion" onclick="irA('pedidos')"><span class="chip azul"><i class="ti ti-clipboard-list"></i></span><strong>Ver mis<br>pedidos</strong><i class="ti ti-arrow-right"></i></button>
+        <button class="accion" onclick="irA('estado')"><span class="chip azul-solido"><i class="ti ti-report-money"></i></span><strong>Estado de<br>cuenta</strong><i class="ti ti-arrow-right"></i></button>
+        <button class="accion" onclick="irA('productos')"><span class="chip ambar-solido"><i class="ti ti-star"></i></span><strong>Mis productos<br>frecuentes</strong><i class="ti ti-arrow-right"></i></button>
       </div>
-      <div class="hero-collage solo" id="heroCollage">
-        <img class="hero-mascota" src="https://pedidos.surtidorahigienicos.com/mascota.png" alt="">
+
+      <div class="kpis">
+        <div class="kpi"><span class="chip verde-solido"><i class="ti ti-shopping-cart"></i></span><div><div class="kpi-num" id="kpiCompras">—</div><div class="kpi-lbl" id="kpiComprasLbl">Compras este año</div></div></div>
+        <div class="kpi"><span class="chip azul"><i class="ti ti-package"></i></span><div><div class="kpi-num" id="kpiProductos">—</div><div class="kpi-lbl">Productos frecuentes</div></div></div>
+        <div class="kpi"><span class="chip ambar-solido"><i class="ti ti-currency-dollar"></i></span><div><div class="kpi-num" id="kpiTotal">—</div><div class="kpi-lbl" id="kpiTotalLbl">Total en compras</div></div></div>
+        <div class="kpi"><span class="chip morado"><i class="ti ti-truck-delivery"></i></span><div><div class="kpi-num" id="kpiRuta">—</div><div class="kpi-lbl">Entregas en ruta</div></div></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h3>Mis compras recientes</h3><button class="link" onclick="irA('facturas')">Ver todas mis facturas <i class="ti ti-arrow-right"></i></button></div>
+        <div id="inicioRecientes"><div class="cargando-panel"><div class="spinner"></div>Cargando tus compras...</div></div>
+      </div>
+
+      <div class="inicio-bottom">
+        <div class="panel">
+          <div class="panel-head"><h3>Productos frecuentes</h3><button class="link" onclick="irA('productos')">Ver todos <i class="ti ti-arrow-right"></i></button></div>
+          <div class="frec-lista" id="inicioFrecuentes"><div class="cargando-panel">Cargando...</div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Compras por periodo</h3><button class="link" onclick="irA('facturas')">Detalle <i class="ti ti-arrow-right"></i></button></div>
+          <div class="mes-actual" id="inicioPeriodo"><div class="cargando-panel">Cargando...</div></div>
+        </div>
+        <div class="panel info-cuenta">
+          <div class="panel-head"><h3>Información de mi cuenta</h3><button class="link" onclick="irA('cuenta')">Ver más <i class="ti ti-arrow-right"></i></button></div>
+          <div id="inicioCuenta"></div>
+        </div>
       </div>
     </section>
 
-    <div class="tabs">
-      <div class="tabs-inner">
-        <div class="tab activo" id="tab-frecuentes" onclick="cambiarTab('frecuentes')"><i class="ti ti-star" aria-hidden="true"></i> Mis productos <span class="tab-count" id="countFrecuentes">0</span></div>
-        <div class="tab" id="tab-catalogo" onclick="cambiarTab('catalogo')"><i class="ti ti-layout-grid" aria-hidden="true"></i> Catálogo completo</div>
-      </div>
-    </div>
+    <!-- ═══ TIENDA (Mis productos / Catálogo) ═══ -->
+    <section class="vista" id="vista-tienda">
+      <div class="tienda">
+        <aside class="sidebar">
+          <nav class="cat-list" id="catTabs" aria-label="Categorías">
+            <div class="cat-skel">Cargando categorías...</div>
+          </nav>
+          <div class="promo">
+            <strong>Todo para<br><span>tu negocio</span></strong>
+            <p>Limpieza, higiene y desechables con precios para ti.</p>
+            <div class="promo-logo">SHS<span>✓</span></div>
+            <img class="promo-img" src="https://pedidos.surtidorahigienicos.com/mascota.png" alt="">
+          </div>
+        </aside>
 
-    <div class="toolbar">
-      <div>
-        <h2 id="tituloLista">Mis productos</h2>
-        <div class="toolbar-sub" id="productosCount"></div>
+        <div class="contenido">
+          <div class="tabs" style="display:none">
+            <div class="tabs-inner">
+              <div class="tab activo" id="tab-frecuentes"><span class="tab-count" id="countFrecuentes">0</span></div>
+              <div class="tab" id="tab-catalogo"></div>
+            </div>
+          </div>
+          <div class="toolbar" style="margin-top:0">
+            <div>
+              <h2 id="tituloLista">Mis productos</h2>
+              <div class="toolbar-sub" id="productosCount"></div>
+            </div>
+            <div class="toolbar-der">
+              <label for="ordenSel">Ordenar por:</label>
+              <select id="ordenSel" onchange="cambiarOrden()">
+                <option value="relevantes">Más relevantes</option>
+                <option value="precio-asc">Precio: menor a mayor</option>
+                <option value="precio-desc">Precio: mayor a menor</option>
+                <option value="nombre">Nombre (A-Z)</option>
+              </select>
+              <div class="vista-btns">
+                <button id="vistaGrid" class="activo" onclick="setVista('grid')" title="Ver en cuadrícula" aria-label="Ver en cuadrícula"><i class="ti ti-layout-grid" aria-hidden="true"></i></button>
+                <button id="vistaLista" onclick="setVista('lista')" title="Ver en lista" aria-label="Ver en lista"><i class="ti ti-list" aria-hidden="true"></i></button>
+              </div>
+            </div>
+          </div>
+          <div class="seccion activa" id="sec-frecuentes">
+            <div id="lista-frecuentes" class="grid-productos"><div class="loading"><div class="spinner"></div>Cargando tus productos...</div></div>
+          </div>
+          <div class="seccion" id="sec-catalogo">
+            <div id="lista-catalogo" class="grid-productos"><div class="loading"><div class="spinner"></div>Cargando catálogo...</div></div>
+          </div>
+        </div>
+
+        <aside class="lateral">
+          <div class="mini-carrito">
+            <div class="mini-head"><h3>Mi carrito <span id="miniCount">0</span></h3></div>
+            <div id="miniItems"></div>
+            <div class="mini-foot">
+              <div class="mini-sub"><span id="miniSubLbl">Subtotal (0 productos)</span><strong id="miniSubtotal">$0.00</strong></div>
+              <div class="mini-nota">Precios sin IVA · el total con IVA se ve al continuar</div>
+              <button class="btn-continuar" id="btnContinuar" onclick="abrirCarrito()" disabled><i class="ti ti-shopping-cart" aria-hidden="true"></i> Continuar compra <i class="ti ti-arrow-right" aria-hidden="true"></i></button>
+            </div>
+          </div>
+          <div class="info">
+            <h4><i class="ti ti-info-circle" aria-hidden="true"></i> Información importante</h4>
+            <ul>
+              <li><i class="ti ti-check" aria-hidden="true"></i>Precios sin IVA y sujetos a disponibilidad</li>
+              <li><i class="ti ti-check" aria-hidden="true"></i>Pedidos después de las 2:00 pm pueden entregarse al día siguiente</li>
+              <li><i class="ti ti-check" aria-hidden="true"></i>Pago con tarjeta seguro por Stripe (+3% de comisión)</li>
+            </ul>
+          </div>
+        </aside>
       </div>
-      <div class="toolbar-der">
-        <label for="ordenSel">Ordenar por:</label>
-        <select id="ordenSel" onchange="cambiarOrden()">
-          <option value="relevantes">Más relevantes</option>
-          <option value="precio-asc">Precio: menor a mayor</option>
-          <option value="precio-desc">Precio: mayor a menor</option>
-          <option value="nombre">Nombre (A-Z)</option>
-        </select>
-        <div class="vista-btns">
-          <button id="vistaGrid" class="activo" onclick="setVista('grid')" title="Ver en cuadrícula" aria-label="Ver en cuadrícula"><i class="ti ti-layout-grid" aria-hidden="true"></i></button>
-          <button id="vistaLista" onclick="setVista('lista')" title="Ver en lista" aria-label="Ver en lista"><i class="ti ti-list" aria-hidden="true"></i></button>
+    </section>
+
+    <!-- ═══ MIS PEDIDOS ═══ -->
+    <section class="vista" id="vista-pedidos">
+      <div class="vista-titulo"><div><h2>Mis pedidos</h2><p>Pedidos que hiciste desde esta tienda en línea. Puedes repetir cualquiera con los precios de hoy.</p></div></div>
+      <div class="panel" style="margin-top:0"><div id="pedidosLista"><div class="cargando-panel"><div class="spinner"></div>Cargando tus pedidos...</div></div></div>
+    </section>
+
+    <!-- ═══ MIS FACTURAS ═══ -->
+    <section class="vista" id="vista-facturas">
+      <div class="vista-titulo">
+        <div><h2>Mis facturas</h2><p>Tus compras facturadas y el estatus de su entrega.</p></div>
+        <div class="filtros">
+          <select id="facAnio" onchange="renderFacturasVista()"></select>
+          <select id="facMes" onchange="renderFacturasVista()"><option value="">Todos los meses</option></select>
+          <input type="text" id="facBusca" placeholder="Buscar folio..." oninput="renderFacturasVista()">
         </div>
       </div>
-    </div>
+      <div class="kpis" style="margin-top:0" id="facResumen"></div>
+      <div class="panel">
+        <div class="panel-head"><h3 id="facMesesTitulo">Compras por mes</h3></div>
+        <div class="meses" id="facMeses"></div>
+      </div>
+      <div class="panel"><div id="facTabla"><div class="cargando-panel"><div class="spinner"></div>Cargando tus facturas...</div></div></div>
+    </section>
 
-    <div class="seccion activa" id="sec-frecuentes">
-      <div id="lista-frecuentes" class="grid-productos"><div class="loading"><div class="spinner"></div>Cargando tus productos...</div></div>
-    </div>
-    <div class="seccion" id="sec-catalogo">
-      <div id="lista-catalogo" class="grid-productos"><div class="loading"><div class="spinner"></div>Cargando catálogo...</div></div>
-    </div>
+    <!-- ═══ ESTADO DE CUENTA ═══ -->
+    <section class="vista" id="vista-estado">
+      <div class="vista-titulo"><div><h2>Estado de cuenta</h2><p id="ecSub">Tu crédito y saldos con SHS.</p></div></div>
+      <div id="ecContenido"></div>
+    </section>
+
+    <!-- ═══ DIRECCIONES ═══ -->
+    <section class="vista" id="vista-direcciones">
+      <div class="vista-titulo">
+        <div><h2>Direcciones de entrega</h2><p>Domicilios registrados para tu cuenta.</p></div>
+        <button class="btn-mini" onclick="solicitarDireccion()"><i class="ti ti-plus"></i> Solicitar nueva dirección o cambio</button>
+      </div>
+      <div class="dir-grid" id="dirLista"></div>
+    </section>
+
+    <!-- ═══ MI CUENTA ═══ -->
+    <section class="vista" id="vista-cuenta">
+      <div class="vista-titulo"><div><h2>Mi cuenta</h2><p>Tus datos comerciales con SHS.</p></div></div>
+      <div class="cuenta-grid" id="cuentaContenido"></div>
+    </section>
   </main>
-
-  <aside class="lateral">
-    <div class="mini-carrito">
-      <div class="mini-head"><h3>Mi carrito <span id="miniCount">0</span></h3></div>
-      <div id="miniItems"></div>
-      <div class="mini-foot">
-        <div class="mini-sub"><span id="miniSubLbl">Subtotal (0 productos)</span><strong id="miniSubtotal">$0.00</strong></div>
-        <div class="mini-nota">Precios sin IVA · el total con IVA se ve al continuar</div>
-        <button class="btn-continuar" id="btnContinuar" onclick="abrirCarrito()" disabled><i class="ti ti-shopping-cart" aria-hidden="true"></i> Continuar compra <i class="ti ti-arrow-right" aria-hidden="true"></i></button>
-      </div>
-    </div>
-    <div class="ayuda">
-      <div class="ayuda-top">
-        <div class="ayuda-ico"><i class="ti ti-message-circle" aria-hidden="true"></i></div>
-        <div>
-          <h4>¿Necesitas ayuda?</h4>
-          <p>Tu vendedora te ayuda a encontrar lo que buscas.</p>
-        </div>
-      </div>
-      <button class="btn-ayuda" onclick="abrirWhatsApp()"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i> Contactar vendedora</button>
-    </div>
-    <div class="info">
-      <h4><i class="ti ti-info-circle" aria-hidden="true"></i> Información importante</h4>
-      <ul>
-        <li><i class="ti ti-check" aria-hidden="true"></i>Precios sin IVA y sujetos a disponibilidad</li>
-        <li><i class="ti ti-check" aria-hidden="true"></i>Pedidos después de las 2:00 pm pueden entregarse al día siguiente</li>
-        <li><i class="ti ti-check" aria-hidden="true"></i>Pago con tarjeta seguro por Stripe (+3% de comisión)</li>
-      </ul>
-    </div>
-  </aside>
 </div>
+
+<div class="modal-overlay" id="modalDetalle" onclick="if(event.target===this)cerrarDetalle()">
+  <div class="detalle-box" id="detalleBox"></div>
+</div>
+<div class="toast" id="toast"></div>
 
 <div class="overlay" id="overlay" onclick="cerrarCarrito()"></div>
 <div class="carrito-panel" id="carritoPanel">
@@ -597,8 +889,7 @@ async function init() {
     mostrarSaludoSplash('Visitante');
     setTimeout(ocultarSplash, 3000);
     document.getElementById('countFrecuentes').textContent = '0';
-    document.querySelector('.tab[onclick*="frecuentes"]')?.style.setProperty('display','none');
-    cambiarTab('catalogo');
+    configurarPortal();
     iniciarRefrescoCatalogo();
     return;
   }
@@ -629,7 +920,8 @@ async function init() {
     try { imagenesMap = await imagenesRes.json() || {}; } catch(e) { imagenesMap = {}; }
     document.getElementById('countFrecuentes').textContent = historialArticulos.length;
     await renderFrecuentes();
-    cargarCatalogo();
+    await cargarCatalogo();
+    configurarPortal();
 
     // ── FIX 1: Refrescar catálogo automáticamente cada hora ──────────────
     iniciarRefrescoCatalogo();
@@ -817,7 +1109,7 @@ function renderCatTabs() {
 function selCat(cat) {
   catActiva = cat;
   document.getElementById('busquedaCatalogo').value = '';
-  if (tabActiva !== 'catalogo') cambiarTab('catalogo');
+  if (vistaActual !== 'catalogo') irA('catalogo');
   else { renderCatTabs(); renderCatalogo(); }
 }
 
@@ -848,7 +1140,7 @@ function renderCatalogo() {
 function filtrarCatalogo() {
   const q = document.getElementById('busquedaCatalogo').value.trim();
   catActiva = 'TODAS';
-  if (q && tabActiva !== 'catalogo') { cambiarTab('catalogo'); return; }
+  if (q && vistaActual !== 'catalogo') { irA('catalogo'); return; }
   renderCatTabs();
   renderCatalogo();
 }
@@ -975,6 +1267,7 @@ function actualizarCarritoUI() {
   const comision = totalConIva * 0.03;
   const totalTarjeta = totalConIva + comision;
   document.getElementById('carritoCount').textContent = totalUnid;
+  document.getElementById('carritoTotalHeader').textContent = fmt(totalPesos);
   verificarAlertas();
   document.getElementById('carritoSubtotal').textContent = fmt(totalPesos);
   document.getElementById('carritoIva').textContent = fmt(iva);
@@ -1124,6 +1417,7 @@ async function enviarPedido() {
       fechaEntrega, notasExtra
     };
     guardarEnHistorial(items, totalPesos * 1.16);
+    guardarPedidoApp(window._ultimoPedido);
     carrito = {}; actualizarCarritoUI(); cerrarCarrito();
     document.getElementById('modalFolio').textContent = `Folio: ${folio}`;
     document.getElementById('modalClienteNombre').textContent = clienteData?.nombre || '';
@@ -1275,12 +1569,15 @@ function ocultarSplash() {
   if (splash) { splash.classList.add('oculto'); setTimeout(function(){ splash.style.display='none'; }, 400); }
 }
 
-function abrirWhatsApp() {
+function abrirWhatsApp(asunto) {
   var vendedora = clienteData?.vendedor?.nombre_vendedor || '';
   var telefonos = {'TELEMARKETING 1':'523121054317','TELEMARKETING 2':'523121054317','TELEMARKETING 3':'523121054317','TELEMARKETING 4':'523121054317'};
   var telefono = telefonos[vendedora] || '523121054317';
   var nombre = clienteData?.nombre || 'cliente';
-  var msg = encodeURIComponent(`Hola, soy ${nombre}. Tengo una pregunta sobre mi pedido en la app de SHS.`);
+  var texto = (typeof asunto === 'string' && asunto)
+    ? `Hola, soy ${nombre} (cliente ${CLIENTE_ID}). ${asunto}`
+    : `Hola, soy ${nombre}. Tengo una pregunta sobre mi pedido en la app de SHS.`;
+  var msg = encodeURIComponent(texto);
   window.open(`https://wa.me/${telefono}?text=${msg}`, '_blank');
 }
 
@@ -1403,6 +1700,535 @@ function guardarClienteNuevo() {
   const btn = document.querySelector('.btn-cliente-nuevo');
   if (btn) { btn.textContent='✅ Datos enviados por WhatsApp'; btn.style.background='#dcfce7'; btn.style.borderColor='#16a34a'; btn.style.color='#166534'; }
   setTimeout(function() { cerrarModalClienteNuevo(); }, 2500);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// PORTAL DEL CLIENTE (Inicio, pedidos, facturas, estado de cuenta, etc.)
+// ══════════════════════════════════════════════════════════════════════
+// Por seguridad, las secciones con datos de la cuenta solo se muestran
+// cuando el cliente entra con su link personal (?t=...). En local
+// (localhost) también con ?cliente=, para poder probar.
+const ES_LOCAL = ['localhost', '127.0.0.1'].includes(location.hostname);
+const API_BASE = 'https://catalogo-shs.vercel.app';
+let PORTAL = false;
+let vistaActual = null;
+const _p = { facturas: null, facturasProm: null, bitIdx: null, bitProm: null, pedidos: null, pedidosProm: null };
+const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+let _fbDb = null;
+function getDb() {
+  if (_fbDb) return _fbDb;
+  if (!window.firebase) return null;
+  if (!firebase.apps.length) {
+    firebase.initializeApp({
+      apiKey: "AIzaSyDGBgicmvOge196PiSgmIHhseQUGMiko-E",
+      authDomain: "surtidora-de-higienicos.firebaseapp.com",
+      databaseURL: "https://surtidora-de-higienicos-default-rtdb.firebaseio.com",
+      projectId: "surtidora-de-higienicos",
+      appId: "1:232648877023:web:9e8a4a743b68f4e16d9a6a"
+    });
+  }
+  _fbDb = firebase.database();
+  return _fbDb;
+}
+
+// ── Utilidades ──
+function normNom(s) { return String(s || '').trim().toUpperCase().replace(/\s+/g, ' '); }
+function normFolio(f) {
+  const s = String(f || '').trim().toUpperCase();
+  const m = s.match(/^([A-Z]*)0*(\d+)$/);
+  return m ? (m[1] + m[2]) : s;
+}
+function escHTML(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtFecha(iso) {
+  const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${Number(m[3])} ${MESES[Number(m[2]) - 1]} ${m[1]}` : (iso || '—');
+}
+function hoyISO() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function nombreCorto(n) {
+  return String(n || '').trim().split(/\s+/).slice(0, 2).map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ');
+}
+const FORMA_PAGO = { credito: 'Crédito', efectivo: 'Efectivo', cheque: 'Cheque', tarjeta: 'Tarjeta', transferencia: 'Transferencia' };
+let _toastT = null;
+function avisar(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('visible');
+  clearTimeout(_toastT); _toastT = setTimeout(() => t.classList.remove('visible'), 3800);
+}
+
+// ── Navegación ──
+function configurarPortal() {
+  PORTAL = CLIENTE_ID !== 'NUEVO' && (!!TOKEN_PARAM || ES_LOCAL);
+  document.querySelectorAll('.solo-portal').forEach(e => { e.style.display = PORTAL ? '' : 'none'; });
+  document.querySelectorAll('.solo-cliente').forEach(e => { e.style.display = CLIENTE_ID === 'NUEVO' ? 'none' : ''; });
+  const validas = PORTAL
+    ? ['inicio','productos','catalogo','pedidos','facturas','estado','direcciones','cuenta']
+    : (CLIENTE_ID === 'NUEVO' ? ['catalogo'] : ['productos','catalogo']);
+  const h = (location.hash || '').replace('#', '');
+  irA(validas.includes(h) ? h : validas[0]);
+}
+
+function irA(v) {
+  if (!PORTAL && v !== 'productos' && v !== 'catalogo') v = CLIENTE_ID === 'NUEVO' ? 'catalogo' : 'productos';
+  vistaActual = v;
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('activo', b.dataset.vista === v));
+  const seccion = (v === 'productos' || v === 'catalogo') ? 'tienda' : v;
+  document.querySelectorAll('.vista').forEach(s => s.classList.toggle('activa', s.id === 'vista-' + seccion));
+  try { history.replaceState(null, '', location.pathname + location.search + '#' + v); } catch (e) {}
+  window.scrollTo(0, 0);
+  if (v === 'productos') cambiarTab('frecuentes');
+  else if (v === 'catalogo') cambiarTab('catalogo');
+  else if (v === 'inicio') renderInicio();
+  else if (v === 'pedidos') renderPedidos();
+  else if (v === 'facturas') renderFacturasVista();
+  else if (v === 'estado') renderEstadoCuenta();
+  else if (v === 'direcciones') renderDirecciones();
+  else if (v === 'cuenta') renderCuenta();
+}
+
+function buscarAhora() {
+  if (vistaActual !== 'catalogo') irA('catalogo'); else filtrarCatalogo();
+  document.getElementById('busquedaCatalogo').focus();
+}
+
+// ── Datos: facturas del cliente (Control de Facturas) ──
+function cargarFacturasCliente() {
+  if (_p.facturas) return Promise.resolve(_p.facturas);
+  if (_p.facturasProm) return _p.facturasProm;
+  const db = getDb();
+  if (!db || !clienteData) return Promise.resolve([]);
+  const nom = normNom(clienteData.nombre);
+  _p.facturasProm = db.ref('control_facturas/facturas').once('value').then(snap => {
+    const out = [];
+    snap.forEach(ch => {
+      const f = ch.val();
+      const folio = (f && f.folio) || ch.key;
+      if (f && normNom(f.cliente) === nom && /^a/i.test(String(folio))) out.push({ ...f, folio });
+    });
+    out.sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)) || String(b.folio).localeCompare(String(a.folio), 'es', { numeric: true }));
+    _p.facturas = out;
+    return out;
+  }).catch(err => { _p.facturasProm = null; throw err; });
+  return _p.facturasProm;
+}
+
+// ── Datos: entregas (Bitácora de rutas, últimas ~400 rutas ≈ 3 meses) ──
+function cargarBitacoras() {
+  if (_p.bitIdx) return Promise.resolve(_p.bitIdx);
+  if (_p.bitProm) return _p.bitProm;
+  const db = getDb();
+  if (!db) return Promise.resolve(new Map());
+  _p.bitProm = db.ref('bitacoras').orderByKey().limitToLast(400).once('value').then(snap => {
+    const idx = new Map();
+    snap.forEach(ch => {
+      const b = ch.val();
+      if (!b || !Array.isArray(b.paradas)) return;
+      b.paradas.forEach(p => {
+        if (!p) return;
+        const asuntos = [p.asunto, ...(Array.isArray(p.asuntos) ? p.asuntos : [])].filter(Boolean).map(a => String(a).toUpperCase());
+        const reg = {
+          estado: b.estado, t: Number(b.tsConcluido || b.timestamp || 0), fecha: b.fecha,
+          pendiente: asuntos.includes('PENDIENTE') && !asuntos.includes('ENTREGA'),
+          ruta: b.folio || '', tsConcluido: b.tsConcluido || null
+        };
+        [p.folio, ...(Array.isArray(p.folios) ? p.folios : [])].filter(Boolean).forEach(f => {
+          const k = normFolio(f);
+          if (!idx.has(k)) idx.set(k, []);
+          idx.get(k).push(reg);
+        });
+      });
+    });
+    _p.bitIdx = idx;
+    return idx;
+  }).catch(() => { _p.bitProm = null; return new Map(); });
+  return _p.bitProm;
+}
+
+function estadoEntrega(folio) {
+  if (!_p.bitIdx) return { cls: 'neutro', txt: '…', icon: 'ti-clock' };
+  const regs = _p.bitIdx.get(normFolio(folio)) || [];
+  if (!regs.length) return { cls: 'neutro', txt: 'Sin ruta registrada', icon: 'ti-minus' };
+  const ultimo = regs.slice().sort((a, b) => b.t - a.t)[0];
+  if (ultimo.estado !== 'concluido') return { cls: 'ruta', txt: 'En ruta', icon: 'ti-truck-delivery', reg: ultimo };
+  if (ultimo.pendiente) return { cls: 'pendiente', txt: 'Pendiente de entrega', icon: 'ti-alert-circle', reg: ultimo };
+  return { cls: 'entregado', txt: 'Entregado', icon: 'ti-circle-check', reg: ultimo };
+}
+function badgeEstado(e) { return `<span class="est ${e.cls}"><i class="ti ${e.icon}"></i>${e.txt}</span>`; }
+
+function tablaFacturas(lista) {
+  if (!lista.length) return `<div class="vacio-panel"><i class="ti ti-file-invoice"></i>No hay facturas para mostrar</div>`;
+  return `<div class="tabla-wrap"><table class="tabla">
+    <thead><tr><th>Factura</th><th>Fecha</th><th class="num">Total</th><th>Forma de pago</th><th>Entrega</th><th></th></tr></thead>
+    <tbody>${lista.map(f => `<tr>
+      <td class="folio">${escHTML(f.folio)}</td>
+      <td>${fmtFecha(f.fecha)}</td>
+      <td class="num">${fmt(f.total)}</td>
+      <td>${FORMA_PAGO[f.tipo] || '—'}</td>
+      <td>${badgeEstado(estadoEntrega(f.folio))}</td>
+      <td><div class="acc"><button class="btn-mini borde" onclick="verFactura('${escHTML(f.folio)}')"><i class="ti ti-eye"></i> Ver</button></div></td>
+    </tr>`).join('')}</tbody></table></div>`;
+}
+
+function verFactura(folio) {
+  const f = (_p.facturas || []).find(x => x.folio === folio);
+  if (!f) return;
+  const e = estadoEntrega(f.folio);
+  const ruta = e.reg ? `<div class="dato"><span>Ruta</span><b>${escHTML(e.reg.ruta || '—')} · ${fmtFecha(e.reg.fecha)}</b></div>` : '';
+  const concl = e.reg && e.reg.tsConcluido ? `<div class="dato"><span>Ruta concluida</span><b>${new Date(e.reg.tsConcluido).toLocaleString('es-MX', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</b></div>` : '';
+  abrirDetalle(`
+    <h3>Factura ${escHTML(f.folio)} <button class="btn-cerrar" style="background:#eef1f6;color:#4a5874" onclick="cerrarDetalle()">✕</button></h3>
+    <div style="margin-top:14px">
+      <div class="dato"><span>Fecha</span><b>${fmtFecha(f.fecha)}</b></div>
+      <div class="dato"><span>Importe</span><b>${fmt(f.importeNeto)}</b></div>
+      <div class="dato"><span>IVA</span><b>${fmt(f.impuesto)}</b></div>
+      <div class="dato"><span>Total</span><b>${fmt(f.total)}</b></div>
+      <div class="dato"><span>Forma de pago</span><b>${FORMA_PAGO[f.tipo] || '—'}</b></div>
+      <div class="dato"><span>Entrega</span><b>${badgeEstado(e)}</b></div>
+      ${ruta}${concl}
+    </div>
+    <p class="nota">El PDF y XML de tus facturas los recibes por correo. Para aclaraciones contacta a tu vendedora.</p>`);
+}
+function abrirDetalle(html) { document.getElementById('detalleBox').innerHTML = html; document.getElementById('modalDetalle').classList.add('abierto'); }
+function cerrarDetalle() { document.getElementById('modalDetalle').classList.remove('abierto'); }
+
+// ── INICIO ──
+async function renderInicio() {
+  document.getElementById('saludoNombre').textContent = nombreCorto(clienteData?.nombre) || 'cliente';
+  document.getElementById('kpiProductos').textContent = historialArticulos.length;
+  renderInicioCuenta();
+  renderInicioFrecuentes();
+  try {
+    const [fac] = await Promise.all([cargarFacturasCliente(), cargarBitacoras()]);
+    const anio = String(new Date().getFullYear());
+    const mes = hoyISO().slice(0, 7);
+    const delAnio = fac.filter(f => String(f.fecha).startsWith(anio));
+    const suma = l => l.reduce((s, f) => s + (Number(f.total) || 0), 0);
+    document.getElementById('kpiCompras').textContent = delAnio.length;
+    document.getElementById('kpiComprasLbl').textContent = `Compras en ${anio}`;
+    document.getElementById('kpiTotal').textContent = fmt(suma(delAnio));
+    document.getElementById('kpiTotalLbl').textContent = `Total comprado en ${anio}`;
+    document.getElementById('kpiRuta').textContent = fac.filter(f => estadoEntrega(f.folio).cls === 'ruta').length;
+    document.getElementById('inicioRecientes').innerHTML = tablaFacturas(fac.slice(0, 5));
+    const dAnt = new Date(); dAnt.setDate(1); dAnt.setMonth(dAnt.getMonth() - 1);
+    const mesAnt = `${dAnt.getFullYear()}-${String(dAnt.getMonth() + 1).padStart(2, '0')}`;
+    const delMes = fac.filter(f => String(f.fecha).startsWith(mes));
+    const mesesConCompra = new Set(delAnio.map(f => String(f.fecha).slice(0, 7))).size || 1;
+    document.getElementById('inicioPeriodo').innerHTML = `
+      <div><small>Este mes</small><b>${fmt(suma(delMes))}</b><small>${delMes.length} compra(s)</small></div>
+      <div><small>Mes anterior</small><b>${fmt(suma(fac.filter(f => String(f.fecha).startsWith(mesAnt))))}</b></div>
+      <div><small>En ${anio}</small><b>${fmt(suma(delAnio))}</b></div>
+      <div><small>Promedio mensual</small><b>${fmt(suma(delAnio) / mesesConCompra)}</b></div>`;
+  } catch (err) {
+    document.getElementById('inicioRecientes').innerHTML = `<div class="vacio-panel"><i class="ti ti-wifi-off"></i>No se pudieron cargar tus compras. Recarga la página.</div>`;
+  }
+}
+
+function renderInicioFrecuentes() {
+  const cont = document.getElementById('inicioFrecuentes');
+  const lista = historialArticulos.slice(0, 4);
+  if (!lista.length) { cont.innerHTML = `<div class="vacio-panel"><i class="ti ti-star"></i>Aún no tienes productos frecuentes</div>`; return; }
+  cont.innerHTML = lista.map((a, i) => {
+    const art = catalogoCompleto.find(x => x.nombre === a.nombre);
+    const img = imagenDe(a.nombre);
+    const thumb = img.url ? `<img src="${img.url}" alt="" onerror="this.parentElement.textContent='${img.emoji}'">` : img.emoji;
+    const p = precioDe(a.nombre, art);
+    return `<div class="frec-fila">
+      <div class="mini-img">${thumb}</div>
+      <div><div class="fn">${escHTML(a.nombre)}</div><div class="fp">${art ? 'Código: ' + escHTML(art.clave) + ' · ' : ''}<b>${p != null ? fmt(p) : '—'}</b></div></div>
+      <button class="btn-mini" onclick="agregarRapido(${i})"><i class="ti ti-shopping-cart-plus"></i> Agregar</button>
+    </div>`;
+  }).join('');
+}
+
+function agregarRapido(i) {
+  const a = historialArticulos[i];
+  if (!a) return;
+  const art = catalogoCompleto.find(x => x.nombre === a.nombre);
+  const precio = precioDe(a.nombre, art);
+  if (precio == null) { avisar('Este producto no tiene precio disponible en este momento.'); return; }
+  if (!carrito[a.nombre]) carrito[a.nombre] = { nombre: a.nombre, precio, cantidad: 0 };
+  carrito[a.nombre].cantidad++;
+  actualizarCarritoUI();
+  refrescarCards(a.nombre);
+  avisar(`Agregado: ${a.nombre}`);
+}
+
+function renderInicioCuenta() {
+  const c = clienteData || {};
+  const dir = (c.direcciones || []).find(d => d.usarParaEnvios) || (c.direcciones || [])[0];
+  document.getElementById('inicioCuenta').innerHTML = `
+    <div class="dato"><i class="ti ti-user"></i><b>${escHTML(c.nombre)}<br><small style="color:var(--texto-suave)">Cliente: ${escHTML(CLIENTE_ID)}</small></b></div>
+    ${c.telefono || dir?.telefono ? `<div class="dato"><i class="ti ti-phone"></i><b>${escHTML(c.telefono || dir.telefono)}</b></div>` : ''}
+    ${c.email || dir?.email ? `<div class="dato"><i class="ti ti-mail"></i><b>${escHTML(c.email || dir.email)}</b></div>` : ''}
+    ${dir ? `<div class="dato"><i class="ti ti-map-pin"></i><b>${direccionTexto(dir)}</b></div>` : ''}
+    ${c.vendedor?.nombre_vendedor ? `<div class="dato"><i class="ti ti-headset"></i><b>Vendedora: ${escHTML(c.vendedor.nombre_vendedor)}</b></div>` : ''}`;
+}
+
+// ── MIS FACTURAS ──
+async function renderFacturasVista() {
+  const tabla = document.getElementById('facTabla');
+  let fac;
+  try { [fac] = await Promise.all([cargarFacturasCliente(), cargarBitacoras()]); }
+  catch (e) { tabla.innerHTML = `<div class="vacio-panel"><i class="ti ti-wifi-off"></i>No se pudieron cargar tus facturas. Recarga la página.</div>`; return; }
+  const selAnio = document.getElementById('facAnio');
+  const selMes = document.getElementById('facMes');
+  if (!selAnio.options.length) {
+    const anios = [...new Set(fac.map(f => String(f.fecha).slice(0, 4)))].filter(a => /^\d{4}$/.test(a)).sort().reverse();
+    const actual = String(new Date().getFullYear());
+    if (!anios.includes(actual)) anios.unshift(actual);
+    selAnio.innerHTML = anios.map(a => `<option value="${a}">${a}</option>`).join('');
+    selMes.innerHTML = '<option value="">Todos los meses</option>' + MESES.map((m, i) => `<option value="${String(i + 1).padStart(2, '0')}">${m.charAt(0).toUpperCase() + m.slice(1)}</option>`).join('');
+  }
+  const anio = selAnio.value, mes = selMes.value;
+  const q = document.getElementById('facBusca').value.trim().toUpperCase();
+  const delAnio = fac.filter(f => String(f.fecha).startsWith(anio));
+  let lista = mes ? delAnio.filter(f => String(f.fecha).slice(5, 7) === mes) : delAnio;
+  if (q) lista = fac.filter(f => String(f.folio).toUpperCase().includes(q) || normFolio(f.folio).includes(normFolio(q)));
+  const suma = l => l.reduce((s, f) => s + (Number(f.total) || 0), 0);
+
+  document.getElementById('facResumen').innerHTML = `
+    <div class="kpi"><span class="chip azul"><i class="ti ti-file-invoice"></i></span><div><div class="kpi-num">${lista.length}</div><div class="kpi-lbl">Facturas${mes ? ' en ' + MESES[Number(mes) - 1] : ' en ' + anio}</div></div></div>
+    <div class="kpi"><span class="chip ambar-solido"><i class="ti ti-currency-dollar"></i></span><div><div class="kpi-num">${fmt(suma(lista))}</div><div class="kpi-lbl">Total comprado</div></div></div>
+    <div class="kpi"><span class="chip verde"><i class="ti ti-chart-bar"></i></span><div><div class="kpi-num">${fmt(lista.length ? suma(lista) / lista.length : 0)}</div><div class="kpi-lbl">Promedio por compra</div></div></div>
+    <div class="kpi"><span class="chip morado"><i class="ti ti-truck-delivery"></i></span><div><div class="kpi-num">${lista.filter(f => estadoEntrega(f.folio).cls === 'ruta').length}</div><div class="kpi-lbl">En ruta</div></div></div>`;
+
+  const porMes = Array.from({ length: 12 }, (_, i) => suma(delAnio.filter(f => Number(String(f.fecha).slice(5, 7)) === i + 1)));
+  const max = Math.max(...porMes, 1);
+  document.getElementById('facMesesTitulo').textContent = `Compras por mes · ${anio}`;
+  document.getElementById('facMeses').innerHTML = porMes.map((v, i) => {
+    const m = String(i + 1).padStart(2, '0');
+    const corto = v >= 1000 ? '$' + (v / 1000).toFixed(v >= 10000 ? 0 : 1) + 'k' : (v ? '$' + Math.round(v) : '');
+    return `<div class="mes ${mes === m ? 'activo' : ''}" onclick="filtrarMes('${m}')" title="${MESES[i]}: ${fmt(v)}">
+      <span class="val">${corto}</span><div class="barra" style="height:${Math.max(2, v / max * 100)}%"></div><span>${MESES[i]}</span></div>`;
+  }).join('');
+
+  const MAX = 100;
+  tabla.innerHTML = tablaFacturas(lista.slice(0, MAX)) +
+    (lista.length > MAX ? `<p class="nota">Mostrando ${MAX} de ${lista.length}. Elige un mes para ver menos.</p>` : '') +
+    `<p class="nota">El estatus de entrega considera las rutas de los últimos 3 meses. El PDF y XML de tus facturas los recibes por correo.</p>`;
+}
+function filtrarMes(m) {
+  const sel = document.getElementById('facMes');
+  sel.value = sel.value === m ? '' : m;
+  renderFacturasVista();
+}
+
+// ── MIS PEDIDOS (pedidos hechos desde esta tienda) ──
+function guardarPedidoApp(p) {
+  try {
+    const db = getDb();
+    if (!db || !p || !CLIENTE_ID || CLIENTE_ID === 'NUEVO') return;
+    db.ref('pedidos_app/' + CLIENTE_ID).push({
+      folio: String(p.folio || ''), ts: Date.now(), fecha: hoyISO(),
+      items: p.items.map(i => ({ nombre: i.nombre, cantidad: i.cantidad, precio: i.precio })),
+      subtotal: Number(p.totalPesos.toFixed(2)), total: Number((p.totalPesos * 1.16).toFixed(2)),
+      fechaEntrega: p.fechaEntrega || '', notas: p.notasExtra || '', origen: 'tienda-en-linea'
+    });
+    _p.pedidos = null; _p.pedidosProm = null;
+  } catch (e) {}
+}
+
+function cargarPedidosApp() {
+  if (_p.pedidos) return Promise.resolve(_p.pedidos);
+  if (_p.pedidosProm) return _p.pedidosProm;
+  const db = getDb();
+  if (!db) return Promise.resolve([]);
+  _p.pedidosProm = db.ref('pedidos_app/' + CLIENTE_ID).once('value').then(snap => {
+    const out = [];
+    snap.forEach(ch => { const v = ch.val(); if (v) out.push({ id: ch.key, ...v }); });
+    out.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    _p.pedidos = out;
+    return out;
+  }).catch(err => { _p.pedidosProm = null; throw err; });
+  return _p.pedidosProm;
+}
+
+// Relaciona cada pedido con la factura que salió de él (folio de origen en Microsip)
+let _docsOrigen = null;
+async function cargarDocsOrigen(desde) {
+  if (_docsOrigen) return _docsOrigen;
+  const ini = new Date(Math.max(new Date(desde).getTime(), Date.now() - 60 * 864e5));
+  const fin = new Date(Date.now() + 2 * 864e5);
+  const f = d => d.toISOString().slice(0, 10);
+  try {
+    const r = await fetch(`${API_BASE}/api/microsip-documentos?fecha_ini=${f(ini)}&fecha_fin=${f(fin)}`);
+    const data = await r.json();
+    const idx = new Map();
+    (data.items || []).forEach(d => {
+      if (d && d.folio_origen && normFolio(d.folio_origen) !== normFolio(d.folio)) idx.set(normFolio(d.folio_origen), d);
+    });
+    _docsOrigen = idx;
+  } catch (e) { _docsOrigen = new Map(); }
+  return _docsOrigen;
+}
+
+function estadoPedido(p) {
+  const doc = p.folio && _docsOrigen ? _docsOrigen.get(normFolio(p.folio)) : null;
+  if (!doc) return { e: { cls: 'recibido', txt: 'Recibido', icon: 'ti-inbox' }, doc: null };
+  const ent = estadoEntrega(doc.folio);
+  if (ent.cls === 'neutro') return { e: { cls: 'facturado', txt: 'Facturado ' + normFolio(doc.folio), icon: 'ti-file-check' }, doc };
+  return { e: ent, doc };
+}
+
+async function renderPedidos() {
+  const cont = document.getElementById('pedidosLista');
+  let ped;
+  try { ped = await cargarPedidosApp(); }
+  catch (e) { cont.innerHTML = `<div class="vacio-panel"><i class="ti ti-wifi-off"></i>No se pudieron cargar tus pedidos. Recarga la página.</div>`; return; }
+  if (!ped.length) {
+    cont.innerHTML = `<div class="vacio-panel"><i class="ti ti-clipboard-list"></i>Aún no tienes pedidos registrados en la tienda en línea.<br><br><button class="btn-mini verde" style="margin:0 auto" onclick="irA('catalogo')"><i class="ti ti-shopping-cart"></i> Hacer un pedido</button></div>`;
+    return;
+  }
+  const pintar = () => {
+    cont.innerHTML = `<div class="tabla-wrap"><table class="tabla">
+      <thead><tr><th>Pedido</th><th>Fecha</th><th>Productos</th><th class="num">Total</th><th>Estado</th><th>Entrega solicitada</th><th></th></tr></thead>
+      <tbody>${ped.map(p => {
+        const n = (p.items || []).reduce((s, i) => s + (Number(i.cantidad) || 0), 0);
+        return `<tr>
+          <td class="folio">${escHTML(p.folio || '—')}</td>
+          <td>${fmtFecha(p.fecha)}</td>
+          <td>${n} artículo${n === 1 ? '' : 's'}</td>
+          <td class="num">${fmt(p.total)}</td>
+          <td>${badgeEstado(estadoPedido(p).e)}</td>
+          <td>${p.fechaEntrega && p.fechaEntrega !== 'No especificada' ? fmtFecha(p.fechaEntrega) : '—'}</td>
+          <td><div class="acc">
+            <button class="btn-mini borde" onclick="verPedido('${p.id}')"><i class="ti ti-eye"></i> Ver</button>
+            <button class="btn-mini" onclick="repetirPedido('${p.id}')"><i class="ti ti-shopping-cart"></i> Comprar de nuevo</button>
+          </div></td></tr>`;
+      }).join('')}</tbody></table></div>`;
+  };
+  pintar();
+  await Promise.all([cargarBitacoras(), cargarDocsOrigen(ped[ped.length - 1].fecha || hoyISO())]);
+  if (vistaActual === 'pedidos') pintar();
+}
+
+function verPedido(id) {
+  const p = (_p.pedidos || []).find(x => x.id === id);
+  if (!p) return;
+  const est = estadoPedido(p);
+  abrirDetalle(`
+    <h3>Pedido ${escHTML(p.folio || '')} <button class="btn-cerrar" style="background:#eef1f6;color:#4a5874" onclick="cerrarDetalle()">✕</button></h3>
+    <div style="margin-top:14px">
+      <div class="dato"><span>Fecha</span><b>${fmtFecha(p.fecha)}</b></div>
+      <div class="dato"><span>Estado</span><b>${badgeEstado(est.e)}</b></div>
+      ${est.doc ? `<div class="dato"><span>Factura</span><b>${escHTML(normFolio(est.doc.folio))}</b></div>` : ''}
+      <div class="dato"><span>Entrega solicitada</span><b>${p.fechaEntrega && p.fechaEntrega !== 'No especificada' ? fmtFecha(p.fechaEntrega) : '—'}</b></div>
+      ${p.notas ? `<div class="dato"><span>Notas</span><b>${escHTML(p.notas)}</b></div>` : ''}
+    </div>
+    <div class="detalle-items">${(p.items || []).map(i => `<div><span>${i.cantidad} × ${escHTML(i.nombre)}</span><b>${fmt(i.precio * i.cantidad)}</b></div>`).join('')}
+      <div><span>Subtotal</span><b>${fmt(p.subtotal)}</b></div>
+      <div><span><b>Total con IVA</b></span><b>${fmt(p.total)}</b></div>
+    </div>
+    <div class="detalle-acc"><button class="btn-mini" onclick="cerrarDetalle();repetirPedido('${p.id}')"><i class="ti ti-shopping-cart"></i> Comprar de nuevo</button></div>`);
+}
+
+async function repetirPedido(id) {
+  const p = (_p.pedidos || []).find(x => x.id === id);
+  if (!p) return;
+  if (!catalogoCargado) await cargarCatalogo();
+  let agregados = 0, cambios = 0;
+  const faltan = [];
+  for (const it of (p.items || [])) {
+    const art = catalogoCompleto.find(a => a.nombre === it.nombre);
+    const precio = art ? precioDe(it.nombre, art) : null;
+    if (!art || precio == null) { faltan.push(it.nombre); continue; }
+    if (Math.abs(precio - Number(it.precio)) > 0.005) cambios++;
+    if (!carrito[it.nombre]) carrito[it.nombre] = { nombre: it.nombre, precio, cantidad: 0 };
+    carrito[it.nombre].precio = precio;
+    carrito[it.nombre].cantidad += Number(it.cantidad) || 1;
+    agregados++;
+    refrescarCards(it.nombre);
+  }
+  actualizarCarritoUI();
+  let msg = `Se agregaron ${agregados} producto(s) al carrito con los precios de hoy.`;
+  if (cambios) msg += ` ${cambios} cambiaron de precio.`;
+  if (faltan.length) msg += ` ${faltan.length} ya no están disponibles.`;
+  avisar(msg);
+  if (agregados) abrirCarrito();
+}
+
+// ── ESTADO DE CUENTA ──
+function renderEstadoCuenta() {
+  const c = clienteData || {};
+  const lc = c.limite_credito || {};
+  const n = v => Number(v) || 0;
+  const limite = n(lc.limite_credito);
+  const saldo = n(lc.saldo?.actual);
+  const vencido = n(lc.vencido?.actual);
+  const porVencer = n(lc.porvencer?.actual);
+  const disponible = Math.max(limite - saldo, 0);
+  const condicion = c.condicion_pago?.nombre_condicion || '—';
+  document.getElementById('ecSub').textContent = `Condición de pago: ${condicion}`;
+  const cont = document.getElementById('ecContenido');
+  if (!limite && !saldo) {
+    cont.innerHTML = `<div class="panel" style="margin-top:0"><div class="vacio-panel"><i class="ti ti-cash"></i>Tu cuenta no tiene saldo pendiente${condicion !== '—' ? ' · Condición: ' + escHTML(condicion) : ''}.</div></div>`;
+    return;
+  }
+  const uso = limite ? Math.min(saldo / limite * 100, 100) : 0;
+  cont.innerHTML = `
+    <div class="ec-cards">
+      <div class="ec-card"><small>Límite de crédito</small><b>${fmt(limite)}</b></div>
+      <div class="ec-card"><small>Saldo actual</small><b>${fmt(saldo)}</b><div class="uso-credito"><div style="width:${uso}%"></div></div></div>
+      <div class="ec-card ${vencido > 0 ? 'alerta' : ''}"><small>Saldo vencido</small><b>${fmt(vencido)}</b></div>
+      <div class="ec-card"><small>Crédito disponible</small><b>${fmt(disponible)}</b></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>Saldo vencido por antigüedad</h3></div>
+      <div class="aging">
+        <div><small>1 a 30 días</small><b>${fmt(lc.vencido?.dias1_30)}</b></div>
+        <div><small>31 a 60 días</small><b>${fmt(lc.vencido?.dias31_60)}</b></div>
+        <div><small>Más de 60 días</small><b>${fmt(lc.vencido?.dias61_mas)}</b></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>Saldo por vencer · ${fmt(porVencer)}</h3></div>
+      <div class="aging">
+        <div><small>Próximos 30 días</small><b>${fmt(lc.porvencer?.dias1_30)}</b></div>
+        <div><small>31 a 60 días</small><b>${fmt(lc.porvencer?.dias31_60)}</b></div>
+        <div><small>Más de 60 días</small><b>${fmt(lc.porvencer?.dias61_mas)}</b></div>
+      </div>
+      <p class="nota">Información al corte de la última actualización desde Microsip; los pagos recientes pueden tardar en reflejarse.${c.cobrador?.nombre_cobrador ? ' Para aclaraciones de pagos, tu cobrador es <b>' + escHTML(c.cobrador.nombre_cobrador) + '</b>.' : ''}</p>
+      <button class="btn-mini" style="margin-top:12px" onclick="abrirWhatsApp('Tengo una pregunta sobre mi estado de cuenta.')"><i class="ti ti-brand-whatsapp"></i> Preguntar por mi estado de cuenta</button>
+    </div>`;
+}
+
+// ── DIRECCIONES ──
+function direccionTexto(d) {
+  const calle = d.nombre_calle ? `${d.nombre_calle} ${d.num_exterior || ''}${d.num_interior && !/^0*$/.test(String(d.num_interior).trim()) ? ' Int. ' + d.num_interior : ''}` : (d.direccion || '');
+  return [calle, d.colonia ? 'Col. ' + d.colonia : '', d.codigo_postal ? 'C.P. ' + d.codigo_postal : '', [d.ciudad, d.estado].filter(Boolean).join(', ')]
+    .map(x => String(x).trim()).filter(Boolean).map(escHTML).join('<br>');
+}
+function renderDirecciones() {
+  const dirs = clienteData?.direcciones || [];
+  document.getElementById('dirLista').innerHTML = dirs.length ? dirs.map(d => `
+    <div class="dir-card"><i class="ti ti-map-pin"></i><div>
+      <h4>${escHTML(d.consignatario || clienteData.nombre)}</h4>
+      <p>${direccionTexto(d)}</p>
+      ${d.contacto || d.telefono ? `<p style="color:var(--texto-suave)">${escHTML([d.contacto, d.telefono].filter(Boolean).join(' · '))}</p>` : ''}
+      <div class="tags">${d.usarParaEnvios ? '<span class="tag verde">Envíos</span>' : ''}${d.usarParaFacturar ? '<span class="tag">Facturación</span>' : ''}</div>
+    </div></div>`).join('')
+    : `<div class="panel" style="margin-top:0"><div class="vacio-panel"><i class="ti ti-map-pin"></i>No hay direcciones registradas</div></div>`;
+}
+function solicitarDireccion() {
+  abrirWhatsApp('Quiero registrar una nueva dirección de entrega o hacer un cambio en una existente.');
+}
+
+// ── MI CUENTA ──
+function renderCuenta() {
+  const c = clienteData || {};
+  const dirFac = (c.direcciones || []).find(d => d.usarParaFacturar) || (c.direcciones || [])[0] || {};
+  const fila = (k, v) => `<div class="dato"><span>${k}</span><b>${v ? escHTML(v) : '—'}</b></div>`;
+  document.getElementById('cuentaContenido').innerHTML = `
+    <div class="panel"><div class="panel-head"><h3>Datos comerciales</h3></div>
+      ${fila('Nombre o razón social', c.nombre)}${fila('Clave de cliente', CLIENTE_ID)}${fila('RFC', dirFac.rfc)}
+      ${fila('Correo', c.email || dirFac.email)}${fila('Teléfono', c.telefono || dirFac.telefono)}
+      ${fila('Tipo de cliente', c.tipo_cliente?.nombre_tipo)}${fila('Zona', c.zona_cliente?.nombre_zona)}</div>
+    <div class="panel"><div class="panel-head"><h3>Condiciones y contacto</h3></div>
+      ${fila('Condición de pago', c.condicion_pago?.nombre_condicion)}${fila('Forma de envío', c.envio?.envio_nombre)}
+      ${fila('Límite de crédito', c.limite_credito?.limite_credito ? fmt(c.limite_credito.limite_credito) : '')}
+      ${fila('Tu vendedora', c.vendedor?.nombre_vendedor)}${fila('Tu cobrador', c.cobrador?.nombre_cobrador)}
+      <button class="btn-azul" onclick="abrirWhatsApp('Quiero actualizar los datos de mi cuenta.')"><i class="ti ti-brand-whatsapp"></i> Solicitar cambio de datos</button>
+    </div>`;
 }
 
 init();
