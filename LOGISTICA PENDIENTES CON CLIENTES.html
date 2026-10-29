@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Logística – Gestión de Pendientes</title>
+  <style>
+
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+    
+    :root {
+      --navy: #0d1b2a;
+      --navy2: #1b2d42;
+      --navy3: #243b55;
+      --accent: #e8a020;
+      --accent2: #f5c842;
+      --teal: #00b4d8;
+      --green: #22c55e;
+      --red: #ef4444;
+      --orange: #f97316;
+      --bg: #f0f4f8;
+      --card: #ffffff;
+      --text: #1e293b;
+      --text2: #64748b;
+      --border: #e2e8f0;
+      --shadow: 0 4px 20px rgba(13,27,42,0.08);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+    
+    /* SIDEBAR */
+    .sidebar {
+      position:fixed; left:0; top:0; width:260px; height:100vh;
+      background: linear-gradient(160deg, var(--navy) 0%, var(--navy2) 60%, var(--navy3) 100%);
+      display:flex; flex-direction:column; padding:0; z-index:100;
+      box-shadow: 4px 0 30px rgba(0,0,0,0.3);
+    }
+    .sidebar-logo {
+      padding: 28px 24px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .sidebar-logo .brand { font-size:10px; font-weight:700; letter-spacing:3px; color:var(--accent); text-transform:uppercase; margin-bottom:4px; }
+    .sidebar-logo h2 { font-size:16px; font-weight:700; color:#fff; line-height:1.3; }
+    .sidebar-logo .module-tag { display:inline-block; margin-top:8px; background:rgba(232,160,32,0.2); color:var(--accent); font-size:10px; font-weight:600; padding:3px 8px; border-radius:20px; letter-spacing:1px; text-transform:uppercase; }
+    .sidebar-nav { padding:20px 0; flex:1; }
+    .nav-section { padding: 6px 24px 4px; font-size:9px; font-weight:700; letter-spacing:2px; color:rgba(255,255,255,0.3); text-transform:uppercase; }
+    .nav-item { display:flex; align-items:center; gap:12px; padding:11px 24px; cursor:pointer; transition:all 0.2s; position:relative; color:rgba(255,255,255,0.6); font-size:13px; font-weight:500; }
+    .nav-item:hover, .nav-item.active { color:#fff; background:rgba(255,255,255,0.07); }
+    .nav-item.active::before { content:''; position:absolute; left:0; top:0; height:100%; width:3px; background:var(--accent); border-radius:0 2px 2px 0; }
+    .nav-item .icon { font-size:16px; width:20px; text-align:center; }
+    .sidebar-footer { padding:16px 24px; border-top:1px solid rgba(255,255,255,0.08); }
+    .sidebar-footer .date-badge { font-size:11px; color:rgba(255,255,255,0.4); }
+    
+    /* MAIN */
+    .main { margin-left:260px; min-height:100vh; display:flex; flex-direction:column; }
+    .topbar { background:var(--card); border-bottom:1px solid var(--border); padding:16px 32px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
+    .topbar h1 { font-size:20px; font-weight:700; color:var(--text); }
+    .topbar .subtitle { font-size:12px; color:var(--text2); margin-top:2px; }
+    .content { padding:28px 32px; flex:1; }
+    
+    /* CARDS */
+    .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:28px; }
+    .stat-card { background:var(--card); border-radius:14px; padding:20px; box-shadow:var(--shadow); border:1px solid var(--border); position:relative; overflow:hidden; }
+    .stat-card::after { content:''; position:absolute; right:-20px; top:-20px; width:80px; height:80px; border-radius:50%; background:currentColor; opacity:0.05; }
+    .stat-card .stat-num { font-size:32px; font-weight:800; line-height:1; margin-bottom:4px; }
+    .stat-card .stat-label { font-size:12px; color:var(--text2); font-weight:500; }
+    .stat-card .stat-icon { position:absolute; right:16px; top:16px; font-size:28px; opacity:0.15; }
+    
+    /* FORMS */
+    .form-card { background:var(--card); border-radius:16px; padding:28px; box-shadow:var(--shadow); border:1px solid var(--border); margin-bottom:28px; }
+    .form-card h3 { font-size:16px; font-weight:700; margin-bottom:20px; display:flex; align-items:center; gap:8px; }
+    .form-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap:16px; }
+    .form-group { display:flex; flex-direction:column; gap:6px; }
+    .form-group label { font-size:11px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; color:var(--text2); }
+    .form-group input, .form-group select, .form-group textarea { 
+      padding:10px 14px; border:2px solid var(--border); border-radius:10px; font-family:'Outfit',sans-serif;
+      font-size:13px; color:var(--text); background:var(--bg); transition:all 0.2s; outline:none;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color:var(--teal); background:#fff; }
+    .form-group textarea { resize:vertical; min-height:80px; }
+    
+    /* AUTOCOMPLETE */
+    .autocomplete-wrap { position:relative; }
+    .autocomplete-list { 
+      position:absolute; top:100%; left:0; right:0; background:#fff; border:2px solid var(--teal);
+      border-top:none; border-radius:0 0 10px 10px; max-height:200px; overflow-y:auto; z-index:200;
+      box-shadow:0 10px 30px rgba(0,0,0,0.12);
+    }
+    .autocomplete-list div { padding:10px 14px; cursor:pointer; font-size:13px; transition:background 0.1s; }
+    .autocomplete-list div:hover { background:var(--bg); }
+    .autocomplete-list div mark { background:none; color:var(--teal); font-weight:700; }
+    
+    /* BUTTONS */
+    .btn { padding:11px 22px; border-radius:10px; font-family:'Outfit',sans-serif; font-size:13px; font-weight:600; cursor:pointer; border:none; transition:all 0.2s; display:inline-flex; align-items:center; gap:8px; }
+    .btn-primary { background:var(--navy); color:#fff; }
+    .btn-primary:hover { background:var(--navy2); transform:translateY(-1px); box-shadow:0 6px 20px rgba(13,27,42,0.3); }
+    .btn-success { background:var(--green); color:#fff; }
+    .btn-success:hover { filter:brightness(1.1); }
+    .btn-accent { background:var(--accent); color:var(--navy); }
+    .btn-accent:hover { background:var(--accent2); }
+    .btn-outline { background:transparent; color:var(--text); border:2px solid var(--border); }
+    .btn-outline:hover { border-color:var(--navy); color:var(--navy); }
+    .btn-sm { padding:6px 14px; font-size:12px; border-radius:8px; }
+    .btn-danger { background:var(--red); color:#fff; }
+    
+    /* TABLE */
+    .table-card { background:var(--card); border-radius:16px; padding:24px; box-shadow:var(--shadow); border:1px solid var(--border); }
+    .table-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+    .table-header h3 { font-size:16px; font-weight:700; }
+    .table-filters { display:flex; gap:10px; flex-wrap:wrap; }
+    .filter-select { padding:8px 12px; border:2px solid var(--border); border-radius:8px; font-family:'Outfit',sans-serif; font-size:12px; color:var(--text); background:var(--bg); cursor:pointer; outline:none; }
+    .filter-select:focus { border-color:var(--teal); }
+    table { width:100%; border-collapse:collapse; }
+    th { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--text2); padding:10px 12px; text-align:left; border-bottom:2px solid var(--border); white-space:nowrap; }
+    td { padding:12px 12px; font-size:13px; border-bottom:1px solid var(--border); vertical-align:middle; }
+    tr:last-child td { border-bottom:none; }
+    tr:hover td { background:rgba(0,180,216,0.03); }
+    
+    /* BADGES */
+    .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; }
+    .badge-pending { background:#fef3c7; color:#92400e; }
+    .badge-done { background:#dcfce7; color:#166534; }
+    .badge-process { background:#dbeafe; color:#1e40af; }
+    
+    /* TIPO BADGES */
+    .tipo-badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:600; }
+    .tipo-1 { background:#e0f2fe; color:#0369a1; }
+    .tipo-2 { background:#fce7f3; color:#be185d; }
+    .tipo-3 { background:#fff7ed; color:#c2410c; }
+    .tipo-4 { background:#f0fdf4; color:#166534; }
+    .tipo-5 { background:#faf5ff; color:#7e22ce; }
+    .tipo-6 { background:#fff1f2; color:#be123c; }
+    .tipo-7 { background:#f0f9ff; color:#075985; }
+    
+    /* MODAL */
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:500; display:flex; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(4px); }
+    .modal { background:#fff; border-radius:20px; padding:32px; width:100%; max-width:520px; box-shadow:0 30px 80px rgba(0,0,0,0.2); }
+    .modal h3 { font-size:18px; font-weight:700; margin-bottom:20px; }
+    .modal-actions { display:flex; gap:12px; justify-content:flex-end; margin-top:24px; }
+    
+    /* EMPTY STATE */
+    .empty-state { text-align:center; padding:60px 20px; color:var(--text2); }
+    .empty-state .empty-icon { font-size:48px; margin-bottom:12px; opacity:0.4; }
+    .empty-state p { font-size:14px; }
+    
+    /* ALERT */
+    .toast { position:fixed; bottom:24px; right:24px; background:var(--navy); color:#fff; padding:14px 22px; border-radius:12px; font-size:13px; font-weight:500; z-index:1000; transform:translateY(100px); opacity:0; transition:all 0.3s; box-shadow:0 10px 40px rgba(0,0,0,0.3); display:flex; align-items:center; gap:10px; }
+    .toast.show { transform:translateY(0); opacity:1; }
+    .toast.success { background:var(--green); }
+    .toast.error { background:var(--red); }
+    
+    @media (max-width:900px) {
+      .sidebar { width:200px; }
+      .main { margin-left:200px; }
+      .content { padding:20px; }
+    }
+
+  .logistica-header {
+    background: linear-gradient(135deg, #0d3b2a 0%, #0f5338 50%, #0d4a30 100%);
+    color:#fff; padding:20px 32px; display:flex; align-items:center; gap:16px;
+    border-bottom: 3px solid #22c55e;
+  }
+  .logistica-header h1 { font-size:20px; font-weight:800; }
+  .logistica-header p { font-size:12px; opacity:0.7; margin-top:2px; }
+  .sidebar { background: linear-gradient(160deg, #0d3b2a 0%, #0f5338 60%, #0d4a30 100%) !important; }
+  .sidebar-logo .brand { color:#4ade80 !important; }
+  .sidebar-logo .module-tag { background:rgba(74,222,128,0.2) !important; color:#4ade80 !important; }
+  .nav-item.active::before { background:#4ade80 !important; }
+  
+
+  
+  .urgente-row td { background:rgba(239,68,68,0.04) !important; }
+  .urgente-row:hover td { background:rgba(239,68,68,0.08) !important; }
+  
+  .conn-banner { display:none; position:fixed; top:0; left:0; right:0; background:#ef4444; color:#fff;
+    text-align:center; padding:8px; font-size:12px; font-weight:600; z-index:9999; }
+  .conn-banner.online { background:#22c55e; }
+
+  </style>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<div class="conn-banner" id="conn-banner">📡 Sin conexión — verificando...</div>
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="brand">Surtidora</div>
+    <h2>Higiénicos y Servicios</h2>
+    <span class="module-tag">Logística</span>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-section">Gestión</div>
+    <div class="nav-item active" onclick="showSection('pendientes')"><span class="icon">📥</span>Pendientes por atender</div>
+    <div class="nav-item" onclick="showSection('concluidos')"><span class="icon">✅</span>Concluidos</div>
+
+  </div>
+  <div class="sidebar-footer">
+    <div class="date-badge" id="current-date"></div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="logistica-header">
+    <div style="width:48px;height:48px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🚛</div>
+    <div>
+      <h1>Módulo de Logística</h1>
+      <p>Atención y seguimiento de pendientes enviados por el equipo de ventas</p>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:10px;" class="no-print">
+      <button class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.3)" onclick="recargar()">🔄 Actualizar</button>
+
+    </div>
+  </div>
+
+  <!-- SECCIÓN: PENDIENTES -->
+  <div id="sec-pendientes" class="content">
+    <div class="stats-grid" id="stats-grid"></div>
+    
+    <div class="table-card">
+
+      <div class="table-header">
+        <h3>📥 Pendientes por Atender</h3>
+        <div class="table-filters no-print">
+          <select class="filter-select" id="fil-vendedora" onchange="renderPendientes()">
+            <option value="">Todas las vendedoras</option>
+            <option value="TELEMARKETING 1">Telemarketing 1</option>
+            <option value="TELEMARKETING 2">Telemarketing 2</option>
+            <option value="TELEMARKETING 3">Telemarketing 3</option>
+          </select>
+          <select class="filter-select" id="fil-tipo" onchange="renderPendientes()">
+            <option value="">Todos los tipos</option>
+            <option value="1">Instalación</option>
+            <option value="2">Garantía</option>
+            <option value="3">Entrega</option>
+            <option value="4">Revisión</option>
+            <option value="5">Error captura</option>
+            <option value="6">Compra bidones</option>
+            <option value="7">Recolección bidones</option>
+            <option value="8">Entrega faltante (Compras)</option>
+          </select>
+          <select class="filter-select" id="fil-prioridad" onchange="renderPendientes()">
+            <option value="">Cualquier prioridad</option>
+            <option value="urgente">🔴 Solo urgentes</option>
+            <option value="vuelta">🔵 Vuelta por el rumbo</option>
+            <option value="regular">Regular</option>
+          </select>
+        </div>
+      </div>
+      <div id="tabla-pendientes"></div>
+    </div>
+  </div>
+
+  <!-- SECCIÓN: CONCLUIDOS -->
+  <div id="sec-concluidos" class="content" style="display:none">
+    <div class="table-card">
+      <div class="table-header">
+        <h3>✅ Pendientes Concluidos</h3>
+        <div class="table-filters no-print">
+          <select class="filter-select" id="fil-v2" onchange="renderConcluidos()">
+            <option value="">Todas</option>
+            <option value="TELEMARKETING 1">Telemarketing 1</option>
+            <option value="TELEMARKETING 2">Telemarketing 2</option>
+            <option value="TELEMARKETING 3">Telemarketing 3</option>
+          </select>
+          <input type="date" class="filter-select" id="fil-fecha-desde" onchange="renderConcluidos()" placeholder="Desde">
+          <input type="date" class="filter-select" id="fil-fecha-hasta" onchange="renderConcluidos()" placeholder="Hasta">
+        </div>
+      </div>
+      <div id="tabla-concluidos"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONCLUSIÓN -->
+<div class="modal-overlay" id="modal" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h3>✅ Concluir Pendiente</h3>
+    <div id="modal-info" style="background:var(--bg);border-radius:10px;padding:16px;margin-bottom:16px;"></div>
+    <div class="form-group">
+      <label>Notas de conclusión (obligatorio)</label>
+      <textarea id="modal-notas" rows="3" placeholder="Describe qué se hizo, quién atendió, resultado, etc..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-success btn-sm" onclick="concluirPendiente()">✓ Marcar como Concluido</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VER DETALLE -->
+<div class="modal-overlay" id="modal-detalle" style="display:none" onclick="if(event.target===this)closeModalDetalle()">
+  <div class="modal">
+    <h3 id="det-title">📋 Detalle</h3>
+    <div id="det-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeModalDetalle()">Cerrar</button>
+      <button class="btn btn-success btn-sm" id="det-btn-concluir" style="display:none" onclick="abrirConcluir(currentId)">✓ Concluir</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+
+  // ═══════════════════════════════════════════════════════════════
+// CONFIGURACIÓN FIREBASE — Pegue sus credenciales de Firebase aquí
+// Obténgalas en: https://console.firebase.google.com → su proyecto
+// → Configuración del proyecto → Sus apps → Config
+// ═══════════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            "AIzaSyDGBgicmvOge196PiSgmIHhseQUGMiko-E",
+  authDomain:        "surtidora-de-higienicos.firebaseapp.com",
+  databaseURL:       "https://surtidora-de-higienicos-default-rtdb.firebaseio.com",
+  projectId:         "surtidora-de-higienicos",
+  storageBucket:     "surtidora-de-higienicos.firebasestorage.app",
+  messagingSenderId: "232648877023",
+  appId:             "1:232648877023:web:9e8a4a743b68f4e16d9a6a"
+};
+
+// ── Inicialización ──────────────────────────────────────────────
+try { firebase.initializeApp(firebaseConfig); } catch(e) {}
+const db = firebase.database();
+let _cache = {};
+
+// Conexión en tiempo real — se actualiza en todas las pantallas automáticamente
+db.ref('pendientes').on('value', snap => {
+  _cache = snap.val() || {};
+  if(typeof refreshUI === 'function') refreshUI();
+}, err => console.error('Firebase error:', err));
+
+function getPendientes() {
+  return Object.values(_cache);
+}
+
+function savePendientes(data) {
+  // Escribe colección completa (compatibilidad)
+  const obj = {};
+  data.forEach(p => { if(p && p.id) obj[p.id] = p; });
+  db.ref('pendientes').set(obj);
+}
+
+function fbAdd(p) {
+  return db.ref('pendientes/' + p.id).set(p);
+}
+
+function fbUpdate(id, changes) {
+  return db.ref('pendientes/' + id).update(changes);
+}
+
+const TIPOS = {
+    1: 'Instalación de equipo',
+    2: 'Garantía (recoger producto)',
+    3: 'Entrega pendiente (almacén)',
+    4: 'Revisión de equipo',
+    5: 'Cambio por error de captura',
+    6: 'Compra de bidones',
+    7: 'Recolección de bidones',
+    8: 'Entrega pendiente por faltante existencia (Compras)'
+  };
+  
+  const TIPO_COLORS = {1:'tipo-1',2:'tipo-2',3:'tipo-3',4:'tipo-4',5:'tipo-5',6:'tipo-6',7:'tipo-7',8:'tipo-1'};
+  
+  function genId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2,5);
+  }
+  
+  function formatDate(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleDateString('es-MX', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  }
+  
+  function showToast(msg, type='success') {
+    const t = document.getElementById('toast');
+    t.textContent = (type==='success'?'✓ ':type==='error'?'✗ ':'ℹ ') + msg;
+    t.className = 'toast show ' + type;
+    setTimeout(()=>{ t.className='toast'; },3000);
+  }
+  
+  function updateDate() {
+    const el = document.getElementById('current-date');
+    if(el) {
+      const now = new Date();
+      el.textContent = now.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    }
+  }
+  
+  // Autocomplete
+function showPrioridad(p) {
+  if(p==='urgente') return '<span style="color:var(--red);font-weight:700;font-size:12px">🔴 Urgente</span>';
+  if(p==='vuelta') return '<span style="color:#2563eb;font-weight:700;font-size:12px">🔵 Vuelta por el rumbo</span>';
+  return '<span style="color:var(--text2);font-size:12px">Regular</span>';
+}
+
+function setupAutocomplete(inputId, listId, clientList, onSelect) {
+    const input = document.getElementById(inputId);
+    const list = document.getElementById(listId);
+    if(!input || !list) return;
+    
+    input.addEventListener('input', function() {
+      const val = this.value.trim().toUpperCase();
+      list.innerHTML = '';
+      if(val.length < 2) { list.style.display='none'; return; }
+      const matches = clientList.filter(c => c.toUpperCase().includes(val)).slice(0,12);
+      if(!matches.length) { list.style.display='none'; return; }
+      matches.forEach(c => {
+        const div = document.createElement('div');
+        const idx = c.toUpperCase().indexOf(val);
+        div.innerHTML = c.substring(0,idx) + '<mark>' + c.substring(idx,idx+val.length) + '</mark>' + c.substring(idx+val.length);
+        div.addEventListener('mousedown', e => {
+          e.preventDefault();
+          input.value = c;
+          list.style.display='none';
+          if(onSelect) onSelect(c);
+        });
+        list.appendChild(div);
+      });
+      list.style.display='block';
+    });
+    
+    input.addEventListener('blur', ()=> setTimeout(()=>{ list.style.display='none'; },150));
+    document.addEventListener('click', e => { if(!input.contains(e.target) && !list.contains(e.target)) list.style.display='none'; });
+  }
+
+
+let currentId = null;
+
+
+function refreshUI() {
+  renderStats();
+  renderPendientes();
+}
+function showSection(sec) {
+  ['pendientes','concluidos'].forEach(s => {
+    document.getElementById('sec-'+s).style.display = s===sec?'block':'none';
+  });
+  document.querySelectorAll('.nav-item').forEach((el,i) => {
+    el.classList.toggle('active', ['pendientes','concluidos'][i]===sec);
+  });
+  if(sec==='concluidos') renderConcluidos();
+  if(sec==='pendientes') { renderStats(); renderPendientes(); }
+}
+
+function recargar() { renderStats(); renderPendientes(); showToast('Datos actualizados'); }
+
+function renderStats() {
+  const all = getPendientes();
+  const pendientes = all.filter(p=>p.estado==='pendiente');
+  const concluidos = all.filter(p=>p.estado==='concluido');
+  const urgentes = pendientes.filter(p=>p.prioridad==='urgente');
+  const grid = document.getElementById('stats-grid');
+  grid.innerHTML = `
+    <div class="stat-card" style="color:var(--orange)">
+      <div class="stat-num">${pendientes.length}</div>
+      <div class="stat-label">Pendientes por Atender</div>
+      <div class="stat-icon">📥</div>
+    </div>
+    <div class="stat-card" style="color:var(--red)">
+      <div class="stat-num">${urgentes.length}</div>
+      <div class="stat-label">Urgentes</div>
+      <div class="stat-icon">🔴</div>
+    </div>
+    <div class="stat-card" style="color:var(--green)">
+      <div class="stat-num">${concluidos.length}</div>
+      <div class="stat-label">Concluidos</div>
+      <div class="stat-icon">✅</div>
+    </div>
+    <div class="stat-card" style="color:var(--teal)">
+      <div class="stat-num">${all.length?Math.round(concluidos.length/all.length*100):0}%</div>
+      <div class="stat-label">Efectividad Global</div>
+      <div class="stat-icon">📊</div>
+    </div>
+  `;
+}
+
+function renderPendientes() {
+  const vend = document.getElementById('fil-vendedora').value;
+  const tipo = document.getElementById('fil-tipo').value;
+  const prio = document.getElementById('fil-prioridad').value;
+  let items = getPendientes().filter(p=>p.estado==='pendiente');
+  if(vend) items=items.filter(p=>p.vendedora===vend);
+  if(tipo) items=items.filter(p=>p.tipo==tipo);
+  if(prio) items=items.filter(p=>p.prioridad===prio);
+  items.sort((a,b)=>{ if(a.prioridad==='urgente'&&b.prioridad!=='urgente')return -1; if(b.prioridad==='urgente'&&a.prioridad!=='urgente')return 1; return new Date(a.fecha)-new Date(b.fecha); });
+  
+  const c=document.getElementById('tabla-pendientes');
+  if(!items.length){c.innerHTML='<div class="empty-state"><div class="empty-icon">🎉</div><p>¡No hay pendientes! Todo al día.</p></div>';return;}
+  c.innerHTML=`<table>
+    <thead><tr>
+      <th>#</th><th>Cliente</th><th>Tipo</th><th>Vendedora</th>
+      <th>Prioridad</th><th>Registrado</th><th>Descripción</th><th>Acción</th>
+    </tr></thead>
+    <tbody>${items.map((p,i)=>`
+      <tr class="${p.prioridad==='urgente'?'urgente-row':''}">
+        <td style="color:var(--text2);font-size:11px">${i+1}</td>
+        <td><strong>${p.cliente}</strong></td>
+        <td><span class="tipo-badge ${TIPO_COLORS[p.tipo]}">${TIPOS[p.tipo]}</span></td>
+        <td style="font-size:12px">${p.vendedora.replace('TELEMARKETING','TM')}</td>
+        <td>${showPrioridad(p.prioridad)}</td>
+        <td style="color:var(--text2);font-size:12px">${formatDate(p.fecha)}</td>
+        <td style="font-size:12px;color:var(--text2);max-width:200px">${p.desc||'—'}</td>
+        <td class="no-print">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" onclick="verDetalle('${p.id}')">Ver</button>
+            <button class="btn btn-success btn-sm" onclick="abrirConcluir('${p.id}')">✓ Concluir</button>
+            <button class="btn btn-sm" style="background:#0ea5e9;color:#fff;" onclick="printPendiente('${p.id}')">🖨️</button>
+          </div>
+        </td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function renderConcluidos() {
+  const vend = document.getElementById('fil-v2').value;
+  const desde = document.getElementById('fil-fecha-desde').value;
+  const hasta = document.getElementById('fil-fecha-hasta').value;
+  let items = getPendientes().filter(p=>p.estado==='concluido');
+  if(vend) items=items.filter(p=>p.vendedora===vend);
+  if(desde) items=items.filter(p=>p.fechaConcluido&&p.fechaConcluido>=desde);
+  if(hasta) items=items.filter(p=>p.fechaConcluido&&p.fechaConcluido<=hasta+'T23:59');
+  items.sort((a,b)=>new Date(b.fechaConcluido)-new Date(a.fechaConcluido));
+  
+  const c=document.getElementById('tabla-concluidos');
+  if(!items.length){c.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><p>No hay concluidos en este rango</p></div>';return;}
+  c.innerHTML=`<table>
+    <thead><tr>
+      <th>Cliente</th><th>Tipo</th><th>Vendedora</th><th>Registrado</th>
+      <th>Concluido</th><th>Notas de Logística</th>
+    </tr></thead>
+    <tbody>${items.map(p=>`
+      <tr>
+        <td><strong>${p.cliente}</strong></td>
+        <td><span class="tipo-badge ${TIPO_COLORS[p.tipo]}">${TIPOS[p.tipo]}</span></td>
+        <td style="font-size:12px">${p.vendedora.replace('TELEMARKETING','TM')}</td>
+        <td style="color:var(--text2);font-size:12px">${formatDate(p.fecha)}</td>
+        <td style="color:var(--green);font-size:12px;font-weight:600">${formatDate(p.fechaConcluido)}</td>
+        <td style="font-size:12px;color:var(--text2)">${p.notasLogistica||'—'}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function abrirConcluir(id) {
+  currentId = id;
+  const p=getPendientes().find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('modal-info').innerHTML=`
+    <div style="display:grid;gap:8px;">
+      <div><strong>${p.cliente}</strong></div>
+      <div><span class="tipo-badge ${TIPO_COLORS[p.tipo]}">${TIPOS[p.tipo]}</span> &nbsp; ${p.vendedora}</div>
+      ${p.desc?`<div style="color:var(--text2);font-size:12px">${p.desc}</div>`:''}
+    </div>
+  `;
+  document.getElementById('modal-notas').value='';
+  document.getElementById('modal').style.display='flex';
+  closeModalDetalle();
+}
+
+function concluirPendiente() {
+  const notas = document.getElementById('modal-notas').value.trim();
+  if(!notas){ showToast('Agrega notas de conclusión','error'); return; }
+  fbUpdate(currentId, {
+    estado: 'concluido',
+    notasLogistica: notas,
+    fechaConcluido: new Date().toISOString()
+  });
+  closeModal();
+  showToast('Pendiente marcado como concluido ✓');
+  renderStats(); renderPendientes();
+}
+
+function verDetalle(id) {
+  const p=getPendientes().find(x=>x.id===id);
+  if(!p) return;
+  currentId=id;
+  document.getElementById('det-title').textContent='📋 Detalle del Pendiente';
+  document.getElementById('det-body').innerHTML=`
+    <div style="display:grid;gap:12px;">
+      <div><span style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700;">Cliente</span><p style="font-weight:600;font-size:15px;margin-top:2px">${p.cliente}</p></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div><span style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700;">Tipo</span><p style="margin-top:4px"><span class="tipo-badge ${TIPO_COLORS[p.tipo]}">${TIPOS[p.tipo]}</span></p></div>
+        <div><span style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700;">Vendedora</span><p style="margin-top:2px;font-size:13px">${p.vendedora}</p></div>
+        <div><span style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700;">Prioridad</span><p style="margin-top:2px">${showPrioridad(p.prioridad)}</p></div>
+        <div><span style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700;">Registrado</span><p style="margin-top:2px;font-size:12px;color:var(--text2)">${formatDate(p.fecha)}</p></div>
+      </div>
+      ${p.desc?`<div style="background:var(--bg);border-radius:8px;padding:12px;"><span style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700;">Descripción de Ventas</span><p style="margin-top:4px;font-size:13px">${p.desc}</p></div>`:''}
+    </div>
+  `;
+  const btnC=document.getElementById('det-btn-concluir');
+  btnC.style.display=p.estado==='pendiente'?'inline-flex':'none';
+  document.getElementById('modal-detalle').style.display='flex';
+}
+
+function closeModal() { document.getElementById('modal').style.display='none'; }
+function closeModalDetalle() { document.getElementById('modal-detalle').style.display='none'; }
+
+
+
+// Auto-refresh check every 30 seconds
+setInterval(()=>{ renderStats(); renderPendientes(); }, 30000);
+
+
+function printPendiente(id) {
+  const p = getPendientes().find(x => x.id === id);
+  if(!p) return;
+  const win = window.open('', '_blank', 'width=700,height=600');
+  win.document.write(`<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="UTF-8">
+<title>Pendiente – ${p.cliente}</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 40px; color: #1e293b; font-size: 13px; }
+  .logo { font-size: 11px; font-weight: 700; letter-spacing: 3px; color: #555; text-transform: uppercase; }
+  h1 { font-size: 20px; font-weight: 800; margin: 4px 0 24px; }
+  hr { border: none; border-top: 2px solid #e2e8f0; margin: 16px 0; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+  td:first-child { font-weight: 700; color: #64748b; font-size: 11px; text-transform: uppercase; width: 160px; }
+  .badge { display:inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+  .pending { background: #fef3c7; color: #92400e; }
+  .done { background: #dcfce7; color: #166534; }
+  .footer { margin-top: 40px; font-size: 11px; color: #999; text-align: center; }
+  @media print { body { padding: 20px; } }
+</style>
+</head><body>
+<div class="logo">Surtidora de Higiénicos y Servicios</div>
+<h1>Comprobante de Pendiente</h1>
+<hr>
+<table>
+  <tr><td>Cliente</td><td><strong style="font-size:15px">${p.cliente}</strong></td></tr>
+  <tr><td>Tipo de pendiente</td><td>${TIPOS[p.tipo]}</td></tr>
+  <tr><td>Vendedora</td><td>${p.vendedora}</td></tr>
+  <tr><td>Prioridad</td><td>${
+    p.prioridad==='urgente'?'🔴 Urgente':
+    p.prioridad==='vuelta'?'🔵 Vuelta por el rumbo':'Regular'
+  }</td></tr>
+  <tr><td>Estado</td><td><span class="badge ${p.estado==='concluido'?'done':'pending'}">${p.estado==='concluido'?'✓ Concluido':'⏳ Pendiente'}</span></td></tr>
+  <tr><td>Fecha de registro</td><td>${formatDate(p.fecha)}</td></tr>
+  <tr><td>Descripción</td><td>${p.desc||'—'}</td></tr>
+  ${p.estado==='concluido'?`
+  <tr><td>Concluido el</td><td>${formatDate(p.fechaConcluido)}</td></tr>
+  <tr><td>Notas de Logística</td><td>${p.notasLogistica||'—'}</td></tr>
+  `:''}
+</table>
+<div class="footer">Impreso el ${new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+</body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(()=>win.print(), 400);
+}
+
+
+// Monitor de conexión
+db.ref('.info/connected').on('value', snap => {
+  const banner = document.getElementById('conn-banner');
+  if(!banner) return;
+  if(snap.val() === true) {
+    banner.style.display = 'none';
+  } else {
+    banner.style.display = 'block';
+    banner.className = 'conn-banner';
+    banner.textContent = '⚠️ Sin conexión a internet — los datos no se están sincronizando';
+  }
+});
+
+updateDate();
+renderStats();
+renderPendientes();
+</script>
+</body>
+</html>
