@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Maestro – Supervisión de Pendientes</title>
+  <style>
+
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+    
+    :root {
+      --navy: #0d1b2a;
+      --navy2: #1b2d42;
+      --navy3: #243b55;
+      --accent: #e8a020;
+      --accent2: #f5c842;
+      --teal: #00b4d8;
+      --green: #22c55e;
+      --red: #ef4444;
+      --orange: #f97316;
+      --bg: #f0f4f8;
+      --card: #ffffff;
+      --text: #1e293b;
+      --text2: #64748b;
+      --border: #e2e8f0;
+      --shadow: 0 4px 20px rgba(13,27,42,0.08);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+    
+    /* SIDEBAR */
+    .sidebar {
+      position:fixed; left:0; top:0; width:260px; height:100vh;
+      background: linear-gradient(160deg, var(--navy) 0%, var(--navy2) 60%, var(--navy3) 100%);
+      display:flex; flex-direction:column; padding:0; z-index:100;
+      box-shadow: 4px 0 30px rgba(0,0,0,0.3);
+    }
+    .sidebar-logo {
+      padding: 28px 24px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .sidebar-logo .brand { font-size:10px; font-weight:700; letter-spacing:3px; color:var(--accent); text-transform:uppercase; margin-bottom:4px; }
+    .sidebar-logo h2 { font-size:16px; font-weight:700; color:#fff; line-height:1.3; }
+    .sidebar-logo .module-tag { display:inline-block; margin-top:8px; background:rgba(232,160,32,0.2); color:var(--accent); font-size:10px; font-weight:600; padding:3px 8px; border-radius:20px; letter-spacing:1px; text-transform:uppercase; }
+    .sidebar-nav { padding:20px 0; flex:1; }
+    .nav-section { padding: 6px 24px 4px; font-size:9px; font-weight:700; letter-spacing:2px; color:rgba(255,255,255,0.3); text-transform:uppercase; }
+    .nav-item { display:flex; align-items:center; gap:12px; padding:11px 24px; cursor:pointer; transition:all 0.2s; position:relative; color:rgba(255,255,255,0.6); font-size:13px; font-weight:500; }
+    .nav-item:hover, .nav-item.active { color:#fff; background:rgba(255,255,255,0.07); }
+    .nav-item.active::before { content:''; position:absolute; left:0; top:0; height:100%; width:3px; background:var(--accent); border-radius:0 2px 2px 0; }
+    .nav-item .icon { font-size:16px; width:20px; text-align:center; }
+    .sidebar-footer { padding:16px 24px; border-top:1px solid rgba(255,255,255,0.08); }
+    .sidebar-footer .date-badge { font-size:11px; color:rgba(255,255,255,0.4); }
+    
+    /* MAIN */
+    .main { margin-left:260px; min-height:100vh; display:flex; flex-direction:column; }
+    .topbar { background:var(--card); border-bottom:1px solid var(--border); padding:16px 32px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
+    .topbar h1 { font-size:20px; font-weight:700; color:var(--text); }
+    .topbar .subtitle { font-size:12px; color:var(--text2); margin-top:2px; }
+    .content { padding:28px 32px; flex:1; }
+    
+    /* CARDS */
+    .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:28px; }
+    .stat-card { background:var(--card); border-radius:14px; padding:20px; box-shadow:var(--shadow); border:1px solid var(--border); position:relative; overflow:hidden; }
+    .stat-card::after { content:''; position:absolute; right:-20px; top:-20px; width:80px; height:80px; border-radius:50%; background:currentColor; opacity:0.05; }
+    .stat-card .stat-num { font-size:32px; font-weight:800; line-height:1; margin-bottom:4px; }
+    .stat-card .stat-label { font-size:12px; color:var(--text2); font-weight:500; }
+    .stat-card .stat-icon { position:absolute; right:16px; top:16px; font-size:28px; opacity:0.15; }
+    
+    /* FORMS */
+    .form-card { background:var(--card); border-radius:16px; padding:28px; box-shadow:var(--shadow); border:1px solid var(--border); margin-bottom:28px; }
+    .form-card h3 { font-size:16px; font-weight:700; margin-bottom:20px; display:flex; align-items:center; gap:8px; }
+    .form-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap:16px; }
+    .form-group { display:flex; flex-direction:column; gap:6px; }
+    .form-group label { font-size:11px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; color:var(--text2); }
+    .form-group input, .form-group select, .form-group textarea { 
+      padding:10px 14px; border:2px solid var(--border); border-radius:10px; font-family:'Outfit',sans-serif;
+      font-size:13px; color:var(--text); background:var(--bg); transition:all 0.2s; outline:none;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color:var(--teal); background:#fff; }
+    .form-group textarea { resize:vertical; min-height:80px; }
+    
+    /* AUTOCOMPLETE */
+    .autocomplete-wrap { position:relative; }
+    .autocomplete-list { 
+      position:absolute; top:100%; left:0; right:0; background:#fff; border:2px solid var(--teal);
+      border-top:none; border-radius:0 0 10px 10px; max-height:200px; overflow-y:auto; z-index:200;
+      box-shadow:0 10px 30px rgba(0,0,0,0.12);
+    }
+    .autocomplete-list div { padding:10px 14px; cursor:pointer; font-size:13px; transition:background 0.1s; }
+    .autocomplete-list div:hover { background:var(--bg); }
+    .autocomplete-list div mark { background:none; color:var(--teal); font-weight:700; }
+    
+    /* BUTTONS */
+    .btn { padding:11px 22px; border-radius:10px; font-family:'Outfit',sans-serif; font-size:13px; font-weight:600; cursor:pointer; border:none; transition:all 0.2s; display:inline-flex; align-items:center; gap:8px; }
+    .btn-primary { background:var(--navy); color:#fff; }
+    .btn-primary:hover { background:var(--navy2); transform:translateY(-1px); box-shadow:0 6px 20px rgba(13,27,42,0.3); }
+    .btn-success { background:var(--green); color:#fff; }
+    .btn-success:hover { filter:brightness(1.1); }
+    .btn-accent { background:var(--accent); color:var(--navy); }
+    .btn-accent:hover { background:var(--accent2); }
+    .btn-outline { background:transparent; color:var(--text); border:2px solid var(--border); }
+    .btn-outline:hover { border-color:var(--navy); color:var(--navy); }
+    .btn-sm { padding:6px 14px; font-size:12px; border-radius:8px; }
+    .btn-danger { background:var(--red); color:#fff; }
+    
+    /* TABLE */
+    .table-card { background:var(--card); border-radius:16px; padding:24px; box-shadow:var(--shadow); border:1px solid var(--border); }
+    .table-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+    .table-header h3 { font-size:16px; font-weight:700; }
+    .table-filters { display:flex; gap:10px; flex-wrap:wrap; }
+    .filter-select { padding:8px 12px; border:2px solid var(--border); border-radius:8px; font-family:'Outfit',sans-serif; font-size:12px; color:var(--text); background:var(--bg); cursor:pointer; outline:none; }
+    .filter-select:focus { border-color:var(--teal); }
+    table { width:100%; border-collapse:collapse; }
+    th { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--text2); padding:10px 12px; text-align:left; border-bottom:2px solid var(--border); white-space:nowrap; }
+    td { padding:12px 12px; font-size:13px; border-bottom:1px solid var(--border); vertical-align:middle; }
+    tr:last-child td { border-bottom:none; }
+    tr:hover td { background:rgba(0,180,216,0.03); }
+    
+    /* BADGES */
+    .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; }
+    .badge-pending { background:#fef3c7; color:#92400e; }
+    .badge-done { background:#dcfce7; color:#166534; }
+    .badge-process { background:#dbeafe; color:#1e40af; }
+    
+    /* TIPO BADGES */
+    .tipo-badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:600; }
+    .tipo-1 { background:#e0f2fe; color:#0369a1; }
+    .tipo-2 { background:#fce7f3; color:#be185d; }
+    .tipo-3 { background:#fff7ed; color:#c2410c; }
+    .tipo-4 { background:#f0fdf4; color:#166534; }
+    .tipo-5 { background:#faf5ff; color:#7e22ce; }
+    .tipo-6 { background:#fff1f2; color:#be123c; }
+    .tipo-7 { background:#f0f9ff; color:#075985; }
+    
+    /* MODAL */
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:500; display:flex; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(4px); }
+    .modal { background:#fff; border-radius:20px; padding:32px; width:100%; max-width:520px; box-shadow:0 30px 80px rgba(0,0,0,0.2); }
+    .modal h3 { font-size:18px; font-weight:700; margin-bottom:20px; }
+    .modal-actions { display:flex; gap:12px; justify-content:flex-end; margin-top:24px; }
+    
+    /* EMPTY STATE */
+    .empty-state { text-align:center; padding:60px 20px; color:var(--text2); }
+    .empty-state .empty-icon { font-size:48px; margin-bottom:12px; opacity:0.4; }
+    .empty-state p { font-size:14px; }
+    
+    /* ALERT */
+    .toast { position:fixed; bottom:24px; right:24px; background:var(--navy); color:#fff; padding:14px 22px; border-radius:12px; font-size:13px; font-weight:500; z-index:1000; transform:translateY(100px); opacity:0; transition:all 0.3s; box-shadow:0 10px 40px rgba(0,0,0,0.3); display:flex; align-items:center; gap:10px; }
+    .toast.show { transform:translateY(0); opacity:1; }
+    .toast.success { background:var(--green); }
+    .toast.error { background:var(--red); }
+    
+    @media (max-width:900px) {
+      .sidebar { width:200px; }
+      .main { margin-left:200px; }
+      .content { padding:20px; }
+    }
+
+  :root {
+    --navy: #1a0a2e;
+    --navy2: #2d1b5e;
+    --navy3: #3d2878;
+    --accent: #f0c040;
+    --accent2: #f8d870;
+    --teal: #7c3aed;
+  }
+  .sidebar { background: linear-gradient(160deg, #1a0a2e 0%, #2d1b5e 60%, #3d2878 100%) !important; }
+  .sidebar-logo .brand { color:#f0c040 !important; }
+  .sidebar-logo .module-tag { background:rgba(240,192,64,0.2) !important; color:#f0c040 !important; }
+  .nav-item.active::before { background:#f0c040 !important; }
+  
+  .master-header {
+    background: linear-gradient(135deg, #1a0a2e 0%, #2d1b5e 60%, #3d2878 100%);
+    color:#fff; padding:24px 32px; display:flex; align-items:center; gap:16px;
+    border-bottom: 3px solid var(--accent);
+  }
+  .master-header h1 { font-size:22px; font-weight:800; }
+  .master-header p { font-size:12px; opacity:0.7; margin-top:2px; }
+  
+  .chart-container { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:28px; }
+  .chart-card { background:var(--card); border-radius:16px; padding:24px; box-shadow:var(--shadow); border:1px solid var(--border); }
+  .chart-card h4 { font-size:13px; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:1px; margin-bottom:16px; }
+  
+  .bar-chart { display:flex; flex-direction:column; gap:10px; }
+  .bar-row { display:flex; align-items:center; gap:10px; }
+  .bar-label { font-size:12px; color:var(--text); width:130px; flex-shrink:0; }
+  .bar-track { flex:1; background:var(--bg); border-radius:20px; height:10px; overflow:hidden; }
+  .bar-fill { height:100%; border-radius:20px; transition:width 0.6s ease; }
+  .bar-val { font-size:12px; font-weight:700; color:var(--text); width:30px; text-align:right; }
+  
+  .donut-grid { display:flex; gap:12px; flex-wrap:wrap; }
+  .donut-item { display:flex; align-items:center; gap:8px; }
+  .donut-dot { width:10px;height:10px;border-radius:50%;flex-shrink:0; }
+  .donut-item span { font-size:12px; }
+  .donut-item strong { font-size:13px; }
+  
+  .tipo-bar-chart { display:flex; flex-direction:column; gap:8px; }
+  .tipo-bar { display:flex; align-items:center; gap:8px; }
+  .tipo-bar-label { font-size:11px; color:var(--text); width:200px; flex-shrink:0; }
+  .tipo-bar-track { flex:1; background:var(--bg); border-radius:20px; height:8px; overflow:hidden; }
+  .tipo-bar-fill { height:100%; border-radius:20px; }
+  .tipo-bar-val { font-size:11px; font-weight:700; color:var(--text); width:25px; }
+
+  @media (max-width:900px) { .chart-container { grid-template-columns:1fr; } }
+  
+  .conn-banner { display:none; position:fixed; top:0; left:0; right:0; background:#ef4444; color:#fff;
+    text-align:center; padding:8px; font-size:12px; font-weight:600; z-index:9999; }
+  .conn-banner.online { background:#22c55e; }
+
+  /* MODAL DETALLE */
+  .detail-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:600;
+    display:flex; align-items:center; justify-content:center; padding:20px;
+    backdrop-filter:blur(6px); animation:fadeInOv 0.2s ease;
+  }
+  @keyframes fadeInOv { from{opacity:0} to{opacity:1} }
+  .detail-modal {
+    background:#fff; border-radius:20px; width:100%; max-width:580px;
+    box-shadow:0 40px 100px rgba(0,0,0,0.25); animation:slideUpM 0.25s ease;
+    overflow:hidden;
+  }
+  @keyframes slideUpM { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+  .detail-modal-header {
+    padding:24px 28px 20px;
+    border-bottom:1px solid var(--border);
+    display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+  }
+  .detail-modal-header .cliente-name { font-size:20px; font-weight:800; color:var(--text); margin-bottom:6px; }
+  .detail-modal-body { padding:24px 28px; display:flex; flex-direction:column; gap:16px; }
+  .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .detail-field { display:flex; flex-direction:column; gap:4px; }
+  .detail-field .df-label { font-size:10px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; color:var(--text2); }
+  .detail-field .df-value { font-size:14px; font-weight:600; color:var(--text); }
+  .detail-desc-box {
+    background:var(--bg); border-radius:10px; padding:14px 16px;
+    font-size:13px; color:var(--text); line-height:1.6; min-height:48px;
+    border:1px solid var(--border);
+  }
+  .detail-modal-footer {
+    padding:16px 28px; border-top:1px solid var(--border);
+    display:flex; justify-content:flex-end; gap:10px;
+  }
+  .btn-close-x {
+    background:none; border:none; font-size:22px; cursor:pointer;
+    color:var(--text2); line-height:1; padding:0 4px; transition:color 0.2s;
+  }
+  .btn-close-x:hover { color:var(--text); }
+  .btn-close-modal {
+    background:transparent; border:2px solid var(--border); color:var(--text);
+    padding:9px 20px; border-radius:10px; font-family:'Outfit',sans-serif;
+    font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s;
+  }
+  .btn-close-modal:hover { border-color:var(--navy); color:var(--navy); }
+  tr.clickable-row { cursor:pointer; }
+  tr.clickable-row:hover td { background:rgba(124,58,237,0.06) !important; }
+
+  </style>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<div class="conn-banner" id="conn-banner">📡 Sin conexión — verificando...</div>
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="brand">Surtidora</div>
+    <h2>Higiénicos y Servicios</h2>
+    <span class="module-tag">Dashboard Maestro</span>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-section">Vistas</div>
+    <div class="nav-item active" onclick="showSection('overview')"><span class="icon">📊</span>Resumen General</div>
+    <div class="nav-item" onclick="showSection('todos')"><span class="icon">📋</span>Todos los Pendientes</div>
+    <div class="nav-item" onclick="showSection('tm1')"><span class="icon">👤</span>Telemarketing 1</div>
+    <div class="nav-item" onclick="showSection('tm2')"><span class="icon">👤</span>Telemarketing 2</div>
+    <div class="nav-item" onclick="showSection('tm3')"><span class="icon">👤</span>Telemarketing 3</div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="date-badge" id="current-date"></div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="master-header">
+    <div style="width:48px;height:48px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">👑</div>
+    <div>
+      <h1>Dashboard Maestro – Supervisión</h1>
+      <p>Control total de pendientes del equipo de ventas y logística</p>
+    </div>
+    <div style="margin-left:auto;">
+      <button class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.3)" onclick="recargar()">🔄 Actualizar</button>
+    </div>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div id="sec-overview" class="content">
+    <div class="stats-grid" id="stats-main"></div>
+    
+    <div class="chart-container">
+      <div class="chart-card">
+        <h4>Pendientes por Vendedora</h4>
+        <div class="bar-chart" id="chart-vendedoras"></div>
+      </div>
+      <div class="chart-card">
+        <h4>Distribución por Tipo</h4>
+        <div class="tipo-bar-chart" id="chart-tipos"></div>
+      </div>
+      <div class="chart-card">
+        <h4>Efectividad por Vendedora</h4>
+        <div class="bar-chart" id="chart-efectividad"></div>
+      </div>
+      <div class="chart-card">
+        <h4>Estado General</h4>
+        <div id="chart-estado"></div>
+      </div>
+    </div>
+    
+    <!-- Pendientes urgentes -->
+    <div class="table-card">
+      <div class="table-header"><h3>🔴 Pendientes Urgentes</h3></div>
+      <div id="tabla-urgentes"></div>
+    </div>
+  </div>
+
+  <!-- TODOS -->
+  <div id="sec-todos" class="content" style="display:none">
+    <div class="table-card">
+      <div class="table-header">
+        <h3>📋 Todos los Pendientes</h3>
+        <div class="table-filters">
+          <select class="filter-select" id="f-vend" onchange="renderTodos()">
+            <option value="">Todas</option>
+            <option value="TELEMARKETING 1">TM 1</option>
+            <option value="TELEMARKETING 2">TM 2</option>
+            <option value="TELEMARKETING 3">TM 3</option>
+          </select>
+          <select class="filter-select" id="f-tipo" onchange="renderTodos()">
+            <option value="">Todos los tipos</option>
+            <option value="1">Instalación</option>
+            <option value="2">Garantía</option>
+            <option value="3">Entrega</option>
+            <option value="4">Revisión</option>
+            <option value="5">Error captura</option>
+            <option value="6">Compra bidones</option>
+            <option value="7">Recolección bidones</option>
+            <option value="8">Entrega faltante (Compras)</option>
+          </select>
+          <select class="filter-select" id="f-estado" onchange="renderTodos()">
+            <option value="">Todos</option>
+            <option value="pendiente">Pendientes</option>
+            <option value="concluido">Concluidos</option>
+          </select>
+        </div>
+      </div>
+      <div id="tabla-todos"></div>
+    </div>
+  </div>
+
+  <!-- TM Individual sections -->
+  <div id="sec-tm1" class="content" style="display:none"><div id="contenido-tm1"></div></div>
+  <div id="sec-tm2" class="content" style="display:none"><div id="contenido-tm2"></div></div>
+  <div id="sec-tm3" class="content" style="display:none"><div id="contenido-tm3"></div></div>
+</div>
+
+<!-- MODAL DETALLE PENDIENTE -->
+<div class="detail-overlay" id="detail-overlay" style="display:none" onclick="closeDetailModal(event)">
+  <div class="detail-modal" id="detail-modal">
+    <div class="detail-modal-header">
+      <div>
+        <div class="cliente-name" id="d-cliente"></div>
+        <div id="d-tipo-badge"></div>
+      </div>
+      <button class="btn-close-x" onclick="closeDetailModal(null, true)">✕</button>
+    </div>
+    <div class="detail-modal-body">
+      <div class="detail-grid">
+        <div class="detail-field">
+          <span class="df-label">Vendedora</span>
+          <span class="df-value" id="d-vendedora"></span>
+        </div>
+        <div class="detail-field">
+          <span class="df-label">Estado</span>
+          <span class="df-value" id="d-estado"></span>
+        </div>
+        <div class="detail-field">
+          <span class="df-label">Prioridad</span>
+          <span class="df-value" id="d-prioridad"></span>
+        </div>
+        <div class="detail-field">
+          <span class="df-label">Registrado</span>
+          <span class="df-value" id="d-fecha"></span>
+        </div>
+        <div class="detail-field">
+          <span class="df-label">Concluido</span>
+          <span class="df-value" id="d-fechaConcluido"></span>
+        </div>
+        <div class="detail-field" id="d-field-notas" style="display:none">
+          <span class="df-label">Notas logística</span>
+          <span class="df-value" id="d-notasLogistica"></span>
+        </div>
+      </div>
+      <div>
+        <div class="df-label" style="margin-bottom:8px">Descripción / Detalle</div>
+        <div class="detail-desc-box" id="d-desc"></div>
+      </div>
+    </div>
+    <div class="detail-modal-footer">
+      <button class="btn-close-modal" onclick="closeDetailModal(null, true)">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+
+  // ═══════════════════════════════════════════════════════════════
+// CONFIGURACIÓN FIREBASE — Pegue sus credenciales de Firebase aquí
+// Obténgalas en: https://console.firebase.google.com → su proyecto
+// → Configuración del proyecto → Sus apps → Config
+// ═══════════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            "AIzaSyDGBgicmvOge196PiSgmIHhseQUGMiko-E",
+  authDomain:        "surtidora-de-higienicos.firebaseapp.com",
+  databaseURL:       "https://surtidora-de-higienicos-default-rtdb.firebaseio.com",
+  projectId:         "surtidora-de-higienicos",
+  storageBucket:     "surtidora-de-higienicos.firebasestorage.app",
+  messagingSenderId: "232648877023",
+  appId:             "1:232648877023:web:9e8a4a743b68f4e16d9a6a"
+};
+
+// ── Inicialización ──────────────────────────────────────────────
+try { firebase.initializeApp(firebaseConfig); } catch(e) {}
+const db = firebase.database();
+let _cache = {};
+
+// Conexión en tiempo real — se actualiza en todas las pantallas automáticamente
+db.ref('pendientes').on('value', snap => {
+  _cache = snap.val() || {};
+  if(typeof refreshUI === 'function') refreshUI();
+}, err => console.error('Firebase error:', err));
+
+function getPendientes() {
+  return Object.values(_cache);
+}
+
+function savePendientes(data) {
+  // Escribe colección completa (compatibilidad)
+  const obj = {};
+  data.forEach(p => { if(p && p.id) obj[p.id] = p; });
+  db.ref('pendientes').set(obj);
+}
+
+function fbAdd(p) {
+  return db.ref('pendientes/' + p.id).set(p);
+}
+
+function fbUpdate(id, changes) {
+  return db.ref('pendientes/' + id).update(changes);
+}
+
+const TIPOS = {
+    1: 'Instalación de equipo',
+    2: 'Garantía (recoger producto)',
+    3: 'Entrega pendiente (almacén)',
+    4: 'Revisión de equipo',
+    5: 'Cambio por error de captura',
+    6: 'Compra de bidones',
+    7: 'Recolección de bidones',
+    8: 'Entrega pendiente por faltante existencia (Compras)'
+  };
+  
+  const TIPO_COLORS = {1:'tipo-1',2:'tipo-2',3:'tipo-3',4:'tipo-4',5:'tipo-5',6:'tipo-6',7:'tipo-7',8:'tipo-1'};
+  
+  function genId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2,5);
+  }
+  
+  function formatDate(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleDateString('es-MX', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  }
+  
+  function showToast(msg, type='success') {
+    const t = document.getElementById('toast');
+    t.textContent = (type==='success'?'✓ ':type==='error'?'✗ ':'ℹ ') + msg;
+    t.className = 'toast show ' + type;
+    setTimeout(()=>{ t.className='toast'; },3000);
+  }
+  
+  function updateDate() {
+    const el = document.getElementById('current-date');
+    if(el) {
+      const now = new Date();
+      el.textContent = now.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    }
+  }
+  
+  // Autocomplete
+function showPrioridad(p) {
+  if(p==='urgente') return '<span style="color:var(--red);font-weight:700;font-size:12px">🔴 Urgente</span>';
+  if(p==='vuelta') return '<span style="color:#2563eb;font-weight:700;font-size:12px">🔵 Vuelta por el rumbo</span>';
+  return '<span style="color:var(--text2);font-size:12px">Regular</span>';
+}
+
+function setupAutocomplete(inputId, listId, clientList, onSelect) {
+    const input = document.getElementById(inputId);
+    const list = document.getElementById(listId);
+    if(!input || !list) return;
+    
+    input.addEventListener('input', function() {
+      const val = this.value.trim().toUpperCase();
+      list.innerHTML = '';
+      if(val.length < 2) { list.style.display='none'; return; }
+      const matches = clientList.filter(c => c.toUpperCase().includes(val)).slice(0,12);
+      if(!matches.length) { list.style.display='none'; return; }
+      matches.forEach(c => {
+        const div = document.createElement('div');
+        const idx = c.toUpperCase().indexOf(val);
+        div.innerHTML = c.substring(0,idx) + '<mark>' + c.substring(idx,idx+val.length) + '</mark>' + c.substring(idx+val.length);
+        div.addEventListener('mousedown', e => {
+          e.preventDefault();
+          input.value = c;
+          list.style.display='none';
+          if(onSelect) onSelect(c);
+        });
+        list.appendChild(div);
+      });
+      list.style.display='block';
+    });
+    
+    input.addEventListener('blur', ()=> setTimeout(()=>{ list.style.display='none'; },150));
+    document.addEventListener('click', e => { if(!input.contains(e.target) && !list.contains(e.target)) list.style.display='none'; });
+  }
+
+
+const VENDEDORAS = ['TELEMARKETING 1','TELEMARKETING 2','TELEMARKETING 3'];
+const TM_COLORS = {
+  'TELEMARKETING 1': '#0ea5e9',
+  'TELEMARKETING 2': '#8b5cf6',
+  'TELEMARKETING 3': '#f97316'
+};
+const TIPO_CHART_COLORS = ['#0ea5e9','#ec4899','#f97316','#22c55e','#8b5cf6','#ef4444','#06b6d4'];
+
+
+function refreshUI() {
+  renderOverview();
+}
+function showSection(sec) {
+  ['overview','todos','tm1','tm2','tm3'].forEach(s => {
+    document.getElementById('sec-'+s).style.display = s===sec?'block':'none';
+  });
+  document.querySelectorAll('.nav-item').forEach((el,i) => {
+    el.classList.toggle('active', ['overview','todos','tm1','tm2','tm3'][i]===sec);
+  });
+  if(sec==='overview') renderOverview();
+  if(sec==='todos') renderTodos();
+  if(sec==='tm1') renderTM('TELEMARKETING 1','contenido-tm1');
+  if(sec==='tm2') renderTM('TELEMARKETING 2','contenido-tm2');
+  if(sec==='tm3') renderTM('TELEMARKETING 3','contenido-tm3');
+}
+
+function recargar() { renderOverview(); showToast('Datos actualizados'); }
+
+function renderOverview() {
+  const all = getPendientes();
+  const pendientes = all.filter(p=>p.estado==='pendiente');
+  const concluidos = all.filter(p=>p.estado==='concluido');
+  const urgentes = pendientes.filter(p=>p.prioridad==='urgente');
+  const hoy = new Date().toDateString();
+  const hoyCount = all.filter(p=>new Date(p.fecha).toDateString()===hoy).length;
+  
+  // Stats
+  document.getElementById('stats-main').innerHTML=`
+    <div class="stat-card" style="color:var(--teal)">
+      <div class="stat-num">${all.length}</div>
+      <div class="stat-label">Total Pendientes</div>
+      <div class="stat-icon">📊</div>
+    </div>
+    <div class="stat-card" style="color:var(--orange)">
+      <div class="stat-num">${pendientes.length}</div>
+      <div class="stat-label">Por Atender</div>
+      <div class="stat-icon">⏳</div>
+    </div>
+    <div class="stat-card" style="color:var(--green)">
+      <div class="stat-num">${concluidos.length}</div>
+      <div class="stat-label">Concluidos</div>
+      <div class="stat-icon">✅</div>
+    </div>
+    <div class="stat-card" style="color:var(--red)">
+      <div class="stat-num">${urgentes.length}</div>
+      <div class="stat-label">Urgentes</div>
+      <div class="stat-icon">🔴</div>
+    </div>
+    <div class="stat-card" style="color:#6366f1">
+      <div class="stat-num">${hoyCount}</div>
+      <div class="stat-label">Nuevos Hoy</div>
+      <div class="stat-icon">📅</div>
+    </div>
+    <div class="stat-card" style="color:#22c55e">
+      <div class="stat-num">${all.length?Math.round(concluidos.length/all.length*100):0}%</div>
+      <div class="stat-label">Efectividad Global</div>
+      <div class="stat-icon">🎯</div>
+    </div>
+  `;
+  
+  // Chart vendedoras
+  const maxV = Math.max(...VENDEDORAS.map(v=>all.filter(p=>p.vendedora===v).length),1);
+  document.getElementById('chart-vendedoras').innerHTML = VENDEDORAS.map(v=>{
+    const n=all.filter(p=>p.vendedora===v&&p.estado==='pendiente').length;
+    const total=all.filter(p=>p.vendedora===v).length;
+    const w=Math.round(total/maxV*100);
+    return `<div class="bar-row">
+      <span class="bar-label" style="font-size:12px">${v.replace('TELEMARKETING','TM')}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${w}%;background:${TM_COLORS[v]}"></div></div>
+      <span class="bar-val">${total}</span>
+    </div>
+    <div style="font-size:10px;color:var(--text2);margin:-6px 0 2px 140px;">${n} pendientes activos</div>`;
+  }).join('');
+  
+  // Chart tipos
+  const tipoCount = {};
+  for(let i=1;i<=7;i++) tipoCount[i]=all.filter(p=>p.tipo===i).length;
+  const maxT = Math.max(...Object.values(tipoCount),1);
+  document.getElementById('chart-tipos').innerHTML = Object.entries(TIPOS).map(([k,v],i)=>`
+    <div class="tipo-bar">
+      <span class="tipo-bar-label">${v}</span>
+      <div class="tipo-bar-track"><div class="tipo-bar-fill" style="width:${Math.round(tipoCount[k]/maxT*100)}%;background:${TIPO_CHART_COLORS[i]}"></div></div>
+      <span class="tipo-bar-val">${tipoCount[k]}</span>
+    </div>
+  `).join('');
+  
+  // Efectividad
+  const maxEf = Math.max(...VENDEDORAS.map(v=>{
+    const tot=all.filter(p=>p.vendedora===v).length;
+    return tot?Math.round(all.filter(p=>p.vendedora===v&&p.estado==='concluido').length/tot*100):0;
+  }),1);
+  document.getElementById('chart-efectividad').innerHTML = VENDEDORAS.map(v=>{
+    const tot=all.filter(p=>p.vendedora===v).length;
+    const ef=tot?Math.round(all.filter(p=>p.vendedora===v&&p.estado==='concluido').length/tot*100):0;
+    return `<div class="bar-row">
+      <span class="bar-label" style="font-size:12px">${v.replace('TELEMARKETING','TM')}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${ef}%;background:${ef>60?'var(--green)':ef>30?'var(--accent)':'var(--red)'}"></div></div>
+      <span class="bar-val">${ef}%</span>
+    </div>`;
+  }).join('');
+  
+  // Estado general
+  const total=all.length||1;
+  document.getElementById('chart-estado').innerHTML=`
+    <div style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-size:12px;font-weight:600">Pendientes</span><span style="font-size:12px;color:var(--orange)">${pendientes.length}</span></div>
+      <div style="background:var(--bg);border-radius:20px;height:12px;overflow:hidden;"><div style="height:100%;border-radius:20px;background:var(--orange);width:${Math.round(pendientes.length/total*100)}%"></div></div>
+    </div>
+    <div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-size:12px;font-weight:600">Concluidos</span><span style="font-size:12px;color:var(--green)">${concluidos.length}</span></div>
+      <div style="background:var(--bg);border-radius:20px;height:12px;overflow:hidden;"><div style="height:100%;border-radius:20px;background:var(--green);width:${Math.round(concluidos.length/total*100)}%"></div></div>
+    </div>
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+      ${VENDEDORAS.map(v=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-size:12px">${v.replace('TELEMARKETING','TM')}</span>
+          <div style="display:flex;gap:8px;">
+            <span style="font-size:11px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:20px">${all.filter(p=>p.vendedora===v&&p.estado==='pendiente').length} pend</span>
+            <span style="font-size:11px;background:#dcfce7;color:#166534;padding:2px 8px;border-radius:20px">${all.filter(p=>p.vendedora===v&&p.estado==='concluido').length} conc</span>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  
+  // Urgentes
+  const urg = pendientes.filter(p=>p.prioridad==='urgente').sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
+  const cu=document.getElementById('tabla-urgentes');
+  if(!urg.length){cu.innerHTML='<div class="empty-state"><div class="empty-icon">✅</div><p>No hay pendientes urgentes</p></div>';return;}
+  cu.innerHTML=`<table><thead><tr><th>Cliente</th><th>Tipo</th><th>Vendedora</th><th>Registrado</th><th>Descripción</th></tr></thead><tbody>${
+    urg.map(p=>`<tr class='clickable-row' style='background:rgba(239,68,68,0.04)' onclick='openDetail("${p.id}")'>
+      <td><strong>${p.cliente}</strong></td>
+      <td><span class="tipo-badge ${TIPO_COLORS[p.tipo]}">${TIPOS[p.tipo]}</span></td>
+      <td style="font-size:12px">${p.vendedora.replace('TELEMARKETING','TM')}</td>
+      <td style="color:var(--text2);font-size:12px">${formatDate(p.fecha)}</td>
+      <td style="font-size:12px;color:var(--text2)">${p.desc||'—'}</td>
+    </tr>`).join('')
+  }</tbody></table>`;
+}
+
+function renderTodos() {
+  const vend=document.getElementById('f-vend').value;
+  const tipo=document.getElementById('f-tipo').value;
+  const estado=document.getElementById('f-estado').value;
+  let items=getPendientes();
+  if(vend) items=items.filter(p=>p.vendedora===vend);
+  if(tipo) items=items.filter(p=>p.tipo==tipo);
+  if(estado) items=items.filter(p=>p.estado===estado);
+  items.sort((a,b)=>{if(a.prioridad==='urgente'&&b.prioridad!=='urgente')return -1;if(b.prioridad==='urgente'&&a.prioridad!=='urgente')return 1;return new Date(b.fecha)-new Date(a.fecha);});
+  
+  const c=document.getElementById('tabla-todos');
+  if(!items.length){c.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><p>No hay registros</p></div>';return;}
+  c.innerHTML=`<table><thead><tr><th>#</th><th>Cliente</th><th>Tipo</th><th>Vendedora</th><th>Estado</th><th>Prioridad</th><th>Registrado</th><th>Concluido</th></tr></thead><tbody>${
+    items.map((p,i)=>`<tr class='clickable-row' onclick='openDetail("${p.id}")'>
+      <td style="color:var(--text2);font-size:11px">${i+1}</td>
+      <td><strong>${p.cliente}</strong></td>
+      <td><span class="tipo-badge ${TIPO_COLORS[p.tipo]}">${TIPOS[p.tipo]}</span></td>
+      <td><span style="font-size:11px;padding:2px 8px;border-radius:4px;background:${TM_COLORS[p.vendedora]}22;color:${TM_COLORS[p.vendedora]}">${p.vendedora.replace('TELEMARKETING','TM')}</span></td>
+      <td>${p.estado==='concluido'?'<span class="badge badge-done">✓ Concluido</span>':'<span class="badge badge-pending">⏳ Pendiente</span>'}</td>
+      <td>${showPrioridad(p.prioridad)}</td>
+      <td style="color:var(--text2);font-size:11px">${formatDate(p.fecha)}</td>
+      <td style="color:var(--green);font-size:11px">${formatDate(p.fechaConcluido)}</td>
+    </tr>`).join('')
+  }</tbody></table>`;
+}
+
+function renderTM(vendedora, cid) {
+  const all=getPendientes().filter(p=>p.vendedora===vendedora);
+  const pend=all.filter(p=>p.estado==='pendiente');
+  const conc=all.filter(p=>p.estado==='concluido');
+  const ef=all.length?Math.round(conc.length/all.length*100):0;
+  const c=document.getElementById(cid);
+  const label=vendedora.replace('TELEMARKETING','Telemarketing');
+  
+  c.innerHTML=`
+    <div class="stats-grid" style="margin-bottom:24px;">
+      <div class="stat-card" style="color:var(--orange)"><div class="stat-num">${pend.length}</div><div class="stat-label">Activos</div><div class="stat-icon">⏳</div></div>
+      <div class="stat-card" style="color:var(--green)"><div class="stat-num">${conc.length}</div><div class="stat-label">Concluidos</div><div class="stat-icon">✅</div></div>
+      <div class="stat-card" style="color:var(--teal)"><div class="stat-num">${ef}%</div><div class="stat-label">Efectividad</div><div class="stat-icon">🎯</div></div>
+      <div class="stat-card" style="color:#6366f1"><div class="stat-num">${all.length}</div><div class="stat-label">Total</div><div class="stat-icon">📊</div></div>
+    </div>
+    <div class="table-card">
+      <div class="table-header"><h3>Pendientes de ${label}</h3></div>
+      ${!all.length?'<div class="empty-state"><div class="empty-icon">📭</div><p>Sin pendientes registrados</p></div>':
+      `<table><thead><tr><th>Cliente</th><th>Tipo</th><th>Prioridad</th><th>Estado</th><th>Registrado</th><th>Notas Logística</th></tr></thead><tbody>${
+        all.sort((a,b)=>{if(a.estado==='pendiente'&&b.estado!=='pendiente')return -1;if(b.estado==='pendiente'&&a.estado!=='pendiente')return 1;return new Date(b.fecha)-new Date(a.fecha);})
+        .map(p=>`<tr class='clickable-row' onclick='openDetail("${p.id}")'>
+          <td><strong>${p.cliente}</strong></td>
+          <td><span class="tipo-badge ${TIPO_COLORS[p.tipo]}">${TIPOS[p.tipo]}</span></td>
+          <td>${showPrioridad(p.prioridad)}</td>
+          <td>${p.estado==='concluido'?'<span class="badge badge-done">✓ Concluido</span>':'<span class="badge badge-pending">⏳ Pendiente</span>'}</td>
+          <td style="color:var(--text2);font-size:11px">${formatDate(p.fecha)}</td>
+          <td style="font-size:12px;color:var(--text2)">${p.notasLogistica||'—'}</td>
+        </tr>`).join('')
+      }</tbody></table>`}
+    </div>
+  `;
+}
+
+setInterval(()=>{ const sec=document.querySelector('.nav-item.active'); }, 60000);
+
+// Monitor de conexión
+db.ref('.info/connected').on('value', snap => {
+  const banner = document.getElementById('conn-banner');
+  if(!banner) return;
+  if(snap.val() === true) {
+    banner.style.display = 'none';
+  } else {
+    banner.style.display = 'block';
+    banner.className = 'conn-banner';
+    banner.textContent = '⚠️ Sin conexión a internet — los datos no se están sincronizando';
+  }
+});
+
+// ── MODAL DETALLE ────────────────────────────────────────────
+function openDetail(id) {
+  const all = getPendientes();
+  const p = all.find(x => x.id === id);
+  if (!p) return;
+
+  document.getElementById('d-cliente').textContent = p.cliente || '—';
+  document.getElementById('d-tipo-badge').innerHTML =
+    '<span class="tipo-badge ' + (TIPO_COLORS[p.tipo] || '') + '">' + (TIPOS[p.tipo] || '—') + '</span>';
+  document.getElementById('d-vendedora').textContent = (p.vendedora || '—').replace('TELEMARKETING','Telemarketing');
+  document.getElementById('d-estado').innerHTML = p.estado === 'concluido'
+    ? '<span class="badge badge-done">✓ Concluido</span>'
+    : '<span class="badge badge-pending">⏳ Pendiente</span>';
+  document.getElementById('d-prioridad').innerHTML = showPrioridad(p.prioridad);
+  document.getElementById('d-fecha').textContent = formatDate(p.fecha);
+  document.getElementById('d-fechaConcluido').textContent = p.fechaConcluido ? formatDate(p.fechaConcluido) : '—';
+  document.getElementById('d-desc').textContent = p.desc || 'Sin descripción registrada.';
+
+  const notasField = document.getElementById('d-field-notas');
+  if (p.notasLogistica) {
+    notasField.style.display = 'flex';
+    document.getElementById('d-notasLogistica').textContent = p.notasLogistica;
+  } else {
+    notasField.style.display = 'none';
+  }
+
+  document.getElementById('detail-overlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDetailModal(e, force) {
+  if (force || (e && e.target === document.getElementById('detail-overlay'))) {
+    document.getElementById('detail-overlay').style.display = 'none';
+    document.body.style.overflow = '';
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeDetailModal(null, true);
+});
+
+updateDate();
+renderOverview();
+</script>
+</body>
+</html>

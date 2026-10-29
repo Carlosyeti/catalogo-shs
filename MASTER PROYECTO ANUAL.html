@@ -1,0 +1,2459 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Presupuesto Vendedoras 2026 · Surtidora</title>
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<!-- SheetJS — parseo de Excel -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+/* ─── RESET & BASE ─────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --col-jazmin: #5B4FCF;
+  --col-nancy:  #C95228;
+  --col-karen:  #1A9069;
+  --bg:         #F5F4F1;
+  --surface:    #FFFFFF;
+  --sidebar:    #1C1C1A;
+  --text:       #1C1C1A;
+  --muted:      #6B6A65;
+  --border:     #E0DED8;
+  --green:      #1A9069;
+  --amber:      #B8740F;
+  --red:        #B02B2B;
+  --green-bg:   #EAF6F1;
+  --amber-bg:   #FEF5E4;
+  --red-bg:     #FCEAEA;
+  --radius:     10px;
+  --radius-sm:  6px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: var(--text);
+}
+
+body{
+  background: var(--bg);
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ─── SIDEBAR ─────────────────────────────────────────── */
+#sidebar{
+  width: 220px;
+  min-height: 100vh;
+  background: var(--sidebar);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  flex-shrink: 0;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
+}
+.sidebar-logo{
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.sidebar-logo .app-name{
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: .02em;
+  line-height: 1.3;
+}
+.sidebar-logo .app-sub{
+  font-size: 11px;
+  color: rgba(255,255,255,.4);
+  margin-top: 2px;
+  font-family: 'DM Mono', monospace;
+}
+.nav-section{
+  padding: 16px 12px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  color: rgba(255,255,255,.3);
+  text-transform: uppercase;
+}
+.nav-item{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px 9px 16px;
+  margin: 1px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: rgba(255,255,255,.55);
+  font-size: 13px;
+  font-weight: 400;
+  transition: background .15s, color .15s;
+  user-select: none;
+}
+.nav-item svg{ opacity: .6; flex-shrink: 0; }
+.nav-item:hover{ background: rgba(255,255,255,.07); color: rgba(255,255,255,.85); }
+.nav-item.active{ background: rgba(255,255,255,.12); color: #fff; font-weight: 500; }
+.nav-item.active svg{ opacity: 1; }
+.sidebar-footer{
+  margin-top: auto;
+  padding: 16px 16px 20px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+.sync-status{
+  font-size: 11px;
+  color: rgba(255,255,255,.35);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'DM Mono', monospace;
+}
+.sync-dot{
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #1A9069;
+  flex-shrink: 0;
+}
+.sync-dot.offline{ background: #B02B2B; }
+
+/* ─── MAIN CONTENT ────────────────────────────────────── */
+#main{
+  margin-left: 220px;
+  flex: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── TOPBAR ──────────────────────────────────────────── */
+#topbar{
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.topbar-title{
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+.topbar-right{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.month-pill{
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-family: 'DM Mono', monospace;
+  color: var(--muted);
+}
+
+/* ─── PAGE CONTENT ────────────────────────────────────── */
+.page{
+  display: none;
+  padding: 24px 28px 40px;
+  animation: fadeIn .18s ease;
+}
+.page.active{ display: block; }
+@keyframes fadeIn{ from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
+
+/* ─── CARDS ────────────────────────────────────────────── */
+.stat-grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.stat-card{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+}
+.stat-card .sc-label{
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 6px;
+}
+.stat-card .sc-value{
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1;
+  font-family: 'DM Mono', monospace;
+}
+.stat-card .sc-sub{
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 5px;
+}
+.stat-card .sc-badge{
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-top: 6px;
+}
+.sc-badge.ok{ background: var(--green-bg); color: var(--green); }
+.sc-badge.warn{ background: var(--amber-bg); color: var(--amber); }
+.sc-badge.danger{ background: var(--red-bg); color: var(--red); }
+.sc-badge.neutral{ background: var(--bg); color: var(--muted); }
+
+/* ─── SECTION LABELS ──────────────────────────────────── */
+.section-label{
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+/* ─── CHART CONTAINERS ────────────────────────────────── */
+.chart-card{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.chart-card .chart-title{
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.chart-card .chart-sub{
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+.chart-wrap{ position: relative; width: 100%; }
+
+/* ─── LEGEND ──────────────────────────────────────────── */
+.legend{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.legend-item{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend-dot{
+  width: 10px; height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* ─── TABLE ───────────────────────────────────────────── */
+.table-card{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.table-card .table-header{
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.table-card .table-header .th-title{
+  font-size: 13px;
+  font-weight: 600;
+}
+table{ width: 100%; border-collapse: collapse; }
+th{
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--muted);
+  padding: 10px 16px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+td{
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+tr:last-child td{ border-bottom: none; }
+tr.total-row td{
+  background: var(--bg);
+  font-weight: 600;
+  font-size: 13px;
+}
+.num{ text-align: right; font-family: 'DM Mono', monospace; font-size: 12px; }
+.text-green{ color: var(--green); }
+.text-amber{ color: var(--amber); }
+.text-red{ color: var(--red); }
+.text-muted{ color: var(--muted); }
+
+/* ─── VENDEDORA DOT ───────────────────────────────────── */
+.vdot{
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-right: 7px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+/* ─── SEMÁFOROS ───────────────────────────────────────── */
+.sem-grid{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.sem-card{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  border-left: 4px solid transparent;
+  transition: box-shadow .15s;
+}
+.sem-card:hover{ box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.sem-card.ok{ border-left-color: var(--green); }
+.sem-card.warn{ border-left-color: var(--amber); }
+.sem-card.danger{ border-left-color: var(--red); }
+.sem-card.sin-datos{ border-left-color: var(--border); }
+.sem-card .sc-nombre{
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: 4px;
+}
+.sem-card .sc-pct{
+  font-size: 28px;
+  font-weight: 600;
+  font-family: 'DM Mono', monospace;
+  line-height: 1;
+}
+.sem-card.ok .sc-pct{ color: var(--green); }
+.sem-card.warn .sc-pct{ color: var(--amber); }
+.sem-card.danger .sc-pct{ color: var(--red); }
+.sem-card.sin-datos .sc-pct{ color: var(--muted); }
+.sem-card .sc-valores{
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 6px;
+  font-family: 'DM Mono', monospace;
+}
+
+/* ─── DETALLE VENDEDORA ───────────────────────────────── */
+.v-selector{
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.v-btn{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
+  transition: all .15s;
+}
+.v-btn:hover{ border-color: var(--text); color: var(--text); }
+.v-btn.active{
+  background: var(--text);
+  border-color: var(--text);
+  color: #fff;
+  font-weight: 500;
+}
+
+/* ─── CAPTURA / FORMULARIO ────────────────────────────── */
+.form-card{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+.form-group{
+  margin-bottom: 16px;
+}
+.form-group label{
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: 6px;
+}
+.form-group select,
+.form-group input[type=number]{
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+  transition: border-color .15s;
+}
+.form-group select:focus,
+.form-group input[type=number]:focus{ border-color: #888; }
+.input-grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.input-with-meta{
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.input-meta{
+  font-size: 11px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+}
+.input-label-row{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 5px;
+}
+.input-label-row span{
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+/* ─── BOTONES ─────────────────────────────────────────── */
+.btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 20px;
+  border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all .15s;
+}
+.btn-primary{
+  background: var(--text);
+  color: #fff;
+}
+.btn-primary:hover{ background: #333; }
+.btn-primary:active{ transform: scale(.98); }
+.btn-ghost{
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover{ border-color: var(--text); color: var(--text); }
+
+/* ─── COMISIONES ──────────────────────────────────────── */
+.com-grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.com-card{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.com-card-header{
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.com-card-header .com-nombre{ font-size: 14px; font-weight: 600; }
+.com-card-header .com-nota{
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+.com-body{ padding: 16px 18px; }
+.com-row{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--bg);
+  font-size: 13px;
+}
+.com-row:last-child{ border-bottom: none; }
+.com-row .cr-label{ color: var(--muted); }
+.com-row .cr-value{
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  font-weight: 500;
+}
+.com-total{
+  background: var(--bg);
+  margin: 0 -18px -16px;
+  padding: 12px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+}
+.com-total .ct-value{
+  font-family: 'DM Mono', monospace;
+  font-size: 16px;
+}
+
+/* ─── TOAST ───────────────────────────────────────────── */
+#toast{
+  position: fixed;
+  bottom: 24px; right: 24px;
+  background: var(--text);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  display: none;
+  z-index: 999;
+  animation: fadeIn .2s ease;
+}
+#toast.show{ display: block; }
+
+/* ─── YEAR PROGRESS ───────────────────────────────────── */
+.year-bar{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.year-bar-track{
+  flex: 1;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.year-bar-fill{
+  height: 100%;
+  background: var(--text);
+  border-radius: 3px;
+  transition: width .4s ease;
+}
+.year-bar-label{ font-size: 12px; color: var(--muted); white-space: nowrap; font-family: 'DM Mono', monospace; }
+.year-bar-pct{ font-size: 13px; font-weight: 600; font-family: 'DM Mono', monospace; white-space: nowrap; }
+
+/* ─── EMPTY STATE ─────────────────────────────────────── */
+.empty-state{
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* ─── GERENTE BONO TIERS ──────────────────────────────── */
+.tier-track{
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.tier{
+  padding: 18px 16px;
+  border-right: 1px solid var(--border);
+  position: relative;
+}
+.tier:last-child{ border-right: none; }
+.tier-label{ font-size: 10px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; margin-bottom: 8px; }
+.tier-A{ background: #FFF5F5; }
+.tier-A .tier-label{ color: var(--red); }
+.tier-B{ background: #FFFBF0; }
+.tier-B .tier-label{ color: var(--amber); }
+.tier-C{ background: #F0FAF5; }
+.tier-C .tier-label{ color: var(--green); }
+.tier-range{ font-size: 12px; font-weight: 600; font-family: 'DM Mono', monospace; margin-bottom: 4px; }
+.tier-bono{ font-size: 22px; font-weight: 700; font-family: 'DM Mono', monospace; margin-bottom: 4px; }
+.tier-A .tier-bono{ color: var(--red); }
+.tier-B .tier-bono{ color: var(--amber); }
+.tier-C .tier-bono{ color: var(--green); }
+.tier-desc{ font-size: 11px; color: var(--muted); line-height: 1.5; }
+.tier-active-badge{
+  position: absolute; top: 10px; right: 10px;
+  background: var(--text); color: #fff;
+  font-size: 10px; font-weight: 700;
+  padding: 2px 7px; border-radius: 10px;
+  letter-spacing: .04em;
+}
+
+.ger-progress{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.ger-bar-wrap{ position: relative; height: 32px; margin: 12px 0 6px; }
+.ger-bar-bg{
+  height: 12px;
+  background: var(--border);
+  border-radius: 6px;
+  position: absolute;
+  top: 10px; left: 0; right: 0;
+}
+.ger-bar-fill{
+  height: 12px;
+  border-radius: 6px;
+  position: absolute;
+  top: 10px; left: 0;
+  transition: width .6s ease, background .4s;
+}
+.ger-marker{
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.ger-marker-line{ width: 2px; height: 32px; background: var(--text); opacity: .3; }
+.ger-marker-label{
+  position: absolute;
+  top: -18px;
+  font-size: 10px;
+  font-family: 'DM Mono', monospace;
+  color: var(--muted);
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+.ger-labels{ display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
+
+.ger-calc-card{
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.ger-result{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-top: 14px;
+  display: none;
+}
+.ger-result.visible{ display: block; }
+.ger-result-tier{
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .08em; margin-bottom: 8px;
+}
+.ger-result-bono{
+  font-size: 32px; font-weight: 700;
+  font-family: 'DM Mono', monospace;
+  line-height: 1; margin-bottom: 6px;
+}
+.ger-result-detail{ font-size: 12px; color: var(--muted); }
+.ger-result-sueldo{
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between;
+  font-size: 13px; font-weight: 600;
+}
+
+/* ─── STAT CARD AMOUNT SMALL ─────────────────────────── */
+.sc-value.sc-value-lg{ font-size: 18px; }
+.sc-value.sc-value-md{ font-size: 20px; }
+
+/* ─── RESPONSIVE ─────────────────────────────────────── */
+@media(max-width:768px){
+  #sidebar{ display: none; }
+  #main{ margin-left: 0; }
+  .sem-grid{ grid-template-columns: 1fr; }
+  .tier-track{ grid-template-columns: 1fr; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ═══ SIDEBAR ═══════════════════════════════════════════ -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="app-name">Surtidora de Higiénicos</div>
+    <div class="app-sub">Ventas 2026 · Vendedoras</div>
+  </div>
+
+  <div class="nav-section">Análisis</div>
+
+  <div class="nav-item active" onclick="goTo('resumen')">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+      <rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/>
+      <rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>
+    </svg>
+    Resumen global
+  </div>
+  <div class="nav-item" onclick="goTo('empresa')">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+    </svg>
+    Empresa 2026
+  </div>
+  <div class="nav-item" onclick="goTo('semaforo')">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+      <circle cx="12" cy="5" r="2.5"/><circle cx="12" cy="12" r="2.5"/><circle cx="12" cy="19" r="2.5"/>
+      <rect x="8" y="1.5" width="8" height="21" rx="3" stroke-width="1.5"/>
+    </svg>
+    Semáforos
+  </div>
+  <div class="nav-item" onclick="goTo('detalle')">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+      <path d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM12 14c-5 0-8 2.5-8 4v1h16v-1c0-1.5-3-4-8-4z"/>
+    </svg>
+    Detalle vendedora
+  </div>
+  <div class="nav-item" onclick="goTo('comisiones')">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+    </svg>
+    Comisiones
+  </div>
+
+  <div class="nav-item" onclick="goTo('gerente')">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+      <path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+      <path d="M16 3H8a2 2 0 0 0-2 2v2h12V5a2 2 0 0 0-2-2z"/>
+      <path d="M12 12v4M10 14h4"/>
+    </svg>
+    Gerente de ventas
+  </div>
+
+  <div class="nav-section">Operación</div>
+
+  <div class="nav-item" onclick="goTo('captura')">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+      <path d="M12 5v14M5 12h14"/>
+    </svg>
+    Captura mensual
+  </div>
+  <div class="nav-item" onclick="goTo('yetclean')">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+      <path d="M3 3h18M3 9h18M3 15h12M3 21h8"/>
+    </svg>
+    YetClean
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="sync-status">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span id="sync-text">Guardado local</span>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══ MAIN ═══════════════════════════════════════════════ -->
+<div id="main">
+
+  <!-- Topbar -->
+  <div id="topbar">
+    <div class="topbar-title" id="topbar-title">Resumen global</div>
+    <div class="topbar-right">
+      <div class="month-pill" id="topbar-date">—</div>
+    </div>
+  </div>
+
+  <!-- ── PÁGINA: RESUMEN GLOBAL ─────────────────────────── -->
+  <div class="page active" id="page-resumen">
+    <!-- Progress bar anual -->
+    <div class="year-bar">
+      <span class="year-bar-label">Avance 2026</span>
+      <div class="year-bar-track"><div class="year-bar-fill" id="year-fill"></div></div>
+      <span class="year-bar-pct" id="year-pct-text"></span>
+      <span class="year-bar-label" id="year-meses-text"></span>
+    </div>
+
+    <div class="stat-grid" id="stat-grid-resumen"></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+      <div class="chart-card">
+        <div class="chart-title">Ventas reales vs proyectadas</div>
+        <div class="chart-sub">Acumulado mensual 2026</div>
+        <div class="chart-wrap" style="height:220px">
+          <canvas id="chart-linea" role="img" aria-label="Ventas reales vs proyectadas 2026"></canvas>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#1C1C1A"></div>Proyectado</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#5B4FCF"></div>Real acumulado</div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Cumplimiento por vendedora</div>
+        <div class="chart-sub">% vs meta mensual · meses con datos</div>
+        <div class="chart-wrap" style="height:220px">
+          <canvas id="chart-barras" role="img" aria-label="Cumplimiento por vendedora"></canvas>
+        </div>
+        <div class="legend" id="legend-barras"></div>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-header">
+        <div class="th-title">Comparativo real vs proyectado · Enero–Marzo 2026</div>
+      </div>
+      <table id="tabla-resumen">
+        <thead>
+          <tr>
+            <th>Vendedora</th>
+            <th class="num">Ene Proy</th><th class="num">Ene Real</th>
+            <th class="num">Feb Proy</th><th class="num">Feb Real</th>
+            <th class="num">Mar Proy</th><th class="num">Mar Real</th>
+            <th class="num">Cumpl. Q1</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-resumen"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── PÁGINA: SEMÁFOROS ──────────────────────────────── -->
+  <div class="page" id="page-semaforo">
+    <div class="stat-grid" id="stat-sem-grid"></div>
+    <div id="sem-content"></div>
+  </div>
+
+  <!-- ── PÁGINA: DETALLE VENDEDORA ──────────────────────── -->
+  <div class="page" id="page-detalle">
+    <div class="v-selector" id="v-selector"></div>
+    <div id="detalle-content"></div>
+  </div>
+
+  <!-- ── PÁGINA: COMISIONES ─────────────────────────────── -->
+  <div class="page" id="page-comisiones">
+    <div class="section-label" style="margin-bottom:14px">Selecciona el mes</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px" id="mes-pills-com"></div>
+    <div class="section-label">Desglose estimado de comisiones</div>
+    <div class="com-grid" id="com-grid"></div>
+    <div class="chart-card">
+      <div class="chart-title">Sueldo bruto estimado por vendedora</div>
+      <div class="chart-sub">Todos los meses · 2026</div>
+      <div class="chart-wrap" style="height:200px">
+        <canvas id="chart-com" role="img" aria-label="Sueldo bruto estimado anual"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PÁGINA: CAPTURA MENSUAL (carga por Excel) ─────── -->
+  <div class="page" id="page-captura">
+
+    <!-- Zona de carga de archivos -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+
+      <!-- Archivo vendedoras -->
+      <div class="form-card" id="drop-vend" style="border:2px dashed var(--border);cursor:pointer;transition:border-color .2s"
+           ondragover="dragOver(event,'drop-vend')" ondragleave="dragLeave('drop-vend')" ondrop="dropFile(event,'vendedoras')">
+        <div style="text-align:center;padding:8px 0 12px">
+          <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="var(--muted)" stroke-width="1.3" style="margin-bottom:10px">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
+          </svg>
+          <div style="font-size:14px;font-weight:600;margin-bottom:4px">Presupuesto Vendedoras</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:14px">PRESUPUESTO_VENDEDORAS_2026.xlsx</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Extrae: CARTERA 2026 de Jazmín, Fátima, Nancy y Karen</div>
+          <input type="file" id="file-vend" accept=".xlsx,.xls" style="display:none" onchange="leerExcelVendedoras(this.files[0])">
+          <button class="btn btn-ghost" style="font-size:12px" onclick="document.getElementById('file-vend').click()">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            Seleccionar archivo
+          </button>
+        </div>
+        <div id="status-vend" style="font-size:12px;text-align:center;min-height:20px;margin-top:4px"></div>
+      </div>
+
+      <!-- Archivo presupuesto global -->
+      <div class="form-card" id="drop-global" style="border:2px dashed var(--border);cursor:pointer;transition:border-color .2s"
+           ondragover="dragOver(event,'drop-global')" ondragleave="dragLeave('drop-global')" ondrop="dropFile(event,'global')">
+        <div style="text-align:center;padding:8px 0 12px">
+          <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="var(--muted)" stroke-width="1.3" style="margin-bottom:10px">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+          </svg>
+          <div style="font-size:14px;font-weight:600;margin-bottom:4px">Presupuesto Global Empresa</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:14px">PRESUPUESTO_2026.xlsx</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Extrae: REAL 2026 de la hoja "2026" (columna REAL 2026)</div>
+          <input type="file" id="file-global" accept=".xlsx,.xls" style="display:none" onchange="leerExcelGlobal(this.files[0])">
+          <button class="btn btn-ghost" style="font-size:12px" onclick="document.getElementById('file-global').click()">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            Seleccionar archivo
+          </button>
+        </div>
+        <div id="status-global" style="font-size:12px;text-align:center;min-height:20px;margin-top:4px"></div>
+      </div>
+    </div>
+
+    <!-- Preview de lo extraído -->
+    <div id="preview-captura" style="display:none">
+      <div class="section-label" style="margin-bottom:12px">Datos extraídos — revisa antes de guardar</div>
+      <div class="table-card" style="margin-bottom:16px">
+        <table>
+          <thead>
+            <tr>
+              <th>Mes</th>
+              <th class="num">Jazmín</th><th class="num">vs Meta</th>
+              <th class="num">Nancy</th><th class="num">vs Meta</th>
+              <th class="num">Karen (K+F)</th><th class="num">vs Meta</th>
+              <th class="num">Empresa total</th><th class="num">vs Meta</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-preview"></tbody>
+        </table>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="btn btn-primary" onclick="confirmarGuardado()">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+          </svg>
+          Confirmar y guardar en Firebase
+        </button>
+        <button class="btn btn-ghost" onclick="limpiarPreview()">Cancelar</button>
+      </div>
+    </div>
+
+    <!-- Historial actual -->
+    <div class="table-card" style="margin-top:20px">
+      <div class="table-header"><div class="th-title">Datos actuales cargados en el sistema</div></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Mes</th>
+            <th class="num">Jazmín</th><th class="num">vs Meta</th>
+            <th class="num">Nancy</th><th class="num">vs Meta</th>
+            <th class="num">Karen (K+F)</th><th class="num">vs Meta</th>
+            <th class="num">Empresa total</th><th class="num">vs Meta</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-historial"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── PÁGINA: YETCLEAN ───────────────────────────────── -->
+  <div class="page" id="page-yetclean">
+    <div class="stat-grid" id="yt-stat-grid"></div>
+    <div class="chart-card">
+      <div class="chart-title">YetClean 2025 · Base de comisión incremental</div>
+      <div class="chart-sub">Ventas por vendedora — meta es superar +15% este mes en 2026</div>
+      <div class="chart-wrap" style="height:240px">
+        <canvas id="chart-yt" role="img" aria-label="YetClean 2025 por vendedora"></canvas>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--col-jazmin)"></div>Jazmín</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--col-nancy)"></div>Nancy</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--col-karen)"></div>Karen (Karen+Fátima)</div>
+      </div>
+    </div>
+    <div class="table-card">
+      <div class="table-header"><div class="th-title">YetClean 2025 · Detalle mensual</div></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Mes</th>
+            <th class="num">Jazmín</th><th class="num">Nancy</th>
+            <th class="num">Karen (K+F)</th><th class="num">Total</th>
+            <th class="num">Meta +15%</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-yt"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── PÁGINA: GERENTE DE VENTAS ─────────────────────── -->
+  <div class="page" id="page-gerente">
+    <div class="stat-grid" id="ger-stat-grid"></div>
+
+    <!-- Esquema de tiers -->
+    <div class="section-label">Esquema de bono anual</div>
+    <div class="tier-track">
+      <div class="tier tier-A">
+        <div class="tier-label">Nivel A · Sin bono</div>
+        <div class="tier-range">Crecimiento &lt; 11%</div>
+        <div class="tier-range" style="font-size:11px">Ventas &lt; $30,345,370</div>
+        <div class="tier-bono">$0</div>
+        <div class="tier-desc">No se paga bono si el incremento no supera el 11% anual de crecimiento.</div>
+      </div>
+      <div class="tier tier-B">
+        <div class="tier-label">Nivel B · Bono parcial</div>
+        <div class="tier-range">11% ≤ crecimiento &lt; 14.34%</div>
+        <div class="tier-range" style="font-size:11px">$30,345,370 – $31,541,390</div>
+        <div class="tier-bono">0.0015%</div>
+        <div class="tier-desc">Se paga 0.0015% sobre el importe del incremento real, de forma proporcional.</div>
+      </div>
+      <div class="tier tier-C">
+        <div class="tier-label">Nivel C · Bono completo</div>
+        <div class="tier-range">Crecimiento ≥ 14.34%</div>
+        <div class="tier-range" style="font-size:11px">Ventas ≥ $31,541,391 · Sin tope</div>
+        <div class="tier-bono">0.003%</div>
+        <div class="tier-desc">Se paga 0.003% sobre el incremento total real. Sin techo máximo.</div>
+      </div>
+    </div>
+
+    <!-- Barra de progreso anual -->
+    <div class="ger-progress">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-size:13px;font-weight:600">Progreso vs meta anual 2026</div>
+        <div id="ger-pct-label" style="font-family:'DM Mono',monospace;font-size:13px;font-weight:600"></div>
+      </div>
+      <div class="ger-bar-wrap" id="ger-bar-wrap">
+        <div class="ger-bar-bg"></div>
+        <div class="ger-bar-fill" id="ger-bar-fill"></div>
+        <!-- Markers se inyectan por JS -->
+      </div>
+      <div class="ger-labels">
+        <span>Base 2025 · $27,338,171</span>
+        <span id="ger-bar-real-label"></span>
+        <span>Meta · $31,541,391</span>
+      </div>
+    </div>
+
+    <!-- Calculadora interactiva -->
+    <div class="ger-calc-card">
+      <div class="section-label" style="margin-bottom:12px">Calculadora de bono · ingresa ventas acumuladas reales</div>
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px">
+          <label style="font-size:12px;color:var(--muted);font-weight:600;display:block;margin-bottom:6px">VENTAS REALES ANUALES ACUMULADAS</label>
+          <input type="number" id="ger-ventas-input" placeholder="$27,338,171 (base 2025)"
+            style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:14px;background:var(--surface);color:var(--text)"
+            oninput="calcularBonoGerente(this.value)">
+        </div>
+        <button class="btn btn-ghost" onclick="document.getElementById('ger-ventas-input').value=totalRealAcumulado();calcularBonoGerente(totalRealAcumulado())">
+          Usar ventas reales actuales
+        </button>
+      </div>
+      <div class="ger-result" id="ger-result"></div>
+    </div>
+
+    <!-- Tabla mensual de avance -->
+    <div class="table-card">
+      <div class="table-header"><div class="th-title">Acumulado mensual real vs meta gerente</div></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Mes</th>
+            <th class="num">Ventas reales acum.</th>
+            <th class="num">Meta acum. proporcional</th>
+            <th class="num">% avance anual</th>
+            <th class="num">Diferencia</th>
+            <th class="num">Sueldo fijo</th>
+            <th class="num">Bono estimado</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-gerente"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── PÁGINA: EMPRESA 2026 ───────────────────────────── -->
+  <div class="page" id="page-empresa">
+    <div class="stat-grid" id="emp-stat-grid"></div>
+
+    <!-- Gráfica histórica -->
+    <div class="chart-card" style="margin-bottom:20px">
+      <div class="chart-title">Evolución de ventas empresa 2019–2026</div>
+      <div class="chart-sub">Real anual + meta 2026 · Fuente: master Excel presupuesto</div>
+      <div class="chart-wrap" style="height:240px">
+        <canvas id="chart-historico" role="img" aria-label="Evolución histórica de ventas"></canvas>
+      </div>
+      <div class="legend" id="legend-historico"></div>
+    </div>
+
+    <!-- Tabla mensual empresa -->
+    <div class="table-card" style="margin-bottom:20px">
+      <div class="table-header">
+        <div class="th-title">Seguimiento mensual empresa 2026</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px">Real 2025 · Proyecto 2026 · Real 2026 · Diferencia</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Mes</th>
+            <th class="num">Real 2025</th>
+            <th class="num">Real 2024</th>
+            <th class="num">Proyecto 2026</th>
+            <th class="num">Real 2026</th>
+            <th class="num">Dif. mes</th>
+            <th class="num">Dif. acum.</th>
+            <th class="num">% Cumpl.</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-empresa"></tbody>
+      </table>
+    </div>
+
+    <!-- Semáforo rápido empresa -->
+    <div class="section-label">Semáforo empresa Q1 2026</div>
+    <div class="sem-grid" id="sem-empresa"></div>
+
+    <!-- Nota compulsa -->
+    <div style="background:var(--amber-bg);border:1px solid #E8C870;border-radius:var(--radius);padding:14px 18px;font-size:12px;color:var(--amber);line-height:1.6">
+      <b>Compulsa Excel vendedoras vs master presupuesto:</b><br>
+      La diferencia mensual entre el total de vendedoras y la meta empresa es el componente de <b>licitaciones</b> (crece de +$11k/ene a +$34k/nov). El promedio de licitaciones mensuales en 2025 fue <b>$50,545/mes</b>. Diciembre tiene diferencia inversa (-$286k) por ajuste de metas entre archivos — pendiente de reconciliar con gerente.
+    </div>
+  </div>
+
+</div><!-- /#main -->
+
+<div id="toast"></div>
+
+<!-- ═══════════════════════════════════════════════════════
+     DATOS Y LÓGICA
+════════════════════════════════════════════════════════ -->
+<script>
+
+/* ──────────────────────────────────────────────
+   ALMACENAMIENTO LOCAL (localStorage)
+   100% privado — solo en esta laptop/navegador
+   Clave: surtidora_presupuesto_2026
+────────────────────────────────────────────── */
+const LS_KEY = 'surtidora_presupuesto_2026';
+
+function guardarLocal(){
+  try {
+    const payload = {
+      datosReales,
+      datosRealesEmpresa,
+      savedAt: new Date().toISOString()
+    };
+    localStorage.setItem(LS_KEY, JSON.stringify(payload));
+    document.getElementById('sync-dot').className = 'sync-dot';
+    document.getElementById('sync-text').textContent =
+      'Guardado · ' + new Date().toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
+  } catch(e){
+    console.warn('localStorage no disponible:', e.message);
+  }
+}
+
+function cargarLocal(){
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return;
+    const payload = JSON.parse(raw);
+
+    // Restaurar datos vendedoras
+    if(payload.datosReales){
+      VENDEDORAS.forEach(v => {
+        if(payload.datosReales[v.id]){
+          datosReales[v.id] = payload.datosReales[v.id].map(x =>
+            (x !== null && x !== undefined && !isNaN(x)) ? parseFloat(x) : null
+          );
+        }
+      });
+    }
+    // Restaurar datos empresa
+    if(payload.datosRealesEmpresa){
+      datosRealesEmpresa = payload.datosRealesEmpresa.map(x =>
+        (x !== null && x !== undefined && !isNaN(x)) ? parseFloat(x) : null
+      );
+    }
+    if(payload.savedAt){
+      const d = new Date(payload.savedAt);
+      document.getElementById('sync-text').textContent =
+        'Cargado · ' + d.toLocaleDateString('es-MX', {day:'2-digit', month:'short'});
+    }
+  } catch(e){
+    console.warn('Error cargando localStorage:', e.message);
+  }
+}
+
+/* ──────────────────────────────────────────────
+   DATOS BASE 2026
+────────────────────────────────────────────── */
+const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const MESES_FULL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+const VENDEDORAS = [
+  {
+    id: 'jazmin',
+    nombre: 'Jazmín',
+    nota: 'TLMK 1',
+    color: '#5B4FCF',
+    proyecto2026: [941244,766958,956833,808492,828479,826361,914891,845642,861702,873129,915958,801030],
+    ventas2025:   [846899,690083,860926,727454,745437,743532,823188,760880,775330,785612,824148,720739],
+    sueldoBruto:  [13864,13441,14222,14076,14023,14123,14224,14083,14167,14208,14218,13860],
+    yetclean2025: [108860,104955,143902,122815,109993,127882,130085,117499,129370,134435,128852,86576],
+    comBase:9582.47, bonoMeta:500, apoyo:500, bonoAnual:833.33, seguro:1500
+  },
+  {
+    id: 'nancy',
+    nombre: 'Nancy',
+    nota: 'TLMK 3',
+    color: '#C95228',
+    proyecto2026: [597613,595610,599338,583321,656061,600214,726445,648802,595569,721183,626787,777545],
+    ventas2025:   [537712,535910,539264,524852,590301,540052,653631,583770,535873,648896,563962,699608],
+    sueldoBruto:  [13165,12634,14508,14418,14636,14439,14684,14561,14487,14588,14422,14485],
+    yetclean2025: [74777,83155,79185,76502,101813,77209,97810,89904,86319,82112,69657,54411],
+    comBase:9582.47, bonoMeta:500, apoyo:500, bonoAnual:833.33, seguro:1500
+  },
+  {
+    id: 'karen',
+    nombre: 'Karen',
+    nota: 'TLMK 2+4 · Cubre Karen + Fátima',
+    color: '#1A9069',
+    proyecto2026: [1460058,813080,899019,960215,884814,1124968,1014624,1070451,1152384,1189568,1266075,1636927],
+    ventas2025:   [1254120,665353,735300,782161,717648,934923,824156,882157,944526,969880,1027884,1342004],
+    sueldoBruto:  [12715,12139,13666,13700,13744,13794,13852,13918,13993,14080,14180,14258],
+    yetclean2025: [104729,52723,68436,63691,91636,104562,95931,110275,96610,130053,117173,41716],
+    comBase:9582.47, bonoMeta:500, apoyo:500, bonoAnual:833.33, seguro:1500
+  }
+];
+
+/* ──────────────────────────────────────────────
+   DATOS EMPRESA (master Excel presupuesto 2026)
+   — definidos ANTES que datosRealesEmpresa
+────────────────────────────────────────────── */
+const EMPRESA = {
+  historico: {
+    2019:11563000, 2020:14587354, 2021:17497185,
+    2022:20675455, 2023:22028295, 2024:24665721, 2025:27680934
+  },
+  real2025:    [2654219,2075157,2144151,2053933,2291721.86,2228465.51,
+                2310482.86,2256837.42,2292646.63,2407948.97,2417281.28,2548089],
+  real2024:    [2093764,1832067,1743122,2013248,1971577,1872448,
+                2180700,2138051,2031784,2309274,2544493,1935193],
+  proyecto2026:[3010483,2188506,2469480,2367908,2387003,2571160,
+                2677762,2589125,2636585,2813810,2842085,2928670],
+  real2026:    [2601177,2213106,2399143,2451960,null,null,null,null,null,null,null,null]
+};
+
+const GER = {
+  sueldoMensual:  20000,
+  base2025:       27680934,
+  meta2026:       31482577,
+  umbral11pct:    Math.round(27680934 * 1.11),
+  incrementoMeta: 31482577 - 27680934,
+  tasaA: 0, tasaB: 0.0015, tasaC: 0.003
+};
+
+/* ──────────────────────────────────────────────
+   DATOS REALES (valores de arranque = Q1 conocido)
+────────────────────────────────────────────── */
+let datosReales = {
+  jazmin: [956640,879385,832535,null,null,null,null,null,null,null,null,null],
+  nancy:  [603310,572263,657433,null,null,null,null,null,null,null,null,null],
+  karen:  [1039893,773306,918587,null,null,null,null,null,null,null,null,null]
+};
+// Real empresa Q1 — fuente autoritativa: master Excel presupuesto 2026
+let datosRealesEmpresa = [...EMPRESA.real2026];
+
+/* ──────────────────────────────────────────────
+   INICIO: cargar datos guardados en localStorage
+────────────────────────────────────────────── */
+let db = null;      // conservado por compatibilidad (no usado)
+let fbReady = false;
+
+/* ──────────────────────────────────────────────
+   UTILIDADES
+────────────────────────────────────────────── */
+function fmt(n, compact=false){
+  if(n == null) return '—';
+  if(compact) return '$' + (n/1000000).toFixed(2) + 'M';
+  return '$' + Math.round(n).toLocaleString('es-MX');
+}
+function fmtFull(n){
+  if(n == null) return '—';
+  return '$' + Math.round(n).toLocaleString('es-MX');
+}
+function pct(real, proy){
+  if(real == null || !proy) return null;
+  return Math.round(real / proy * 100);
+}
+function semClass(p){
+  if(p == null) return 'sin-datos';
+  if(p >= 95) return 'ok';
+  if(p >= 80) return 'warn';
+  return 'danger';
+}
+function pctColor(p){
+  if(p == null) return 'text-muted';
+  if(p >= 95) return 'text-green';
+  if(p >= 80) return 'text-amber';
+  return 'text-red';
+}
+function mesesConDatos(){
+  return datosReales['jazmin'].filter(x => x != null).length;
+}
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+/* ──────────────────────────────────────────────
+   NAVEGACIÓN
+────────────────────────────────────────────── */
+const TITLES = {
+  resumen:   'Resumen global · Empresa',
+  empresa:   'Seguimiento empresa 2026',
+  semaforo:  'Semáforos de cumplimiento',
+  detalle:   'Detalle por vendedora',
+  comisiones:'Calculadora de comisiones',
+  gerente:   'Gerente de ventas · Bono anual',
+  captura:   'Captura mensual',
+  yetclean:  'YetClean'
+};
+function goTo(page){
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  event.currentTarget.classList.add('active');
+  document.getElementById('topbar-title').textContent = TITLES[page] || page;
+  // Renderizar según página
+  if(page === 'resumen') renderResumen();
+  if(page === 'empresa') renderEmpresa();
+  if(page === 'semaforo') renderSemaforo();
+  if(page === 'detalle') renderDetalle();
+  if(page === 'comisiones') renderComisiones();
+  if(page === 'gerente') renderGerente();
+  if(page === 'captura') renderCaptura();
+  if(page === 'yetclean') renderYetClean();
+}
+
+/* ──────────────────────────────────────────────
+   REFRESH ALL (cuando cambian datos)
+────────────────────────────────────────────── */
+let currentPage = 'resumen';
+function refreshAll(){
+  // Topbar date
+  const now = new Date();
+  document.getElementById('topbar-date').textContent =
+    now.toLocaleDateString('es-MX', {day:'2-digit', month:'short', year:'numeric'});
+
+  // Year bar — % real de ventas vs meta anual empresa
+  const mcd = mesesConDatos();
+  const ventasAcum = datosRealesEmpresa.filter(x => x != null).reduce((a,b) => a+b, 0);
+  const metaAnualBar = EMPRESA.proyecto2026.reduce((a,b) => a+b, 0);
+  const pctAnual = metaAnualBar > 0 ? parseFloat((ventasAcum / metaAnualBar * 100).toFixed(1)) : 0;
+  // Referencia temporal: qué % de la meta debería llevar al ritmo proporcional del año
+  const pctTiempo = Math.round(mcd / 12 * 100);
+  const diffVsTiempo = (pctAnual - pctTiempo).toFixed(1);
+  const diffColor = parseFloat(diffVsTiempo) >= 0 ? '#1A9069' : '#B02B2B';
+  document.getElementById('year-fill').style.width = Math.min(pctAnual, 100) + '%';
+  document.getElementById('year-pct-text').textContent = pctAnual + '%';
+  document.getElementById('year-meses-text').innerHTML =
+    `$${Math.round(ventasAcum).toLocaleString('es-MX')} de $${Math.round(metaAnualBar).toLocaleString('es-MX')} · ${mcd} meses · <span style="color:${diffColor};font-weight:600">${parseFloat(diffVsTiempo)>=0?'+':''}${diffVsTiempo}% vs ritmo esperado</span>`;
+
+  renderResumen();
+}
+
+/* ──────────────────────────────────────────────
+   RESUMEN GLOBAL
+────────────────────────────────────────────── */
+let chartLinea = null, chartBarras = null;
+
+function renderResumen(){
+  const mcd = mesesConDatos();
+  // Para el resumen global usamos Real Empresa (fuente autoritativa)
+  const totalReal   = datosRealesEmpresa.filter(x=>x!=null).reduce((a,b)=>a+b,0);
+  const totalProy   = EMPRESA.proyecto2026.slice(0,mcd).reduce((a,b)=>a+b,0);
+  const totalAnual  = EMPRESA.proyecto2026.reduce((a,b)=>a+b,0);
+  const totalSueldos= VENDEDORAS.reduce((s,v)=>{
+    for(let m2=0;m2<mcd;m2++) s+=v.sueldoBruto[m2]; return s;
+  }, 0) + GER.sueldoMensual * mcd; // incluye gerente
+  const cumpl  = pct(totalReal, totalProy);
+  const efic   = totalReal > 0 ? ((totalSueldos / totalReal)*100).toFixed(1) : null;
+
+  document.getElementById('stat-grid-resumen').innerHTML = `
+    <div class="stat-card">
+      <div class="sc-label">Meta empresa 2026</div>
+      <div class="sc-value sc-value-lg">${fmtFull(totalAnual)}</div>
+      <div class="sc-sub">+${((totalAnual/GER.base2025-1)*100).toFixed(1)}% vs base 2025</div>
+    </div>
+    <div class="stat-card">
+      <div class="sc-label">Ventas reales acumuladas</div>
+      <div class="sc-value sc-value-lg">${fmtFull(totalReal)}</div>
+      <div class="sc-sub">${mcd} ${mcd===1?'mes':'meses'} · fuente: master Excel</div>
+      ${cumpl!=null ? `<div class="sc-badge ${semClass(cumpl)}">${cumpl}% vs meta parcial (${fmtFull(totalProy)})</div>` : ''}
+    </div>
+    <div class="stat-card">
+      <div class="sc-label">Nómina total acumulada</div>
+      <div class="sc-value sc-value-lg">${fmtFull(totalSueldos)}</div>
+      <div class="sc-sub">${mcd} ${mcd===1?'mes':'meses'} · 3 vendedoras + gerente</div>
+    </div>
+    <div class="stat-card">
+      <div class="sc-label">% Costo nómina vs ventas</div>
+      <div class="sc-value">${efic ? efic+'%' : '—'}</div>
+      <div class="sc-sub">Rango sano: 4–8%</div>
+      ${efic ? `<div class="sc-badge ${parseFloat(efic)<=8?'ok':parseFloat(efic)<=12?'warn':'danger'}">${parseFloat(efic)<=8?'Eficiente':parseFloat(efic)<=12?'Moderado':'Revisar'}</div>` : ''}
+    </div>
+  `;
+
+  // Gráfica línea acumulada — usa datos empresa (fuente maestra)
+  const proyAcum = [], realAcum = [];
+  let ps=0, rs=0;
+  for(let m=0; m<12; m++){
+    ps += EMPRESA.proyecto2026[m];
+    proyAcum.push(ps);
+    const r = datosRealesEmpresa[m];
+    if(r != null){ rs += r; realAcum.push(rs); }
+    else realAcum.push(null);
+  }
+
+  if(chartLinea){ chartLinea.destroy(); chartLinea=null; }
+  const ctx1 = document.getElementById('chart-linea').getContext('2d');
+  chartLinea = new Chart(ctx1, {
+    type: 'line',
+    data: { labels: MESES, datasets: [
+      { label:'Proyectado', data:proyAcum, borderColor:'#CCCCCC', borderDash:[5,4],
+        backgroundColor:'transparent', pointRadius:2, tension:.3 },
+      { label:'Real', data:realAcum, borderColor:'#5B4FCF',
+        backgroundColor:'rgba(91,79,207,.07)', fill:true, pointRadius:4,
+        tension:.3, spanGaps:false, pointBackgroundColor:'#5B4FCF' }
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{
+        y:{ ticks:{ callback:v=>'$'+(v/1000000).toFixed(1)+'M', font:{family:'DM Mono',size:11} },
+            grid:{ color:'rgba(0,0,0,.05)' } },
+        x:{ grid:{ display:false }, ticks:{ font:{family:'DM Mono',size:11} } }
+      }
+    }
+  });
+
+  // Gráfica barras cumplimiento
+  const datasets = VENDEDORAS.map(v => {
+    const cumplData = [];
+    for(let m=0; m<12; m++){
+      const r = datosReales[v.id][m];
+      cumplData.push(r != null ? Math.round(r / v.proyecto2026[m] * 100) : null);
+    }
+    return { label: v.nombre, data: cumplData, backgroundColor: v.color + 'CC',
+             borderRadius:3, borderSkipped:false };
+  });
+
+  if(chartBarras){ chartBarras.destroy(); chartBarras=null; }
+  const ctx2 = document.getElementById('chart-barras').getContext('2d');
+  chartBarras = new Chart(ctx2, {
+    type:'bar',
+    data:{ labels:MESES, datasets },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{
+        y:{ ticks:{ callback:v=>v+'%', font:{family:'DM Mono',size:11} },
+            grid:{ color:'rgba(0,0,0,.05)' },
+            min:0 },
+        x:{ grid:{ display:false }, ticks:{ font:{family:'DM Mono',size:11} } }
+      }
+    }
+  });
+
+  document.getElementById('legend-barras').innerHTML = VENDEDORAS.map(v =>
+    `<div class="legend-item"><div class="legend-dot" style="background:${v.color}"></div>${v.nombre}</div>`
+  ).join('');
+
+  // Tabla Q1
+  let html = '';
+  VENDEDORAS.forEach(v => {
+    const p0=v.proyecto2026[0], r0=datosReales[v.id][0];
+    const p1=v.proyecto2026[1], r1=datosReales[v.id][1];
+    const p2=v.proyecto2026[2], r2=datosReales[v.id][2];
+    const sumP = p0+p1+p2;
+    const sumR = (r0||0)+(r1||0)+(r2||0);
+    const c = pct(sumR, sumP);
+    const col = pctColor(c);
+    html += `<tr>
+      <td><span class="vdot" style="background:${v.color}"></span>${v.nombre}
+        <span style="font-size:11px;color:var(--muted);margin-left:4px">${v.nota}</span>
+      </td>
+      <td class="num text-muted">${fmt(p0)}</td><td class="num">${fmt(r0)}</td>
+      <td class="num text-muted">${fmt(p1)}</td><td class="num">${fmt(r1)}</td>
+      <td class="num text-muted">${fmt(p2)}</td><td class="num">${fmt(r2)}</td>
+      <td class="num ${col}">${c!=null?c+'%':'—'}</td>
+    </tr>`;
+  });
+  // Totales Q1
+  const tp=[0,1,2].map(m=>VENDEDORAS.reduce((s,v)=>s+v.proyecto2026[m],0));
+  const tr=[0,1,2].map(m=>VENDEDORAS.reduce((s,v)=>s+(datosReales[v.id][m]||0),0));
+  const cT=pct(tr[0]+tr[1]+tr[2], tp[0]+tp[1]+tp[2]);
+  html += `<tr class="total-row">
+    <td>Total</td>
+    <td class="num">${fmt(tp[0])}</td><td class="num">${fmt(tr[0])}</td>
+    <td class="num">${fmt(tp[1])}</td><td class="num">${fmt(tr[1])}</td>
+    <td class="num">${fmt(tp[2])}</td><td class="num">${fmt(tr[2])}</td>
+    <td class="num ${pctColor(cT)}">${cT!=null?cT+'%':'—'}</td>
+  </tr>`;
+  document.getElementById('tbody-resumen').innerHTML = html;
+}
+
+/* ──────────────────────────────────────────────
+   SEMÁFOROS
+────────────────────────────────────────────── */
+function renderSemaforo(){
+  const mcd = mesesConDatos();
+
+  // Stat cards: promedios
+  const promedios = VENDEDORAS.map(v => {
+    const vals = [];
+    for(let m=0; m<mcd; m++){
+      const p = pct(datosReales[v.id][m], v.proyecto2026[m]);
+      if(p != null) vals.push(p);
+    }
+    return vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length) : null;
+  });
+
+  document.getElementById('stat-sem-grid').innerHTML = VENDEDORAS.map((v,i) => {
+    const p = promedios[i];
+    return `<div class="stat-card">
+      <div class="sc-label"><span class="vdot" style="background:${v.color}"></span>${v.nombre}</div>
+      <div class="sc-value">${p!=null?p+'%':'—'}</div>
+      <div class="sc-sub">Promedio cumplimiento</div>
+      ${p!=null?`<div class="sc-badge ${semClass(p)}">${p>=95?'En meta':p>=80?'Cerca de meta':'Revisar'}</div>`:'<div class="sc-badge neutral">Sin datos</div>'}
+    </div>`;
+  }).join('');
+
+  // Semáforos por mes
+  if(mcd === 0){
+    document.getElementById('sem-content').innerHTML = '<div class="empty-state">No hay datos reales capturados aún. Ve a <b>Captura mensual</b> para registrar ventas.</div>';
+    return;
+  }
+
+  let html = '';
+  for(let m=0; m<mcd; m++){
+    html += `<div style="margin-bottom:20px">
+      <div class="section-label">${MESES_FULL[m]}</div>
+      <div class="sem-grid">`;
+    VENDEDORAS.forEach(v => {
+      const real = datosReales[v.id][m];
+      const proy = v.proyecto2026[m];
+      const p = pct(real, proy);
+      const cls = semClass(p);
+      const diff = real != null ? real - proy : null;
+      html += `<div class="sem-card ${cls}">
+        <div class="sc-nombre"><span class="vdot" style="background:${v.color}"></span>${v.nombre}</div>
+        <div class="sc-pct">${p!=null?p+'%':'—'}</div>
+        <div class="sc-valores">${fmt(real)} / ${fmt(proy)}</div>
+        ${diff!=null?`<div style="font-size:11px;margin-top:4px;color:${diff>=0?'var(--green)':'var(--red)'}">${diff>=0?'+':''}${fmt(diff)}</div>`:''}
+      </div>`;
+    });
+    html += `</div></div>`;
+  }
+  document.getElementById('sem-content').innerHTML = html;
+}
+
+/* ──────────────────────────────────────────────
+   DETALLE VENDEDORA
+────────────────────────────────────────────── */
+let selectedV = 0;
+
+function renderDetalle(){
+  // Botones selector
+  document.getElementById('v-selector').innerHTML = VENDEDORAS.map((v,i) => {
+    const mcd = mesesConDatos();
+    const totalR = VENDEDORAS[i] ? datosReales[v.id].slice(0,mcd).reduce((a,b)=>a+(b||0),0) : 0;
+    const totalP = v.proyecto2026.slice(0,mcd).reduce((a,b)=>a+b,0);
+    const c = pct(totalR, totalP);
+    return `<button class="v-btn ${i===selectedV?'active':''}" onclick="selectedV=${i};renderDetalle()">
+      <span class="vdot" style="background:${v.color};margin-right:0"></span>
+      ${v.nombre}
+      ${c!=null?`<span style="font-size:11px;opacity:.7">${c}%</span>`:''}
+    </button>`;
+  }).join('');
+
+  const v = VENDEDORAS[selectedV];
+  const mcd = mesesConDatos();
+
+  let html = `
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px">
+      <div style="font-size:18px;font-weight:600">${v.nombre}</div>
+      <div style="font-size:13px;color:var(--muted)">${v.nota}</div>
+    </div>
+    <div class="table-card" style="margin-bottom:20px">
+      <table>
+        <thead><tr>
+          <th>Mes</th>
+          <th class="num">Proyectado</th>
+          <th class="num">Real</th>
+          <th class="num">Diferencia</th>
+          <th class="num">Cumplim.</th>
+          <th class="num">Sueldo bruto</th>
+          <th class="num">% Costo</th>
+        </tr></thead>
+        <tbody>`;
+
+  let sumP=0, sumR=0, sumS=0;
+  for(let m=0; m<12; m++){
+    const proy = v.proyecto2026[m];
+    const real = datosReales[v.id][m];
+    const sueldo = v.sueldoBruto[m];
+    const diff = real != null ? real - proy : null;
+    const c = pct(real, proy);
+    const costo = real && real > 0 ? ((sueldo/real)*100).toFixed(1) : null;
+    const isFut = m >= mcd;
+    sumP += proy;
+    if(real != null){ sumR += real; sumS += sueldo; }
+    html += `<tr style="${isFut?'opacity:.4':''}">
+      <td style="font-family:'DM Mono',monospace;font-size:12px">
+        ${MESES_FULL[m]}
+        ${isFut?'<span style="font-size:10px;color:var(--muted);margin-left:4px">proyec.</span>':''}
+      </td>
+      <td class="num text-muted">${fmt(proy)}</td>
+      <td class="num">${real!=null?fmt(real):'—'}</td>
+      <td class="num ${diff!=null?(diff>=0?'text-green':'text-red'):'text-muted'}">
+        ${diff!=null?(diff>=0?'+':'')+fmt(diff):'—'}
+      </td>
+      <td class="num ${pctColor(c)}">${c!=null?c+'%':'—'}</td>
+      <td class="num">${fmt(sueldo)}</td>
+      <td class="num ${costo?(parseFloat(costo)<=8?'text-green':parseFloat(costo)<=12?'text-amber':'text-red'):'text-muted'}">
+        ${costo?costo+'%':'—'}
+      </td>
+    </tr>`;
+  }
+  const cT = pct(sumR, sumP / 12 * mcd);
+  html += `</tbody>
+    <tfoot><tr class="total-row">
+      <td>Total acumulado</td>
+      <td class="num">${fmt(sumP)}</td>
+      <td class="num">${sumR?fmt(sumR):'—'}</td>
+      <td class="num ${sumR?((sumR-sumP/12*mcd)>=0?'text-green':'text-red'):''}">
+        ${sumR?(sumR-sumP/12*mcd>=0?'+':'')+fmt(sumR-sumP/12*mcd):'—'}
+      </td>
+      <td class="num ${pctColor(cT)}">${cT?cT+'%':'—'}</td>
+      <td class="num">${sumS?fmt(sumS):'—'}</td>
+      <td class="num ${sumR?((sumS/sumR*100)<=8?'text-green':(sumS/sumR*100)<=12?'text-amber':'text-red'):''}">
+        ${sumR?((sumS/sumR)*100).toFixed(1)+'%':'—'}
+      </td>
+    </tr></tfoot>
+    </table></div>`;
+
+  document.getElementById('detalle-content').innerHTML = html;
+}
+
+/* ──────────────────────────────────────────────
+   COMISIONES
+────────────────────────────────────────────── */
+let selectedMesCom = 0;
+let chartCom = null;
+
+function renderComisiones(){
+  // Pills de mes
+  document.getElementById('mes-pills-com').innerHTML = MESES.map((m,i) =>
+    `<button style="padding:6px 14px;border-radius:20px;border:1px solid ${i===selectedMesCom?'var(--text)':'var(--border)'};background:${i===selectedMesCom?'var(--text)':'transparent'};color:${i===selectedMesCom?'#fff':'var(--muted)'};font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;font-weight:${i===selectedMesCom?'500':'400'}" onclick="selectedMesCom=${i};renderComisiones()">${m}</button>`
+  ).join('');
+
+  const m = selectedMesCom;
+  // Cards comisión
+  document.getElementById('com-grid').innerHTML = VENDEDORAS.map(v => {
+    const ventas = datosReales[v.id][m] || v.proyecto2026[m];
+    const esReal = datosReales[v.id][m] != null;
+    const com001 = ventas * 0.001;
+    const ytBase = (v.yetclean2025[m] || 0) * 1.15;
+    const comYT = ytBase * 0.005;
+    const totalVariable = com001 + comYT;
+    const totalFijo = v.comBase + v.bonoMeta + v.apoyo + v.bonoAnual;
+    const totalBruto = totalVariable + totalFijo + v.seguro;
+    return `<div class="com-card">
+      <div class="com-card-header">
+        <span class="vdot" style="background:${v.color};width:10px;height:10px;border-radius:50%;flex-shrink:0"></span>
+        <div>
+          <div class="com-nombre">${v.nombre}</div>
+          <div class="com-nota">${v.nota} · ${esReal?'datos reales':'proyección'}</div>
+        </div>
+      </div>
+      <div class="com-body">
+        <div class="com-row">
+          <span class="cr-label">Sueldo base</span>
+          <span class="cr-value">${fmt(v.comBase)}</span>
+        </div>
+        <div class="com-row">
+          <span class="cr-label">Comisión 0.001% ventas</span>
+          <span class="cr-value">${fmt(com001)}</span>
+        </div>
+        <div class="com-row">
+          <span class="cr-label">Comisión YetClean increm.</span>
+          <span class="cr-value">${fmt(comYT)}</span>
+        </div>
+        <div class="com-row">
+          <span class="cr-label">Bono meta mensual</span>
+          <span class="cr-value">${fmt(v.bonoMeta)}</span>
+        </div>
+        <div class="com-row">
+          <span class="cr-label">Apoyo transporte</span>
+          <span class="cr-value">${fmt(v.apoyo)}</span>
+        </div>
+        <div class="com-row">
+          <span class="cr-label">Bono meta anual (prorr.)</span>
+          <span class="cr-value">${fmt(v.bonoAnual)}</span>
+        </div>
+        <div class="com-row">
+          <span class="cr-label">Seguro</span>
+          <span class="cr-value">${fmt(v.seguro)}</span>
+        </div>
+        <div class="com-total">
+          <span>Total sueldo bruto</span>
+          <span class="ct-value">${fmt(totalBruto)}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Gráfica anual sueldos
+  if(chartCom){ chartCom.destroy(); chartCom=null; }
+  const ctx3 = document.getElementById('chart-com').getContext('2d');
+  chartCom = new Chart(ctx3, {
+    type:'bar',
+    data:{ labels: MESES, datasets: VENDEDORAS.map(v => ({
+      label: v.nombre,
+      data: v.sueldoBruto,
+      backgroundColor: v.color + 'BB',
+      borderRadius: 3
+    }))},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{
+        y:{ stacked:false,
+            ticks:{ callback:v=>'$'+(v/1000).toFixed(0)+'k', font:{family:'DM Mono',size:11} },
+            grid:{ color:'rgba(0,0,0,.05)' } },
+        x:{ grid:{ display:false }, ticks:{ font:{family:'DM Mono',size:11} } }
+      }
+    }
+  });
+}
+
+/* ──────────────────────────────────────────────
+   CAPTURA — CARGA DE EXCEL
+   SheetJS: parsea CARTERA 2026 de cada hoja de vendedoras
+   y REAL 2026 de la hoja "2026" del presupuesto global
+────────────────────────────────────────────── */
+
+// Staging area: datos extraídos pendientes de confirmar
+let preview = {
+  jazmin: Array(12).fill(null),
+  nancy:  Array(12).fill(null),
+  karen:  Array(12).fill(null),
+  empresa:Array(12).fill(null),
+  tieneVend: false,
+  tieneGlobal: false
+};
+
+function renderCaptura(){
+  renderHistorial();
+}
+
+function renderHistorial(){
+  let html = '';
+  for(let m=0; m<12; m++){
+    const j  = datosReales['jazmin'][m];
+    const n  = datosReales['nancy'][m];
+    const k  = datosReales['karen'][m];
+    const e  = datosRealesEmpresa[m];
+    const hasData = j != null || n != null || k != null || e != null;
+    if(!hasData) continue;
+    html += `<tr>
+      <td style="font-family:'DM Mono',monospace;font-size:12px">${MESES_FULL[m]}</td>
+      <td class="num">${fmtFull(j)}</td>
+      <td class="num ${pctColor(pct(j,VENDEDORAS[0].proyecto2026[m]))}">${j?pct(j,VENDEDORAS[0].proyecto2026[m])+'%':'—'}</td>
+      <td class="num">${fmtFull(n)}</td>
+      <td class="num ${pctColor(pct(n,VENDEDORAS[1].proyecto2026[m]))}">${n?pct(n,VENDEDORAS[1].proyecto2026[m])+'%':'—'}</td>
+      <td class="num">${fmtFull(k)}</td>
+      <td class="num ${pctColor(pct(k,VENDEDORAS[2].proyecto2026[m]))}">${k?pct(k,VENDEDORAS[2].proyecto2026[m])+'%':'—'}</td>
+      <td class="num">${fmtFull(e)}</td>
+      <td class="num ${pctColor(pct(e,EMPRESA.proyecto2026[m]))}">${e?pct(e,EMPRESA.proyecto2026[m])+'%':'—'}</td>
+    </tr>`;
+  }
+  document.getElementById('tbody-historial').innerHTML = html ||
+    '<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--muted)">Sin datos cargados aún — sube un archivo Excel</td></tr>';
+}
+
+// ── Drag & drop helpers ─────────────────────
+function dragOver(e, id){
+  e.preventDefault();
+  document.getElementById(id).style.borderColor = 'var(--text)';
+}
+function dragLeave(id){
+  document.getElementById(id).style.borderColor = 'var(--border)';
+}
+function dropFile(e, tipo){
+  e.preventDefault();
+  const id = tipo === 'vendedoras' ? 'drop-vend' : 'drop-global';
+  dragLeave(id);
+  const file = e.dataTransfer.files[0];
+  if(!file) return;
+  if(tipo === 'vendedoras') leerExcelVendedoras(file);
+  else leerExcelGlobal(file);
+}
+
+// ── Leer Excel vendedoras ───────────────────
+function leerExcelVendedoras(file){
+  if(!file) return;
+  const statusEl = document.getElementById('status-vend');
+  statusEl.innerHTML = '<span style="color:var(--muted)">Leyendo archivo...</span>';
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, {type:'array'});
+
+      // Mapa de hojas a IDs
+      const HOJAS = [
+        { id:'jazmin', hoja:'TLMK1 JAZMÍN'  },
+        { id:'fatima', hoja:'TLMK2 '        },  // Fátima
+        { id:'nancy',  hoja:'TLMK3 NANCY'   },
+        { id:'karen4', hoja:'TLMK4 KAREN'   }
+      ];
+
+      const extraido = {};
+      const errores  = [];
+
+      HOJAS.forEach(({id, hoja}) => {
+        const ws = wb.Sheets[hoja];
+        if(!ws){ errores.push(hoja); return; }
+
+        const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+        // Buscar fila con etiqueta "CARTERA 2026" en col A
+        const filaCar = rows.findIndex(r =>
+          r[0] && String(r[0]).toUpperCase().includes('CARTERA 2026')
+        );
+
+        if(filaCar < 0){ errores.push(hoja + ' (sin CARTERA 2026)'); return; }
+
+        // Leer cols B-M (índices 1-12)
+        extraido[id] = Array.from({length:12}, (_,i) => {
+          const v = rows[filaCar][i+1];
+          return (v !== null && v !== '' && !isNaN(parseFloat(v)))
+            ? parseFloat(v) : null;
+        });
+      });
+
+      // Combinar Fátima + Karen → karen
+      preview.jazmin = extraido['jazmin'] || Array(12).fill(null);
+      preview.nancy  = extraido['nancy']  || Array(12).fill(null);
+      // Karen cubre la cartera de Fátima + Karen
+      preview.karen  = Array.from({length:12}, (_,i) => {
+        const f = extraido['fatima'] ? extraido['fatima'][i] : null;
+        const k = extraido['karen4'] ? extraido['karen4'][i] : null;
+        if(f == null && k == null) return null;
+        return (f || 0) + (k || 0);
+      });
+      preview.tieneVend = true;
+
+      const mesesCon = preview.jazmin.filter(x=>x!=null).length;
+      statusEl.innerHTML = `<span style="color:var(--green)">✓ Extraídos ${mesesCon} meses${errores.length?' · Hojas no encontradas: '+errores.join(', '):''}</span>`;
+      mostrarPreview();
+    } catch(err){
+      statusEl.innerHTML = `<span style="color:var(--red)">Error al leer: ${err.message}</span>`;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ── Leer Excel global (presupuesto empresa) ─
+function leerExcelGlobal(file){
+  if(!file) return;
+  const statusEl = document.getElementById('status-global');
+  statusEl.innerHTML = '<span style="color:var(--muted)">Leyendo archivo...</span>';
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb   = XLSX.read(e.target.result, {type:'array'});
+
+      // Buscar hoja "2026"
+      const hojaNombre = wb.SheetNames.find(n => n.trim() === '2026');
+      if(!hojaNombre) throw new Error('No se encontró la hoja "2026"');
+
+      const ws   = wb.Sheets[hojaNombre];
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+
+      // Buscar dinámicamente la fila que contiene "REAL 2026"
+      // (el encabezado no siempre está en la primera fila)
+      let colReal = -1;
+      for(let i = 0; i < Math.min(rows.length, 10); i++){
+        const idx = (rows[i] || []).findIndex(c =>
+          c && String(c).trim().toUpperCase() === 'REAL 2026'
+        );
+        if(idx >= 0){ colReal = idx; break; }
+      }
+      if(colReal < 0) colReal = 14; // fallback: posición correcta en este formato
+
+      const MESES_ES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+      const mesesRows = rows.filter(r => r[0] && MESES_ES.includes(String(r[0]).trim().toUpperCase().slice(0,3)));
+
+      preview.empresa = MESES_ES.map((mes) => {
+        const row = mesesRows.find(r => String(r[0]).trim().toUpperCase().startsWith(mes));
+        if(!row) return null;
+        const v = row[colReal];
+        return (v !== null && v !== undefined && v !== '' && !isNaN(parseFloat(v)) && parseFloat(v) > 0)
+          ? Math.round(parseFloat(v)) : null;
+      });
+
+      preview.tieneGlobal = true;
+      const mesesCon = preview.empresa.filter(x=>x!=null).length;
+      statusEl.innerHTML = `<span style="color:var(--green)">✓ ${mesesCon} meses extraídos de REAL 2026</span>`;
+      mostrarPreview();
+    } catch(err){
+      statusEl.innerHTML = `<span style="color:var(--red)">Error: ${err.message}</span>`;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ── Mostrar preview ─────────────────────────
+function mostrarPreview(){
+  if(!preview.tieneVend && !preview.tieneGlobal) return;
+  document.getElementById('preview-captura').style.display = 'block';
+
+  let html = '';
+  for(let m=0; m<12; m++){
+    const j = preview.jazmin[m];
+    const n = preview.nancy[m];
+    const k = preview.karen[m];
+    const emp = preview.empresa[m];
+    if(j == null && n == null && k == null && emp == null) continue;
+
+    html += `<tr>
+      <td style="font-family:'DM Mono',monospace;font-size:12px">${MESES_FULL[m]}</td>
+      <td class="num">${fmtFull(j)}</td>
+      <td class="num ${pctColor(pct(j,VENDEDORAS[0].proyecto2026[m]))}">${j?pct(j,VENDEDORAS[0].proyecto2026[m])+'%':'—'}</td>
+      <td class="num">${fmtFull(n)}</td>
+      <td class="num ${pctColor(pct(n,VENDEDORAS[1].proyecto2026[m]))}">${n?pct(n,VENDEDORAS[1].proyecto2026[m])+'%':'—'}</td>
+      <td class="num">${fmtFull(k)}</td>
+      <td class="num ${pctColor(pct(k,VENDEDORAS[2].proyecto2026[m]))}">${k?pct(k,VENDEDORAS[2].proyecto2026[m])+'%':'—'}</td>
+      <td class="num">${fmtFull(emp)}</td>
+      <td class="num ${pctColor(pct(emp,EMPRESA.proyecto2026[m]))}">${emp?pct(emp,EMPRESA.proyecto2026[m])+'%':'—'}</td>
+    </tr>`;
+  }
+  document.getElementById('tbody-preview').innerHTML = html ||
+    '<tr><td colspan="9" style="text-align:center;padding:16px;color:var(--muted)">Sin datos encontrados en los archivos</td></tr>';
+}
+
+// ── Confirmar guardado ──────────────────────
+function confirmarGuardado(){
+  // Aplicar datos en memoria
+  for(let m=0; m<12; m++){
+    if(preview.jazmin[m]  != null) datosReales['jazmin'][m]  = preview.jazmin[m];
+    if(preview.nancy[m]   != null) datosReales['nancy'][m]   = preview.nancy[m];
+    if(preview.karen[m]   != null) datosReales['karen'][m]   = preview.karen[m];
+    if(preview.empresa[m] != null) datosRealesEmpresa[m]     = preview.empresa[m];
+  }
+
+  // Guardar en localStorage
+  guardarLocal();
+  toast('✓ Datos guardados localmente en tu laptop');
+
+  limpiarPreview();
+  refreshAll();
+  renderHistorial();
+}
+
+function limpiarPreview(){
+  preview = {
+    jazmin:Array(12).fill(null), nancy:Array(12).fill(null),
+    karen:Array(12).fill(null),  empresa:Array(12).fill(null),
+    tieneVend:false, tieneGlobal:false
+  };
+  document.getElementById('preview-captura').style.display = 'none';
+  document.getElementById('status-vend').innerHTML   = '';
+  document.getElementById('status-global').innerHTML = '';
+  document.getElementById('file-vend').value   = '';
+  document.getElementById('file-global').value = '';
+  document.querySelectorAll('#drop-vend,#drop-global').forEach(el =>
+    el.style.borderColor = 'var(--border)');
+}
+
+/* ──────────────────────────────────────────────
+   YETCLEAN
+────────────────────────────────────────────── */
+let chartYT = null;
+
+function renderYetClean(){
+  const totales = VENDEDORAS.map(v => v.yetclean2025.reduce((a,b)=>a+b,0));
+  const totalGlobal = totales.reduce((a,b)=>a+b,0);
+
+  document.getElementById('yt-stat-grid').innerHTML = `
+    ${VENDEDORAS.map((v,i) => `
+    <div class="stat-card">
+      <div class="sc-label"><span class="vdot" style="background:${v.color}"></span>${v.nombre}</div>
+      <div class="sc-value">${fmt(totales[i], true)}</div>
+      <div class="sc-sub">YetClean 2025 total</div>
+      <div class="sc-badge neutral">Meta 2026: ${fmt(totales[i]*1.15, true)}</div>
+    </div>`).join('')}
+    <div class="stat-card">
+      <div class="sc-label">Total equipo</div>
+      <div class="sc-value">${fmt(totalGlobal, true)}</div>
+      <div class="sc-sub">Meta acumulada 2026: ${fmt(totalGlobal*1.15, true)}</div>
+    </div>
+  `;
+
+  if(chartYT){ chartYT.destroy(); chartYT=null; }
+  const ctx4 = document.getElementById('chart-yt').getContext('2d');
+  chartYT = new Chart(ctx4, {
+    type:'bar',
+    data:{ labels:MESES, datasets: VENDEDORAS.map(v => ({
+      label: v.nombre,
+      data: v.yetclean2025,
+      backgroundColor: v.color + 'AA',
+      borderRadius: 3
+    }))},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{
+        y:{ ticks:{ callback:v=>'$'+(v/1000).toFixed(0)+'k', font:{family:'DM Mono',size:11} },
+            grid:{ color:'rgba(0,0,0,.05)' } },
+        x:{ grid:{ display:false }, ticks:{ font:{family:'DM Mono',size:11} } }
+      }
+    }
+  });
+
+  // Tabla
+  let html = '';
+  for(let m=0; m<12; m++){
+    const vals = VENDEDORAS.map(v => v.yetclean2025[m]);
+    const total = vals.reduce((a,b)=>a+b,0);
+    html += `<tr>
+      <td style="font-family:'DM Mono',monospace;font-size:12px">${MESES_FULL[m]}</td>
+      ${vals.map(v => `<td class="num">${fmt(v)}</td>`).join('')}
+      <td class="num" style="font-weight:500">${fmt(total)}</td>
+      <td class="num text-green">${fmt(total*1.15)}</td>
+    </tr>`;
+  }
+  const tots = VENDEDORAS.map(v => v.yetclean2025.reduce((a,b)=>a+b,0));
+  html += `<tr class="total-row">
+    <td>Total</td>
+    ${tots.map(t=>`<td class="num">${fmt(t)}</td>`).join('')}
+    <td class="num">${fmt(totalGlobal)}</td>
+    <td class="num text-green">${fmt(totalGlobal*1.15)}</td>
+  </tr>`;
+  document.getElementById('tbody-yt').innerHTML = html;
+}
+
+/* ──────────────────────────────────────────────
+   GERENTE DE VENTAS · lógica de bono anual
+────────────────────────────────────────────── */
+
+function totalRealAcumulado(){
+  // Usa el real empresa (fuente autoritativa del master Excel)
+  return datosRealesEmpresa.filter(x => x != null).reduce((a,b) => a + (b||0), 0);
+}
+
+/* ──────────────────────────────────────────────
+   EMPRESA 2026
+────────────────────────────────────────────── */
+let chartHistorico = null;
+
+function renderEmpresa(){
+  const mcd = datosRealesEmpresa.filter(x => x != null).length;
+  const totalReal = datosRealesEmpresa.filter(x=>x!=null).reduce((a,b)=>a+b,0);
+  const totalProy = EMPRESA.proyecto2026.slice(0,mcd).reduce((a,b)=>a+b,0);
+  const totalAnual = EMPRESA.proyecto2026.reduce((a,b)=>a+b,0);
+  const dif = totalReal - totalProy;
+  const pctReal2025 = ((totalReal / totalAnual)*100).toFixed(1);
+
+  // KPI cards
+  document.getElementById('emp-stat-grid').innerHTML = `
+    <div class="stat-card">
+      <div class="sc-label">Meta empresa 2026</div>
+      <div class="sc-value sc-value-lg">${fmtFull(totalAnual)}</div>
+      <div class="sc-sub">+${((totalAnual/GER.base2025-1)*100).toFixed(1)}% vs 2025</div>
+    </div>
+    <div class="stat-card">
+      <div class="sc-label">Real empresa ${mcd} meses</div>
+      <div class="sc-value sc-value-lg">${mcd>0?fmtFull(totalReal):'—'}</div>
+      <div class="sc-sub">Base parcial ${mcd}m: ${fmtFull(totalProy)}</div>
+      ${mcd>0?`<div class="sc-badge ${semClass(pct(totalReal,totalProy))}">${pct(totalReal,totalProy)}% vs meta parcial</div>`:''}
+    </div>
+    <div class="stat-card">
+      <div class="sc-label">Diferencia acumulada</div>
+      <div class="sc-value sc-value-lg ${dif>=0?'text-green':'text-red'}">${mcd>0?(dif>=0?'+':'')+fmtFull(dif):'—'}</div>
+      <div class="sc-sub">${dif<0?'Rezago acumulado vs meta':'Superávit acumulado'}</div>
+    </div>
+    <div class="stat-card">
+      <div class="sc-label">Base real 2025 (empresa)</div>
+      <div class="sc-value sc-value-lg">${fmtFull(GER.base2025)}</div>
+      <div class="sc-sub">Incluye cartera + licitaciones</div>
+      <div class="sc-badge neutral">Promedio mensual: ${fmtFull(GER.base2025/12)}</div>
+    </div>
+  `;
+
+  // Gráfica histórica
+  const anios = Object.keys(EMPRESA.historico).map(Number);
+  const vals  = Object.values(EMPRESA.historico);
+  const labels = [...anios.map(String), '2026 Meta'];
+  const dataHist = [...vals, totalAnual];
+  const colorsHist = [...anios.map(()=>'rgba(91,79,207,.5)'), 'rgba(26,144,105,.9)'];
+
+  if(chartHistorico){ chartHistorico.destroy(); chartHistorico=null; }
+  const ctxH = document.getElementById('chart-historico').getContext('2d');
+  chartHistorico = new Chart(ctxH, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Ventas anuales',
+          data: dataHist,
+          backgroundColor: colorsHist,
+          borderRadius: 4,
+          borderSkipped: false,
+          order: 2
+        },
+        {
+          label: 'Tendencia',
+          data: dataHist,
+          type: 'line',
+          borderColor: '#1C1C1A',
+          borderWidth: 1.5,
+          borderDash: [4,3],
+          pointRadius: 3,
+          pointBackgroundColor: '#1C1C1A',
+          backgroundColor: 'transparent',
+          tension: .3,
+          order: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          ticks: { callback: v => '$'+(v/1000000).toFixed(1)+'M', font:{family:'DM Mono',size:11} },
+          grid: { color: 'rgba(0,0,0,.05)' }
+        },
+        x: { grid: { display: false }, ticks: { font:{family:'DM Mono',size:11} } }
+      }
+    }
+  });
+
+  document.getElementById('legend-historico').innerHTML = `
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(91,79,207,.5)"></div>Real histórico</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(26,144,105,.9)"></div>Meta 2026</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#1C1C1A"></div>Tendencia</div>
+  `;
+
+  // Tabla mensual
+  let html = '';
+  let acumDif = 0;
+  for(let m=0; m<12; m++){
+    const r25   = EMPRESA.real2025[m];
+    const r24   = EMPRESA.real2024[m];
+    const proy  = EMPRESA.proyecto2026[m];
+    const real  = datosRealesEmpresa[m];
+    const dif   = real != null ? real - proy : null;
+    if(dif != null) acumDif += dif;
+    const c     = pct(real, proy);
+    const hasDatos = real != null;
+    html += `<tr style="${!hasDatos?'opacity:.38':''}">
+      <td style="font-family:'DM Mono',monospace;font-size:12px">
+        ${MESES_FULL[m]}${!hasDatos?'<span style="font-size:10px;color:var(--muted);margin-left:4px">proyec.</span>':''}
+      </td>
+      <td class="num text-muted">${fmtFull(r25)}</td>
+      <td class="num text-muted" style="font-size:11px">${fmtFull(r24)}</td>
+      <td class="num">${fmtFull(proy)}</td>
+      <td class="num ${hasDatos?'':'text-muted'}">${hasDatos?fmtFull(real):'—'}</td>
+      <td class="num ${dif!=null?(dif>=0?'text-green':'text-red'):'text-muted'}">
+        ${dif!=null?(dif>=0?'+':'')+fmtFull(dif):'—'}
+      </td>
+      <td class="num ${acumDif>=0?'text-green':'text-red'}" style="font-weight:${hasDatos?500:400}">
+        ${hasDatos?(acumDif>=0?'+':'')+fmtFull(acumDif):'—'}
+      </td>
+      <td class="num ${pctColor(c)}">${c!=null?c+'%':'—'}</td>
+    </tr>`;
+  }
+  // Totales
+  const totR25 = EMPRESA.real2025.reduce((a,b)=>a+b,0);
+  const totR24 = EMPRESA.real2024.reduce((a,b)=>a+b,0);
+  html += `<tr class="total-row">
+    <td>Total anual</td>
+    <td class="num">${fmtFull(totR25)}</td>
+    <td class="num">${fmtFull(totR24)}</td>
+    <td class="num">${fmtFull(totalAnual)}</td>
+    <td class="num">${mcd>0?fmtFull(totalReal):'—'}</td>
+    <td class="num ${dif>=0?'text-green':'text-red'}">${mcd>0?(dif>=0?'+':'')+fmtFull(dif):'—'}</td>
+    <td class="num ${acumDif>=0?'text-green':'text-red'}">${mcd>0?(acumDif>=0?'+':'')+fmtFull(acumDif):'—'}</td>
+    <td class="num ${pctColor(pct(totalReal,totalProy))}">${mcd>0?pct(totalReal,totalProy)+'%':'—'}</td>
+  </tr>`;
+  document.getElementById('tbody-empresa').innerHTML = html;
+
+  // Semáforos empresa Q1
+  let semHtml = '';
+  for(let m=0; m<Math.min(mcd,3); m++){
+    const real = datosRealesEmpresa[m];
+    const proy = EMPRESA.proyecto2026[m];
+    const p    = pct(real, proy);
+    const cls  = semClass(p);
+    semHtml += `<div class="sem-card ${cls}">
+      <div class="sc-nombre">Empresa · ${MESES_FULL[m]}</div>
+      <div class="sc-pct">${p!=null?p+'%':'—'}</div>
+      <div class="sc-valores">${fmtFull(real)} / ${fmtFull(proy)}</div>
+      <div style="font-size:11px;margin-top:4px;color:${real-proy>=0?'var(--green)':'var(--red)'}">
+        ${(real-proy>=0?'+':'')+fmtFull(real-proy)}
+      </div>
+    </div>`;
+  }
+  document.getElementById('sem-empresa').innerHTML = semHtml || '<div class="empty-state">Sin datos reales capturados</div>';
+}
+
+function calcularBonoGerente(ventas){
+  ventas = parseFloat(ventas);
+  const resultado = document.getElementById('ger-result');
+  if(isNaN(ventas) || ventas <= 0){ resultado.classList.remove('visible'); updateGerBar(0); return; }
+
+  const incremento = ventas - GER.base2025;
+  const crecPct = ((ventas - GER.base2025) / GER.base2025 * 100).toFixed(2);
+
+  let tier, bono, tasa, tierId;
+  if(ventas < GER.umbral11pct){
+    tier = 'Nivel A — Sin bono (crecimiento por debajo del 11%)';
+    bono = 0; tasa = 0; tierId = 'A';
+  } else if(ventas < GER.meta2026){
+    tier = 'Nivel B — Bono proporcional (entre 11% y 14.34%)';
+    bono = incremento * GER.tasaB; tasa = GER.tasaB; tierId = 'B';
+  } else {
+    tier = 'Nivel C — Bono completo (meta alcanzada o superada)';
+    bono = incremento * GER.tasaC; tasa = GER.tasaC; tierId = 'C';
+  }
+
+  const sueldoAnual = GER.sueldoMensual * 12;
+  const totalAnual = sueldoAnual + bono;
+  const colores = { A:'var(--red)', B:'var(--amber)', C:'var(--green)' };
+
+  resultado.classList.add('visible');
+  resultado.innerHTML = `
+    <div class="ger-result-tier" style="color:${colores[tierId]}">${tier}</div>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap">
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:2px">Bono anual estimado</div>
+        <div class="ger-result-bono" style="color:${colores[tierId]}">${fmtFull(bono)}</div>
+        <div class="ger-result-detail">
+          ${tasa>0 ? `${(tasa*100).toFixed(4)}% × incremento real ${fmtFull(incremento)}` : 'Crecimiento insuficiente para activar bono'}
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:2px">Crecimiento real</div>
+        <div class="ger-result-bono" style="font-size:24px;color:${colores[tierId]}">${crecPct}%</div>
+        <div class="ger-result-detail">
+          Ventas: ${fmtFull(ventas)} · Incremento: ${fmtFull(incremento)}
+        </div>
+      </div>
+    </div>
+    <div class="ger-result-sueldo">
+      <span>Sueldo fijo anual + bono = Compensación total estimada</span>
+      <span style="font-family:'DM Mono',monospace">${fmtFull(sueldoAnual)} + ${fmtFull(bono)} = ${fmtFull(totalAnual)}</span>
+    </div>
+  `;
+
+  updateGerBar(ventas);
+}
+
+function updateGerBar(ventas){
+  const min = GER.base2025;
+  const max = GER.meta2026 * 1.04;
+  const range = max - min;
+  const pct11   = Math.min(((GER.umbral11pct - min) / range * 100), 100).toFixed(1);
+  const pctMeta = Math.min(((GER.meta2026 - min) / range * 100), 100).toFixed(1);
+  const pctReal = ventas > 0 ? Math.min(((ventas - min) / range * 100), 100).toFixed(1) : 0;
+
+  let fillColor = 'var(--border)';
+  if(ventas > 0){
+    if(ventas >= GER.meta2026) fillColor = 'var(--green)';
+    else if(ventas >= GER.umbral11pct) fillColor = 'var(--amber)';
+    else fillColor = 'var(--red)';
+  }
+
+  document.getElementById('ger-bar-fill').style.width = pctReal + '%';
+  document.getElementById('ger-bar-fill').style.background = fillColor;
+  document.getElementById('ger-pct-label').textContent = ventas > 0
+    ? ((ventas / GER.meta2026)*100).toFixed(1) + '% de la meta'
+    : '';
+
+  const wrap = document.getElementById('ger-bar-wrap');
+  const existingMarkers = wrap.querySelectorAll('.ger-marker');
+  existingMarkers.forEach(m => m.remove());
+
+  // Marker umbral 11%
+  const m1 = document.createElement('div');
+  m1.className = 'ger-marker';
+  m1.style.left = pct11 + '%';
+  m1.innerHTML = `<div class="ger-marker-line" style="background:var(--amber)"></div>
+    <div class="ger-marker-label" style="color:var(--amber)">Mín. 11%<br>$30.7M</div>`;
+  wrap.appendChild(m1);
+
+  // Marker meta
+  const m2 = document.createElement('div');
+  m2.className = 'ger-marker';
+  m2.style.left = pctMeta + '%';
+  m2.innerHTML = `<div class="ger-marker-line" style="background:var(--green)"></div>
+    <div class="ger-marker-label" style="color:var(--green)">Meta 13.73%<br>$31.5M</div>`;
+  wrap.appendChild(m2);
+
+  const label = document.getElementById('ger-bar-real-label');
+  label.textContent = ventas > 0 ? `Real: ${fmtFull(ventas)}` : '';
+}
+
+function renderGerente(){
+  const mcd = mesesConDatos();
+  const totalReal = totalRealAcumulado();
+  const incremento = Math.max(0, totalReal - GER.base2025);
+  const crecPct = totalReal > 0 ? ((totalReal / GER.base2025 - 1)*100).toFixed(2) : null;
+
+  // Stat cards
+  document.getElementById('ger-stat-grid').innerHTML = `
+    <div class="stat-card">
+      <div class="sc-label">Sueldo fijo mensual</div>
+      <div class="sc-value">${fmtFull(GER.sueldoMensual)}</div>
+      <div class="sc-sub">Anual: ${fmtFull(GER.sueldoMensual*12)}</div>
+    </div>
+    <div class="stat-card">
+      <div class="sc-label">Meta anual equipo 2026</div>
+      <div class="sc-value sc-value-lg">${fmtFull(GER.meta2026)}</div>
+      <div class="sc-sub">Base 2025: ${fmtFull(GER.base2025)}</div>
+      <div class="sc-badge neutral">Incremento meta: ${fmtFull(GER.incrementoMeta)}</div>
+    </div>
+    <div class="stat-card">
+      <div class="sc-label">Umbral mínimo (11%)</div>
+      <div class="sc-value sc-value-lg">${fmtFull(GER.umbral11pct)}</div>
+      <div class="sc-sub">Por debajo no se activa bono</div>
+    </div>
+    <div class="stat-card">
+      <div class="sc-label">Ventas reales acum. (${mcd}m)</div>
+      <div class="sc-value sc-value-lg">${mcd>0?fmtFull(totalReal):'—'}</div>
+      <div class="sc-sub">${crecPct?'Crecimiento actual: '+crecPct+'%':'Sin datos aún'}</div>
+      ${crecPct ? `<div class="sc-badge ${parseFloat(crecPct)>=14.34?'ok':parseFloat(crecPct)>=11?'warn':'danger'}">
+        ${parseFloat(crecPct)>=14.34?'Nivel C · Bono completo':parseFloat(crecPct)>=11?'Nivel B · Bono parcial':'Nivel A · Sin bono'}
+      </div>` : ''}
+    </div>
+  `;
+
+  // Tier activo
+  document.querySelectorAll('.tier').forEach(t => {
+    t.querySelectorAll('.tier-active-badge').forEach(b=>b.remove());
+  });
+  if(mcd > 0 && totalReal > 0){
+    let tierIdx = 0;
+    if(totalReal >= GER.meta2026) tierIdx = 2;
+    else if(totalReal >= GER.umbral11pct) tierIdx = 1;
+    const tiers = document.querySelectorAll('.tier');
+    if(tiers[tierIdx]){
+      const badge = document.createElement('div');
+      badge.className = 'tier-active-badge';
+      badge.textContent = 'Nivel actual';
+      tiers[tierIdx].appendChild(badge);
+    }
+  }
+
+  // Barra
+  updateGerBar(totalReal > 0 ? totalReal : 0);
+
+  // Auto-llenar calculadora con datos reales actuales
+  if(mcd > 0 && totalReal > 0){
+    document.getElementById('ger-ventas-input').value = Math.round(totalReal);
+    calcularBonoGerente(totalReal);
+  }
+
+  // Tabla mensual
+  let html = '';
+  let acum = 0;
+  for(let m=0; m<12; m++){
+    const hasData = datosReales['jazmin'][m] != null;
+    const realMes = hasData
+      ? VENDEDORAS.reduce((s,v) => s+(datosReales[v.id][m]||0), 0)
+      : null;
+    if(realMes != null) acum += realMes;
+
+    const metaAcumProp = GER.meta2026 / 12 * (m+1);
+    const pctAnual = acum > 0 ? ((acum / GER.meta2026)*100).toFixed(1) : null;
+    const diff = hasData ? acum - metaAcumProp : null;
+    const incremAcum = Math.max(0, acum - GER.base2025);
+    let bonoEstimado = null;
+    if(hasData){
+      if(acum >= GER.meta2026) bonoEstimado = incremAcum * GER.tasaC;
+      else if(acum >= GER.umbral11pct) bonoEstimado = incremAcum * GER.tasaB;
+      else bonoEstimado = 0;
+    }
+
+    html += `<tr style="${!hasData?'opacity:.38':''}">
+      <td style="font-family:'DM Mono',monospace;font-size:12px">
+        ${MESES_FULL[m]}${!hasData?' <span style="font-size:10px;color:var(--muted)">proyec.</span>':''}
+      </td>
+      <td class="num">${hasData?fmtFull(acum):'—'}</td>
+      <td class="num text-muted">${fmtFull(metaAcumProp)}</td>
+      <td class="num ${pctAnual?(parseFloat(pctAnual)>=100?'text-green':parseFloat(pctAnual)>=80?'text-amber':'text-red'):'text-muted'}">
+        ${pctAnual?pctAnual+'%':'—'}
+      </td>
+      <td class="num ${diff!=null?(diff>=0?'text-green':'text-red'):'text-muted'}">
+        ${diff!=null?(diff>=0?'+':'')+fmtFull(diff):'—'}
+      </td>
+      <td class="num">${fmtFull(GER.sueldoMensual)}</td>
+      <td class="num ${bonoEstimado!=null?(bonoEstimado>0?'text-green':'text-red'):'text-muted'}">
+        ${bonoEstimado!=null?(bonoEstimado===0?'Sin bono':fmtFull(bonoEstimado)+' (anual)' ):'—'}
+      </td>
+    </tr>`;
+  }
+  document.getElementById('tbody-gerente').innerHTML = html;
+}
+// Cargar datos guardados en localStorage (si existen)
+cargarLocal();
+// Renderizar con los datos disponibles
+refreshAll();
+
+</script>
+</body>
+</html>

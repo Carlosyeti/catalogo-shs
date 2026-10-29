@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Master Prospectos · SHS</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f7f7f5;--bg3:#efefec;
+  --text:#1a1a18;--text2:#6b6b66;--text3:#adadaa;
+  --border:#e0dfd8;--border2:#c8c7c0;
+  --blue:#185FA5;--blue-bg:#e6f1fb;
+  --red:#A32D2D;--red-bg:#FCEBEB;
+  --amber:#BA7517;--amber-bg:#FAEEDA;
+  --green:#3B6D11;--green-bg:#EAF3DE;
+  --gray:#888780;--gray-bg:#F1EFE8;
+  --navy:#0f2744;
+  --shadow:0 1px 4px rgba(0,0,0,.07),0 4px 16px rgba(0,0,0,.05);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;font-size:14px;color:var(--text);background:var(--bg3);min-height:100vh}
+.screen{position:fixed;inset:0;background:var(--bg3);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px}
+.box{background:var(--bg);border-radius:16px;padding:32px;width:500px;max-width:100%;box-shadow:0 8px 40px rgba(0,0,0,.12)}
+.box-logo{font-size:32px;margin-bottom:8px}.box-title{font-size:20px;font-weight:700;margin-bottom:6px}
+.box-sub{font-size:13px;color:var(--text2);margin-bottom:24px;line-height:1.6}
+.setup-step{background:var(--bg2);border-radius:10px;padding:13px 15px;margin-bottom:10px;font-size:13px;line-height:1.6}
+.setup-step b{color:var(--navy)}.setup-step a{color:var(--blue)}
+.setup-divider{text-align:center;font-size:12px;color:var(--text3);margin:18px 0 14px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
+.field input{width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-size:13px;font-family:inherit;color:var(--text);outline:none}
+.field input:focus{border-color:var(--blue)}.field .hint{font-size:11px;color:var(--text3);margin-top:3px}
+.btn-primary{width:100%;padding:11px;background:var(--navy);color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-primary:not(:disabled):hover{background:#162f5a}
+.screen-err{color:var(--red);font-size:12px;text-align:center;margin-top:10px;min-height:18px}
+#app{display:none}
+.header{background:var(--navy);color:white;padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25);gap:12px;flex-wrap:wrap}
+.hdr-left{display:flex;align-items:center;gap:10px}
+.hdr-title{font-size:15px;font-weight:700}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.hbtn{background:rgba(255,255,255,.12);color:white;border:1px solid rgba(255,255,255,.2);border-radius:7px;padding:6px 13px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.hbtn:hover{background:rgba(255,255,255,.22)}.hbtn-blue{background:#1e6bbf;border-color:#2278db}.hbtn-blue:hover{background:#1a5fb0}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#4ade80;display:inline-block;transition:background .5s}
+.sync-dot.off{background:#f87171}.sync-dot.syncing{background:#fbbf24;animation:pulse .8s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.main{max-width:1200px;margin:0 auto;padding:16px 16px 60px}
+.filter-bar{background:var(--bg);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;box-shadow:var(--shadow);margin-bottom:16px;border-radius:10px}
+.filter-bar select,.filter-bar input{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:12px;outline:none;cursor:pointer}
+.filter-bar select:hover,.filter-bar input:hover{border-color:var(--blue)}
+.filter-bar input{width:200px}.filter-bar input::placeholder{color:var(--text3)}
+.filter-lbl{font-size:12px;font-weight:500;color:var(--text2)}
+.f-sep{width:1px;height:22px;background:var(--border);flex-shrink:0}
+.sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+.kpi{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px 16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--kc,var(--blue))}
+.kpi-lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);margin-bottom:6px}
+.kpi-val{font-size:28px;font-weight:700;line-height:1;color:var(--kc,var(--blue));margin-bottom:3px}
+.kpi-sub{font-size:11px;color:var(--text2)}
+.kpi-bar{height:3px;background:var(--border);border-radius:2px;margin-top:10px;overflow:hidden}
+.kpi-fill{height:100%;background:var(--kc,var(--blue));border-radius:2px;transition:width .5s}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+.chart-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;box-shadow:var(--shadow)}
+.chart-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);margin-bottom:12px}
+.chart-wrap{height:210px;position:relative}
+.vd-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:12px;margin-bottom:18px}
+.vd-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;box-shadow:var(--shadow)}
+.vdc-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.vdc-name{font-size:14px;font-weight:700;color:var(--navy)}
+.vdc-total{font-size:24px;font-weight:700;color:var(--navy)}
+.vdc-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.vdc-stat{text-align:center;padding:7px 4px;background:var(--bg2);border-radius:6px}
+.vdc-stat-val{font-size:18px;font-weight:700;line-height:1}
+.vdc-stat-lbl{font-size:10px;color:var(--text2);margin-top:2px}
+.prog-row{display:grid;grid-template-columns:88px 1fr 36px;align-items:center;gap:7px;margin-bottom:5px;font-size:11px}
+.prog-lbl{color:var(--text2)}.prog-val{color:var(--text2);text-align:right;font-weight:600}
+.prog-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;border-radius:2px;transition:width .6s}
+.vdc-footer{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.vdc-valor{font-size:13px;font-weight:700;color:var(--green)}
+.vdc-conv{font-size:11px;font-weight:700;padding:3px 8px;border-radius:5px;background:var(--green-bg);color:var(--green);border:1px solid #c8e6b8}
+
+/* LLAMADAS SECTION */
+.calls-section{margin-bottom:18px}
+.calls-hdr{padding:10px 14px;background:var(--amber-bg);border-radius:10px 10px 0 0;border:1px solid #e8d6b0;border-bottom:none;display:flex;align-items:center;gap:8px}
+.calls-hdr-title{font-size:13px;font-weight:700;color:var(--amber);flex:1}
+.calls-pill{background:var(--amber);color:white;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px}
+.calls-body{background:var(--bg);border:1px solid #e8d6b0;border-radius:0 0 10px 10px;overflow:hidden}
+.call-row{display:grid;grid-template-columns:50px 1fr 100px 120px auto;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border)}
+.call-row:last-child{border-bottom:none}.call-row:hover{background:var(--bg2)}
+.call-row-hdr{background:var(--bg2);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text2)}
+.call-row-hdr:hover{background:var(--bg2)}
+.call-hr{font-size:16px;font-weight:700;color:var(--navy);line-height:1;text-align:center}
+.call-hr-lbl{font-size:10px;color:var(--text3);text-align:center}
+.call-client-name{font-size:13px;font-weight:700}
+.call-note{font-size:12px;color:var(--text2);margin-top:2px;font-style:italic}
+.call-vd-badge{font-size:11px;padding:2px 8px;border-radius:99px;font-weight:600;background:var(--blue-bg);color:var(--blue)}
+.call-phone{font-size:12px;color:var(--blue)}
+.upcoming-grp{padding:6px 14px;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;background:var(--bg2);border-bottom:1px solid var(--border)}
+.upcoming-calls-hdr{padding:10px 14px;background:var(--blue-bg);border-radius:10px 10px 0 0;border:1px solid #c4dff8;border-bottom:none;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.upcoming-calls-body{background:var(--bg);border:1px solid #c4dff8;border-radius:0 0 10px 10px;overflow:hidden}
+
+.table-wrap{background:var(--bg);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow)}
+.table-hdr{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--bg2)}
+.table-title-el{font-size:13px;font-weight:700}.table-count-el{font-size:12px;color:var(--text2)}
+table{width:100%;border-collapse:collapse}
+thead tr{background:var(--bg2);border-bottom:2px solid var(--border)}
+th{padding:8px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{color:var(--navy)}
+td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#fafaf8;cursor:pointer}
+.td-n{font-weight:700;color:var(--navy);max-width:170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.td-m{color:var(--text2);font-size:12px}
+.td-o{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text2);font-size:12px}
+.bst{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:600;white-space:nowrap}
+.bst-prospecto{background:var(--blue-bg);color:var(--blue)}.bst-negociacion{background:var(--amber-bg);color:var(--amber)}
+.bst-cerrada{background:var(--green-bg);color:var(--green)}.bst-perdida{background:var(--red-bg);color:var(--red)}.bst-gray{background:var(--gray-bg);color:var(--gray)}
+.bac{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;white-space:nowrap}
+.bac-propuesta{background:var(--blue-bg);color:var(--blue)}.bac-seguimiento{background:var(--amber-bg);color:var(--amber)}.bac-presentacion{background:#fff3e0;color:#c76f10}.bac-cierre{background:var(--green-bg);color:var(--green)}
+.pagination{display:flex;align-items:center;gap:6px;padding:12px;justify-content:center;border-top:1px solid var(--border)}
+.pg-btn{width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .12s}
+.pg-btn:hover{border-color:var(--blue);color:var(--blue)}.pg-btn.active{background:var(--navy);border-color:var(--navy);color:#fff}.pg-btn:disabled{opacity:.3;cursor:default}
+.pg-info{font-size:12px;color:var(--text2)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.42);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px}
+.modal-overlay.hide{display:none}
+.modal{background:var(--bg);border-radius:14px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.18)}
+.m-hdr{padding:20px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start}
+.m-title{font-size:17px;font-weight:700;color:var(--navy)}.m-sub{font-size:12px;color:var(--text2);margin-top:4px;display:flex;align-items:center;gap:8px}
+.m-close{background:none;border:none;color:var(--text2);cursor:pointer;font-size:20px}.m-close:hover{color:var(--text)}
+.m-body{padding:20px 22px}
+.m-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;background:var(--bg2);border-radius:8px;padding:12px;margin-bottom:14px}
+.m-field-lbl{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px}
+.m-field-val{font-size:13px;font-weight:600;word-break:break-word}
+.m-field-val a{color:var(--blue);text-decoration:none}
+.obs-box{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text2);line-height:1.65;white-space:pre-wrap;max-height:140px;overflow-y:auto}
+.m-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+.mbtn{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.mbtn-cancel{background:none;border:1px solid var(--border2);color:var(--text)}
+.live-badge{background:var(--green-bg);border:1px solid #c8e6b8;color:var(--green);border-radius:99px;padding:2px 9px;font-size:11px;font-weight:700;display:flex;align-items:center;gap:5px}
+.rsel{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:5px 9px;color:var(--text2);font-family:inherit;font-size:12px;outline:none;cursor:pointer}
+/* ══ PANEL LLAMADAS HOY (mismo estilo gestor) ══ */
+.today-panel{background:var(--bg);border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(186,117,23,.18),0 0 0 2px rgba(186,117,23,.25);margin-bottom:18px}
+.today-head{background:linear-gradient(135deg,#8a5200 0%,var(--amber) 100%);padding:16px 20px;display:flex;align-items:center;gap:14px}
+.today-bell{font-size:32px;animation:ring 2s ease-in-out infinite}
+@keyframes ring{0%,100%{transform:rotate(0)}10%{transform:rotate(-15deg)}20%{transform:rotate(15deg)}30%{transform:rotate(-10deg)}40%{transform:rotate(10deg)}50%{transform:rotate(0)}}
+.today-head-text{flex:1}
+.today-head-title{font-size:18px;font-weight:800;color:white;line-height:1.2}
+.today-head-sub{font-size:13px;color:rgba(255,255,255,.8);margin-top:3px}
+.today-head-badge{background:white;color:var(--amber);font-size:22px;font-weight:800;border-radius:10px;padding:6px 16px;min-width:52px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.today-badge-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:rgba(186,117,23,.7);text-align:center;margin-top:1px}
+.today-calls-list{padding:0}
+.tci{display:flex;align-items:center;border-bottom:1px solid var(--border);transition:background .1s}
+.tci:last-child{border-bottom:none}.tci:hover{background:#fffbf3}
+.tci-time{width:70px;flex-shrink:0;text-align:center;padding:14px 0;border-right:1px solid var(--border)}
+.tci-hora{font-size:20px;font-weight:800;color:var(--navy);line-height:1}
+.tci-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+.tci-info{flex:1;padding:12px 16px}
+.tci-nombre{font-size:14px;font-weight:700;color:var(--text)}
+.tci-meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:5px}
+.tci-phone{font-size:12px;color:var(--blue);font-weight:600}
+.tci-nota{font-size:12px;color:var(--text2);font-style:italic;background:var(--amber-bg);padding:2px 8px;border-radius:4px}
+.tci-vd{font-size:11px;padding:2px 9px;border-radius:99px;font-weight:700;background:var(--blue-bg);color:var(--blue);white-space:nowrap}
+.today-footer{background:var(--amber-bg);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid #e8d6b0}
+.today-footer-txt{font-size:12px;color:var(--amber);font-weight:600}
+.today-readonly{font-size:11px;color:var(--amber);opacity:.7;font-style:italic}
+/* ══ PRÓXIMAS (misma estructura) ══ */
+.upcoming-panel{background:var(--bg);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);border:1px solid #c4dff8;margin-bottom:18px}
+.upcoming-panel-hdr{background:var(--blue-bg);padding:12px 18px;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.upcoming-panel-title{font-size:13px;font-weight:700;color:var(--blue);flex:1;display:flex;align-items:center;gap:8px}
+.upcoming-toggle{font-size:12px;color:var(--blue)}
+.upcoming-grp-lbl{padding:7px 16px;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;background:var(--bg2);border-bottom:1px solid var(--border)}
+.upcoming-row{display:flex;align-items:center;border-bottom:1px solid var(--border)}
+.upcoming-row:last-child{border-bottom:none}.upcoming-row:hover{background:var(--bg2)}
+.upr-time{width:70px;flex-shrink:0;text-align:center;padding:12px 0;border-right:1px solid var(--border)}
+.upr-hr{font-size:16px;font-weight:700;color:var(--navy);line-height:1}
+.upr-lbl{font-size:10px;color:var(--text3);margin-top:2px}
+.upr-info{flex:1;padding:10px 16px}
+.upr-name{font-size:13px;font-weight:700}
+.upr-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.upr-nota{font-size:12px;color:var(--text2);font-style:italic}
+/* ══ VENDEDOR DE CAMPO ══ */
+.cp-card{background:var(--bg);border-radius:12px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden;border-top:4px solid var(--navy)}
+.cp-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.cp-title{font-size:16px;font-weight:800;color:var(--navy)}
+.cp-sub{font-size:12px;color:var(--text2);margin-top:2px}
+.cp-cfg{background:var(--bg2);border:1px solid var(--border2);border-radius:7px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.cp-cfg:hover{border-color:var(--navy)}
+.cp-grid{display:grid;grid-template-columns:repeat(5,1fr)}
+.cp-tile{padding:14px 16px;border-right:1px solid var(--border)}
+.cp-tile:last-child{border-right:none}
+.cp-lbl{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px}
+.cp-val{font-size:24px;font-weight:800;line-height:1.1;margin-top:6px}
+.cp-meta{font-size:12px;color:var(--text2);font-weight:600}
+.cp-bar{height:7px;border-radius:99px;background:var(--bg3);margin-top:8px;overflow:hidden}
+.cp-bar>div{height:100%;border-radius:99px;transition:width .4s}
+.cp-note{font-size:11px;color:var(--text2);margin-top:5px}
+.cp-foot{padding:10px 18px;background:var(--bg2);border-top:1px solid var(--border);font-size:12px;color:var(--text2);display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+.cp-foot b{color:var(--text)}
+.cp-warn{color:var(--red);font-weight:700}
+.c-ok{color:var(--green)}.c-mid{color:var(--amber)}.c-bad{color:var(--red)}
+.b-ok{background:var(--green)}.b-mid{background:var(--amber)}.b-bad{background:var(--red)}
+.campo-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:14px;margin-bottom:14px}
+.tr-table{width:100%;border-collapse:collapse;font-size:12px}
+.tr-table th{cursor:default;font-size:10px;padding:7px 10px}.tr-table th:hover{color:var(--text2)}
+.tr-table td{padding:8px 10px;font-size:12px}.tr-table tbody tr:hover td{background:transparent;cursor:default}
+.tr-cell b{font-size:13px}
+.tr-now td{background:#f4f8fd!important}
+.rv-panel{background:var(--bg);border-radius:12px;overflow:hidden;margin-bottom:18px;box-shadow:0 2px 12px rgba(163,45,45,.14),0 0 0 2px rgba(163,45,45,.22)}
+.rv-head{background:linear-gradient(135deg,#7a1f1f 0%,var(--red) 100%);padding:13px 18px;display:flex;align-items:center;gap:12px;color:white}
+.rv-title{font-size:15px;font-weight:800}.rv-sub{font-size:12px;opacity:.85;margin-top:2px}
+.rv-badge{margin-left:auto;background:white;color:var(--red);font-size:20px;font-weight:800;border-radius:10px;padding:4px 14px}
+.rv-item{display:flex;align-items:center;border-bottom:1px solid var(--border);cursor:pointer}
+.rv-item:last-child{border-bottom:none}.rv-item:hover{background:#fff7f7}
+.rv-days{width:74px;flex-shrink:0;text-align:center;padding:11px 0;border-right:1px solid var(--border)}
+.rv-days-n{font-size:20px;font-weight:800;color:var(--red);line-height:1}.rv-days-l{font-size:9px;color:var(--text3);text-transform:uppercase;margin-top:2px}
+.rv-info{flex:1;padding:9px 14px;min-width:0}
+.rv-name{font-size:13px;font-weight:700;color:var(--navy)}
+.rv-meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:3px;font-size:12px;color:var(--text2)}
+.badge-rv{display:inline-block;background:var(--red);color:white;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700;margin-left:6px;vertical-align:middle}
+.badge-campo{display:inline-block;background:#e8eaf6;color:#283593;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700;margin-left:6px;vertical-align:middle}
+.rv-empty{padding:14px 18px;font-size:13px;color:var(--green);font-weight:600;background:var(--green-bg)}
+.cfg-modal{max-width:440px;padding:22px}
+.cfg-modal input{width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:8px;font-size:13px;font-family:inherit;margin-top:6px}
+/* ══ AGENDA DE VISITAS ══ */
+.ag-panel{background:var(--bg);border-radius:12px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden;border-top:4px solid #185FA5}
+.ag-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.ag-title{font-size:16px;font-weight:800;color:var(--navy)}.ag-sub{font-size:12px;color:var(--text2);margin-top:2px}
+.ag-scroll{display:flex;gap:10px;overflow-x:auto;padding:12px 16px}
+.ag-day{flex:0 0 210px;border:1px solid var(--border);border-radius:10px;background:var(--bg2);display:flex;flex-direction:column}
+.ag-day-h{display:flex;justify-content:space-between;align-items:baseline;padding:9px 11px 4px}
+.ag-day-t{font-size:12px;font-weight:800;color:var(--navy);text-transform:capitalize}.ag-day-n{font-size:15px;font-weight:800}
+.ag-bar{height:5px;background:var(--bg3);margin:0 11px 6px;border-radius:99px;overflow:hidden}.ag-bar>div{height:100%}
+.ag-list{flex:1;padding:0 6px}
+.ag-it{display:flex;align-items:center;gap:5px;padding:4px 5px;border-radius:6px;font-size:12px;background:var(--bg);margin-bottom:3px;border:1px solid var(--border)}
+.ag-num{font-size:10px;font-weight:800;color:white;background:var(--navy);border-radius:50%;width:17px;height:17px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ag-cli{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;cursor:pointer}.ag-cli:hover{text-decoration:underline}
+.ag-por{font-size:9px;color:var(--text2);white-space:nowrap}
+.ag-x{background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;padding:0 2px}.ag-x:hover{color:var(--red)}
+.ag-empty{font-size:11px;color:var(--text3);padding:6px 5px}
+.ag-add{margin:6px;padding:6px;border:1px dashed var(--border2);border-radius:7px;background:transparent;font-size:12px;font-weight:700;color:var(--blue);cursor:pointer;font-family:inherit}
+.ag-add:hover{border-color:var(--blue);background:var(--blue-bg)}
+.ag-full{margin:6px;padding:6px;text-align:center;font-size:11px;font-weight:700;color:var(--red);background:var(--red-bg);border-radius:7px}
+.badge-ag{display:inline-block;background:var(--blue-bg);color:var(--blue);padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700;margin-left:6px;vertical-align:middle}
+.abtn-ag:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-bg)}
+.ag-sum{display:flex;gap:18px;flex-wrap:wrap;padding:9px 16px;background:var(--bg2);border-top:1px solid var(--border);font-size:12px;color:var(--text2)}
+.ag-sum b{color:var(--text)}
+@media(max-width:900px){.cp-grid{grid-template-columns:repeat(2,1fr)}.cp-tile{border-bottom:1px solid var(--border)}.campo-grid{grid-template-columns:1fr}}
+@media(max-width:768px){.charts-grid{grid-template-columns:1fr}.kpi-grid{grid-template-columns:repeat(2,1fr)}th:nth-child(3),td:nth-child(3),th:nth-child(8),td:nth-child(8){display:none}.today-head-badge{display:none}}
+</style>
+</head>
+<body>
+
+<!-- SETUP -->
+<!-- APP -->
+<div id="app">
+  <div class="header">
+    <div class="hdr-left">
+      <div class="hdr-title">Master Prospectos &nbsp;·&nbsp; Gerencia SHS</div>
+      <div class="live-badge"><span class="sync-dot syncing" id="sync-dot"></span> En vivo</div>
+    </div>
+    <div class="hdr-right">
+      <div id="last-updated" style="font-size:11px;color:rgba(255,255,255,.4)"></div>
+      <button class="hbtn" style="background:#A32D2D;border-color:#c24040" onclick="abrirCorte()">🖨 Corte diario vendedor <span id="corte-n" style="background:white;color:#A32D2D;border-radius:99px;padding:0 7px;margin-left:4px;font-size:11px">0</span></button>
+      <button class="hbtn hbtn-blue" onclick="exportCSV()">⬇ Exportar CSV</button>
+      <button class="hbtn" onclick="resetFirebase()">⚙ Firebase</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- ══ VENDEDOR DE CAMPO ══ -->
+    <div class="sec-title">🚗 Vendedor de campo</div>
+    <div class="cp-card">
+      <div class="cp-head">
+        <div><div class="cp-title">🎯 Avance · <span id="cp-periodo">—</span></div><div class="cp-sub" id="cp-rango"></div></div>
+        <button class="cp-cfg" onclick="openCfg()">⚙ Fecha de inicio</button>
+      </div>
+      <div class="cp-grid" id="cp-grid"></div>
+      <div class="cp-foot" id="cp-foot"></div>
+    </div>
+    <div class="cp-card" style="border-top-color:#3B6D11">
+      <div class="cp-head"><div><div class="cp-title">📅 <span id="ca-title">Acumulado del año</span></div><div class="cp-sub" id="ca-range-wrap"><span id="ca-rango"></span></div></div></div>
+      <div class="cp-grid" id="ca-grid"></div>
+    </div>
+    <div class="campo-grid">
+      <div class="chart-card">
+        <div class="chart-title">Periodo de prueba · meta vs. real</div>
+        <div id="tr-body"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Actividad semanal · últimas 8 semanas</div>
+        <div class="chart-wrap"><canvas id="chartCampo"></canvas></div>
+      </div>
+    </div>
+    <div id="rv-section"></div>
+    <div id="ag-section"></div>
+
+    <!-- KPIs -->
+    <div class="sec-title">Resumen General</div>
+    <div class="kpi-grid">
+      <div class="kpi" style="--kc:var(--blue)"><div class="kpi-lbl">Total Prospectos</div><div class="kpi-val" id="kTotal">0</div><div class="kpi-sub">registros únicos</div><div class="kpi-bar"><div class="kpi-fill" id="kTotalFill" style="width:100%"></div></div></div>
+      <div class="kpi" style="--kc:var(--amber)"><div class="kpi-lbl">En Negociación</div><div class="kpi-val" id="kNeg">0</div><div class="kpi-sub" id="kNegSub">—</div><div class="kpi-bar"><div class="kpi-fill" id="kNegFill" style="width:0%"></div></div></div>
+      <div class="kpi" style="--kc:var(--green)"><div class="kpi-lbl">Cerradas</div><div class="kpi-val" id="kCer">0</div><div class="kpi-sub" id="kCerSub">—</div><div class="kpi-bar"><div class="kpi-fill" id="kCerFill" style="width:0%"></div></div></div>
+      <div class="kpi" style="--kc:var(--red)"><div class="kpi-lbl">Perdidas</div><div class="kpi-val" id="kPer">0</div><div class="kpi-sub" id="kPerSub">—</div><div class="kpi-bar"><div class="kpi-fill" id="kPerFill" style="width:0%"></div></div></div>
+      <div class="kpi" style="--kc:var(--navy)"><div class="kpi-lbl">Valor Potencial</div><div class="kpi-val" id="kValor" style="font-size:20px">$0</div><div class="kpi-sub">pipeline activo</div><div class="kpi-bar"><div class="kpi-fill" id="kValorFill" style="width:100%"></div></div></div>
+      <div class="kpi" style="--kc:var(--blue)"><div class="kpi-lbl">Llamadas Hoy</div><div class="kpi-val" id="kCallsHoy" style="color:var(--amber)">0</div><div class="kpi-sub">todas las vendedoras</div><div class="kpi-bar"><div class="kpi-fill" id="kCallsFill" style="width:0%;background:var(--amber)"></div></div></div>
+    </div>
+
+    <!-- CHARTS -->
+    <div class="sec-title">Análisis Visual</div>
+    <div class="charts-grid">
+      <div class="chart-card"><div class="chart-title">Pipeline por Vendedora</div><div class="chart-wrap"><canvas id="chartPipeline"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Valor Potencial por Vendedora</div><div class="chart-wrap"><canvas id="chartValor"></canvas></div></div>
+    </div>
+
+    <!-- VENDEDORA CARDS -->
+    <div class="sec-title">Desempeño por Vendedora</div>
+    <div class="vd-grid" id="vdGrid"></div>
+
+    <!-- ══ PANEL LLAMADAS HOY ══ -->
+    <div id="calls-today-section" style="display:none">
+      <div class="sec-title">Llamadas de Hoy — Todas las Vendedoras</div>
+      <div class="today-panel">
+        <div class="today-head">
+          <div class="today-bell">🔔</div>
+          <div class="today-head-text">
+            <div class="today-head-title">Llamadas programadas para hoy</div>
+            <div class="today-head-sub" id="today-head-sub">Las vendedoras deben realizar y marcar estas llamadas</div>
+          </div>
+          <div>
+            <div class="today-head-badge" id="calls-today-count">0</div>
+            <div class="today-badge-lbl">llamadas</div>
+          </div>
+        </div>
+        <div class="today-calls-list" id="calls-today-list"></div>
+        <div class="today-footer">
+          <span class="today-footer-txt" id="today-footer-date"></span>
+          <span class="today-readonly">👁 Solo lectura — las vendedoras marcan sus llamadas desde el Gestor</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PRÓXIMAS LLAMADAS ══ -->
+    <div id="calls-upcoming-section" style="display:none">
+      <div class="upcoming-panel">
+        <div class="upcoming-panel-hdr" onclick="toggleUpcoming()">
+          <div class="upcoming-panel-title">📅 Próximas Llamadas — 7 días <span style="background:var(--blue-bg);color:var(--blue);border-radius:99px;padding:1px 8px;font-size:11px;font-weight:700" id="upcoming-count">0</span></div>
+          <span class="upcoming-toggle" id="upcoming-arrow">▼ ver</span>
+        </div>
+        <div id="upcoming-body" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- TABLA -->
+    <div class="sec-title">Todos los Prospectos</div>
+    <!-- FILTROS -->
+    <div class="filter-bar">
+      <span class="filter-lbl">Filtrar:</span>
+      <select id="fVd" onchange="applyFilters()"><option value="">Todas las vendedoras</option></select>
+      <select id="fMes" onchange="applyFilters()"><option value="">Todos los meses</option></select>
+      <select id="fEst" onchange="applyFilters()"><option value="">Todos los estados</option><option value="PROSPECTO">Prospecto</option><option value="EN NEGOCIACION">En Negociación</option><option value="CERRADA">Cerrada</option><option value="PERDIDA">Perdida</option></select>
+      <select id="fOri" onchange="applyFilters()"><option value="">Todos los orígenes</option><option value="CAMPO">🚗 Prospección de campo</option><option value="TLMK">📞 Telemarketing</option></select>
+      <select id="fAcc" onchange="applyFilters()"><option value="">Todas las acciones</option><option value="ENVIAR PROPUESTA">Enviar Propuesta</option><option value="LLAMAR PARA SEGUIMIENTO">Llamar Seguimiento</option><option value="LLAMAR PARA PRESENTACIÓN">Llamar Presentación</option><option value="REUNION DE CIERRE">Reunión de Cierre</option></select>
+      <div class="f-sep"></div>
+      <input type="text" id="fSearch" placeholder="🔍 Buscar cliente..." oninput="applyFilters()">
+      <div style="flex:1"></div>
+      <span id="total-count" style="font-size:12px;color:var(--text2);white-space:nowrap"></span>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-hdr">
+        <div><div class="table-title-el">Cartera Completa</div><div class="table-count-el" id="table-count"></div></div>
+        <select class="rsel" id="rpp" onchange="renderTable()"><option value="25">25 filas</option><option value="50">50 filas</option><option value="100">100 filas</option><option value="9999">Todas</option></select>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th onclick="sortBy('cliente')">Cliente ↕</th>
+            <th onclick="sortBy('mes')">Mes ↕</th>
+            <th onclick="sortBy('contacto')">Contacto</th>
+            <th onclick="sortBy('estado')">Estado ↕</th>
+            <th onclick="sortBy('proximaAccion')">Próxima Acción ↕</th>
+            <th onclick="sortBy('valorPotencial')">Valor ↕</th>
+            <th onclick="sortBy('responsable')">Vendedora ↕</th>
+            <th>Observaciones</th>
+          </tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FECHA DE INICIO -->
+<div class="modal-overlay hide" id="cfg-overlay" onclick="if(event.target===this)closeCfg()">
+  <div class="modal cfg-modal">
+    <div class="m-title">⚙ Periodo de prueba del vendedor de campo</div>
+    <div style="font-size:12px;color:var(--text2);margin:8px 0 14px;line-height:1.5">Primer día de trabajo. Con esta fecha se calculan los meses 1, 2 y 3 (periodos de 30 días). Es la misma fecha que ve el equipo en Prospección de clientes.</div>
+    <label style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase">Fecha de inicio</label>
+    <input type="date" id="cfg-inicio">
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px"><button class="mbtn mbtn-cancel" onclick="closeCfg()">Cancelar</button><button class="mbtn" style="background:var(--navy);color:white;border:none" onclick="saveCfg()">Guardar</button></div>
+  </div>
+</div>
+
+<!-- MODAL DETALLE -->
+<div class="modal-overlay hide" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="m-hdr">
+      <div><div class="m-title" id="m-title"></div><div class="m-sub" id="m-sub"></div></div>
+      <button class="m-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="m-body">
+      <div class="m-grid" id="m-grid"></div>
+      <div style="margin-bottom:4px"><div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">Observaciones</div><div class="obs-box" id="m-obs"></div></div>
+    </div>
+    <div class="m-footer"><button class="mbtn mbtn-cancel" onclick="closeModal()">Cerrar</button></div>
+  </div>
+</div>
+
+<script>
+const DB='shs_crm';
+let db=null,allProspects=[],allCalls=[],filtered=[],sortKey='',sortDir=1,currentPage=1,charts={},upcomingOpen=false,cfgCampo={},agenda={};
+
+window.addEventListener('DOMContentLoaded',()=>{
+  initFirebase();
+});
+
+function initFirebase(){
+  try{
+    if(!firebase.apps.length) firebase.initializeApp({
+  apiKey: "AIzaSyDGBgicmvOge196PiSgmIHhseQUGMiko-E",
+  authDomain: "surtidora-de-higienicos.firebaseapp.com",
+  databaseURL: "https://surtidora-de-higienicos-default-rtdb.firebaseio.com",
+  projectId: "surtidora-de-higienicos",
+  storageBucket: "surtidora-de-higienicos.firebasestorage.app",
+  messagingSenderId: "232648877023",
+  appId: "1:232648877023:web:9e8a4a743b68f4e16d9a6a"
+});
+    db=firebase.database();
+    db.ref('.info/connected').on('value',snap=>{
+      const dot=document.getElementById('sync-dot');
+      if(dot){dot.className='sync-dot'+(snap.val()?'':' off');}
+      if(snap.val()){document.getElementById('last-updated').textContent='Conectado · '+new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});}
+    });
+    document.getElementById('setup-screen') && (document.getElementById('setup-screen').style.display='none');
+    document.getElementById('app').style.display='block';
+    db.ref(DB+'/prospectos').on('value',snap=>{
+      allProspects=snap.exists()?Object.values(snap.val()).map(normP):[];
+      rebuildFilters();applyFilters();renderCampo();
+    });
+    db.ref(DB+'/config/campo').on('value',snap=>{ cfgCampo=snap.val()||{}; renderCampo(); });
+    db.ref(DB+'/recorridos').orderByKey().startAt(ymd(new Date(Date.now()-7*864e5))).on('value',snap=>{ agenda=snap.val()||{}; renderCampo(); });
+    db.ref(DB+'/llamadas').on('value',snap=>{
+      allCalls=snap.exists()?Object.values(snap.val()).map(c=>{c.responsable=nr(c.responsable);return c;}):[];
+      renderCalls();updateCallsKPI();
+    });
+  }catch(e){console.error('Firebase error:',e);}
+}
+function resetFirebase(){localStorage.removeItem('shs_fb_config');location.reload();}
+function rebuildFilters(){
+  const vds=[...new Set(allProspects.map(p=>p.responsable).filter(Boolean))].sort();
+  const mes=[...new Set(allProspects.map(p=>p.mes).filter(Boolean))];
+  const fv=document.getElementById('fVd');const curVd=fv.value;
+  fv.innerHTML='<option value="">Todas las vendedoras</option>'+vds.map(v=>`<option value="${v}"${v===curVd?' selected':''}>${v}</option>`).join('');
+  const fm=document.getElementById('fMes');const curMes=fm.value;
+  fm.innerHTML='<option value="">Todos los meses</option>'+mes.map(m=>`<option value="${m}"${m===curMes?' selected':''}>${m}</option>`).join('');
+}
+
+function applyFilters(){
+  const fv=document.getElementById('fVd').value,fm=document.getElementById('fMes').value;
+  const fe=document.getElementById('fEst').value,fa=document.getElementById('fAcc').value;
+  const fs=document.getElementById('fSearch').value.toLowerCase();
+  filtered=allProspects.filter(p=>{
+    if(fv&&p.responsable!==fv)return false;
+    if(fm&&p.mes!==fm)return false;
+    if(fe&&p.estado!==fe)return false;
+    if(fa&&p.proximaAccion!==fa)return false;
+    const fo=document.getElementById('fOri').value;
+    if(fo==='CAMPO'&&p.origen!=='CAMPO')return false;
+    if(fo==='TLMK'&&p.origen==='CAMPO')return false;
+    if(fs&&!String(p.cliente||'').toLowerCase().includes(fs)&&!String(p.contacto||'').toLowerCase().includes(fs)&&!String(p.razonSocial||'').toLowerCase().includes(fs))return false;
+    return true;
+  });
+  if(sortKey){filtered.sort((a,b)=>{const av=a[sortKey],bv=b[sortKey];if(typeof av==='number')return(av-bv)*sortDir;return String(av||'').localeCompare(String(bv||''))*sortDir;});}
+  currentPage=1;
+  document.getElementById('total-count').textContent=filtered.length+' prospectos';
+  updateKPIs();updateCharts();updateVdCards();renderTable();
+}
+
+function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function today(){return ymd(new Date());}
+// Telemarketing 4 ahora se llama Telemarketing 2. Los registros viejos se leen con el nombre nuevo.
+const RENOMBRES={'TELEMARKETING 4':'TELEMARKETING 2'};
+function nr(v){return RENOMBRES[v]||v;}
+function normP(p){['responsable','capturadoPor','actualizadoPor','derivadoDe'].forEach(k=>{if(p[k])p[k]=nr(p[k]);});return p;}   // fecha local (antes UTC: después de las 6 pm marcaba el día siguiente)
+function fm(v){if(!v)return'$0';return'$'+Number(v).toLocaleString('es-MX');}
+function fd(s){if(!s)return'—';try{return new Date(s+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});}catch{return s;}}
+function eKey(e){const m={PROSPECTO:'bst-prospecto','EN NEGOCIACION':'bst-negociacion',CERRADA:'bst-cerrada',PERDIDA:'bst-perdida'};return m[e]||'bst-gray';}
+function eLbl(e){return e==='EN NEGOCIACION'?'EN NEGOCIACIÓN':(e||'—');}
+function aCls(a){if(!a)return'';if(a.includes('PROPUESTA'))return'bac-propuesta';if(a.includes('PRESENTACIÓN'))return'bac-presentacion';if(a.includes('CIERRE'))return'bac-cierre';return'bac-seguimiento';}
+function sj(o){return JSON.stringify(o).replace(/'/g,"&#39;");}
+
+function updateKPIs(){
+  const tot=filtered.length,neg=filtered.filter(p=>p.estado==='EN NEGOCIACION').length;
+  const cer=filtered.filter(p=>p.estado==='CERRADA').length,per=filtered.filter(p=>p.estado==='PERDIDA').length;
+  const valor=filtered.filter(p=>['PROSPECTO','EN NEGOCIACION'].includes(p.estado)).reduce((a,p)=>a+(p.valorPotencial||0),0);
+  document.getElementById('kTotal').textContent=tot;
+  document.getElementById('kNeg').textContent=neg;document.getElementById('kNegSub').textContent=tot?Math.round(neg/tot*100)+'% del total':'—';document.getElementById('kNegFill').style.width=(tot?neg/tot*100:0)+'%';
+  document.getElementById('kCer').textContent=cer;document.getElementById('kCerSub').textContent=tot?Math.round(cer/tot*100)+'% conversión':'—';document.getElementById('kCerFill').style.width=(tot?cer/tot*100:0)+'%';
+  document.getElementById('kPer').textContent=per;document.getElementById('kPerSub').textContent=tot?Math.round(per/tot*100)+'% pérdida':'—';document.getElementById('kPerFill').style.width=(tot?per/tot*100:0)+'%';
+  document.getElementById('kValor').textContent=fm(valor);
+}
+function updateCallsKPI(){
+  const n=allCalls.filter(c=>!c.completada&&c.fecha===today()).length;
+  document.getElementById('kCallsHoy').textContent=n;
+  document.getElementById('kCallsFill').style.width=Math.min(n*10,100)+'%';
+}
+
+function getVdStats(){
+  const m={};
+  filtered.forEach(p=>{if(!m[p.responsable])m[p.responsable]={pros:0,neg:0,cer:0,per:0,valor:0,total:0};const s=m[p.responsable];s.total++;if(p.estado==='PROSPECTO')s.pros++;else if(p.estado==='EN NEGOCIACION')s.neg++;else if(p.estado==='CERRADA')s.cer++;else if(p.estado==='PERDIDA')s.per++;if(['PROSPECTO','EN NEGOCIACION'].includes(p.estado))s.valor+=p.valorPotencial||0;});
+  return m;
+}
+
+function updateCharts(){
+  if(typeof Chart==='undefined')return;   // sin internet para Chart.js: el resto del tablero sigue funcionando
+  const stats=getVdStats();const labels=Object.keys(stats);
+  const colors=['#185FA5','#BA7517','#3B6D11','#A32D2D','#888780'];
+  if(charts.pipeline)charts.pipeline.destroy();
+  if(charts.valor)charts.valor.destroy();
+  const cfg={type:'bar',options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#6b6b66',font:{size:11}}}},scales:{x:{stacked:true,ticks:{color:'#6b6b66'},grid:{color:'rgba(224,223,216,.8)'}},y:{stacked:true,ticks:{color:'#6b6b66'},grid:{color:'rgba(224,223,216,.8)'}}}}};
+  charts.pipeline=new Chart(document.getElementById('chartPipeline').getContext('2d'),{...cfg,data:{labels,datasets:[{label:'Prospecto',data:labels.map(l=>stats[l].pros),backgroundColor:'#185FA5'},{label:'En Negociación',data:labels.map(l=>stats[l].neg),backgroundColor:'#BA7517'},{label:'Cerrada',data:labels.map(l=>stats[l].cer),backgroundColor:'#3B6D11'},{label:'Perdida',data:labels.map(l=>stats[l].per),backgroundColor:'#A32D2D'}]}});
+  charts.valor=new Chart(document.getElementById('chartValor').getContext('2d'),{type:'doughnut',data:{labels,datasets:[{data:labels.map(l=>stats[l].valor),backgroundColor:colors.slice(0,labels.length),borderColor:'#fff',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'#6b6b66',font:{size:11},padding:12}}},cutout:'60%'}});
+}
+
+function updateVdCards(){
+  const stats=getVdStats();
+  document.getElementById('vdGrid').innerHTML=Object.entries(stats).map(([nombre,s])=>{
+    const conv=s.total?Math.round(s.cer/s.total*100):0;
+    const pPct=s.total?Math.round(s.per/s.total*100):0,nPct=s.total?Math.round(s.neg/s.total*100):0;
+    return`<div class="vd-card">
+      <div class="vdc-hdr"><div class="vdc-name">${nombre}</div><div class="vdc-total">${s.total}</div></div>
+      <div class="vdc-stats">
+        <div class="vdc-stat"><div class="vdc-stat-val" style="color:var(--blue)">${s.pros}</div><div class="vdc-stat-lbl">Prospectos</div></div>
+        <div class="vdc-stat"><div class="vdc-stat-val" style="color:var(--amber)">${s.neg}</div><div class="vdc-stat-lbl">Negociación</div></div>
+        <div class="vdc-stat"><div class="vdc-stat-val" style="color:var(--green)">${s.cer}</div><div class="vdc-stat-lbl">Cerradas</div></div>
+        <div class="vdc-stat"><div class="vdc-stat-val" style="color:var(--red)">${s.per}</div><div class="vdc-stat-lbl">Perdidas</div></div>
+      </div>
+      <div class="prog-row"><span class="prog-lbl">Cerradas</span><div class="prog-bar"><div class="prog-fill" style="width:${conv}%;background:var(--green)"></div></div><span class="prog-val">${conv}%</span></div>
+      <div class="prog-row"><span class="prog-lbl">Pérdidas</span><div class="prog-bar"><div class="prog-fill" style="width:${pPct}%;background:var(--red)"></div></div><span class="prog-val">${pPct}%</span></div>
+      <div class="prog-row"><span class="prog-lbl">Negociación</span><div class="prog-bar"><div class="prog-fill" style="width:${nPct}%;background:var(--amber)"></div></div><span class="prog-val">${nPct}%</span></div>
+      <div class="vdc-footer"><div class="vdc-valor">${fm(s.valor)}</div><div class="vdc-conv">${conv}% CONV.</div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderCalls(){
+  const t=today();
+  const todayCalls=allCalls.filter(c=>!c.completada&&c.fecha===t).sort((a,b)=>a.hora.localeCompare(b.hora));
+  const lim=(()=>{const d=new Date();d.setDate(d.getDate()+7);return ymd(d);})();
+  const upcomingCalls=allCalls.filter(c=>!c.completada&&c.fecha>t&&c.fecha<=lim).sort((a,b)=>(a.fecha+a.hora).localeCompare(b.fecha+b.hora));
+
+  // ── HOY ──
+  const ts=document.getElementById('calls-today-section');
+  ts.style.display=todayCalls.length?'block':'none';
+  if(todayCalls.length){
+    document.getElementById('calls-today-count').textContent=todayCalls.length;
+    const done=allCalls.filter(c=>c.completada&&c.fecha===t).length;
+    document.getElementById('today-head-sub').textContent=
+      `${todayCalls.length} pendiente${todayCalls.length>1?'s':''} · ${done} realizada${done!==1?'s':''} hoy`;
+    const now=new Date();
+    const hoyFmt=now.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+    document.getElementById('today-footer-date').textContent=hoyFmt.charAt(0).toUpperCase()+hoyFmt.slice(1);
+    const nowMin=now.getHours()*60+now.getMinutes();
+    document.getElementById('calls-today-list').innerHTML=todayCalls.map(c=>{
+      const [ch,cm]=c.hora.split(':'); const isPast=parseInt(ch)*60+parseInt(cm)<nowMin;
+      const vdLbl=c.responsable.replace('TELEMARKETING ','TM ');
+      return `<div class="tci" style="${isPast?'opacity:.6':''}">
+        <div class="tci-time"><div class="tci-hora">${c.hora}</div><div class="tci-lbl">${isPast?'pasada':'hrs'}</div></div>
+        <div class="tci-info">
+          <div class="tci-nombre">${c.clienteNombre}</div>
+          <div class="tci-meta">
+            <span class="tci-vd">${vdLbl}</span>
+            ${c.clienteTelefono?`<span class="tci-phone">📱 ${c.clienteTelefono}</span>`:''}
+            ${c.nota?`<span class="tci-nota">${c.nota}</span>`:''}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── PRÓXIMAS ──
+  const us=document.getElementById('calls-upcoming-section');
+  us.style.display=upcomingCalls.length?'block':'none';
+  if(upcomingCalls.length){
+    document.getElementById('upcoming-count').textContent=upcomingCalls.length;
+    const bd={};upcomingCalls.forEach(c=>{if(!bd[c.fecha])bd[c.fecha]=[];bd[c.fecha].push(c);});
+    let html='';
+    Object.entries(bd).forEach(([f,cs])=>{
+      html+=`<div class="upcoming-grp-lbl">${new Date(f+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'})}</div>`;
+      cs.forEach(c=>{
+        const vdLbl=c.responsable.replace('TELEMARKETING ','TM ');
+        html+=`<div class="upcoming-row">
+          <div class="upr-time"><div class="upr-hr">${c.hora}</div><div class="upr-lbl">hrs</div></div>
+          <div class="upr-info">
+            <div class="upr-name">${c.clienteNombre}</div>
+            <div class="upr-meta">
+              <span class="tci-vd">${vdLbl}</span>
+              ${c.clienteTelefono?`<span class="tci-phone">📱 ${c.clienteTelefono}</span>`:''}
+              ${c.nota?`<span class="upr-nota">${c.nota}</span>`:''}
+            </div>
+          </div>
+        </div>`;
+      });
+    });
+    document.getElementById('upcoming-body').innerHTML=html;
+  }
+}
+function toggleUpcoming(){upcomingOpen=!upcomingOpen;document.getElementById('upcoming-body').style.display=upcomingOpen?'block':'none';document.getElementById('upcoming-arrow').textContent=upcomingOpen?'▲ ocultar':'▼ ver';}
+
+function renderTable(){
+  const rpp=parseInt(document.getElementById('rpp').value);
+  const tp=Math.ceil(filtered.length/rpp),start=(currentPage-1)*rpp;
+  const rows=filtered.slice(start,start+rpp);
+  document.getElementById('table-count').textContent=`${start+1}–${Math.min(start+rpp,filtered.length)} de ${filtered.length}`;
+  const tb=document.getElementById('tbody');
+  tb.innerHTML=rows.length?rows.map(p=>{
+    const sk=eKey(p.estado),al=p.proximaAccion?p.proximaAccion.replace('LLAMAR PARA ',''):'';
+    return`<tr onclick='openModal(${sj(p)})'>
+      <td><div class="td-n" style="max-width:none">${p.cliente}${p.origen==='CAMPO'?'<span class="badge-campo">🚗 Campo</span>':''}${p.derivadoDe?'<span class="badge-campo" style="background:#fff3e0;color:#c76f10">↪ de '+p.derivadoDe.replace('TELEMARKETING','TLMK')+'</span>':''}${p.origen==='CAMPO'&&p.responsable===CAMPO&&necesitaRevisita(p)?'<span class="badge-rv">🔁 '+diasSinAvance(p)+' d</span>':''}</div>${p.folio?`<div class="td-m">${p.folio}</div>`:''}</td>
+      <td class="td-m">${p.mes||'—'}</td>
+      <td><div class="td-m">${p.contacto||'—'}</div><div class="td-m">${p.telefono||''}</div></td>
+      <td><span class="bst ${sk}">${eLbl(p.estado)}</span></td>
+      <td>${al?`<span class="bac ${aCls(p.proximaAccion)}">${al}</span>`:'—'}</td>
+      <td style="font-weight:700;color:var(--green);white-space:nowrap">${fm(p.valorPotencial)}</td>
+      <td class="td-m">${p.responsable||'—'}</td>
+      <td class="td-o">${p.observaciones||'—'}</td>
+    </tr>`;
+  }).join(''):
+  `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text2)">Sin resultados</td></tr>`;
+
+  const pg=document.getElementById('pagination');
+  if(rpp>=9999||tp<=1){pg.innerHTML='';return;}
+  let btns=[];
+  for(let p=1;p<=tp;p++){
+    if(p===1||p===tp||(p>=currentPage-2&&p<=currentPage+2))btns.push(`<button class="pg-btn${p===currentPage?' active':''}" onclick="goPage(${p})">${p}</button>`);
+    else if(btns[btns.length-1]!=='…')btns.push(`<span class="pg-info">…</span>`);
+  }
+  pg.innerHTML=`<button class="pg-btn" onclick="goPage(${currentPage-1})" ${currentPage<=1?'disabled':''}>‹</button>${btns.join('')}<button class="pg-btn" onclick="goPage(${currentPage+1})" ${currentPage>=tp?'disabled':''}>›</button>`;
+}
+function goPage(p){const rpp=parseInt(document.getElementById('rpp').value);const tp=Math.ceil(filtered.length/rpp);if(p<1||p>tp)return;currentPage=p;renderTable();window.scrollTo({top:document.querySelector('.table-wrap').offsetTop-70,behavior:'smooth'});}
+function sortBy(k){if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=1;}applyFilters();}
+
+function openModal(p){if(typeof p==='string')p=JSON.parse(p);
+  document.getElementById('m-title').textContent=p.cliente;
+  const sk=eKey(p.estado);
+  document.getElementById('m-sub').innerHTML=`<span class="bst ${sk}">${eLbl(p.estado)}</span> ${p.responsable||''} · ${p.mes||''}`;
+  document.getElementById('m-grid').innerHTML=`<div><div class="m-field-lbl">Contacto</div><div class="m-field-val">${p.contacto||'—'}</div></div><div><div class="m-field-lbl">Teléfono</div><div class="m-field-val">${p.telefono?`<a href="tel:${p.telefono}">${p.telefono}</a>`:'—'}</div></div><div><div class="m-field-lbl">Correo</div><div class="m-field-val" style="word-break:break-all">${p.email?`<a href="mailto:${p.email}">${p.email}</a>`:'—'}</div></div><div><div class="m-field-lbl">Valor Potencial</div><div class="m-field-val" style="color:var(--green)">${fm(p.valorPotencial)}</div></div><div><div class="m-field-lbl">Próxima Acción</div><div class="m-field-val">${p.proximaAccion||'—'}</div></div><div><div class="m-field-lbl">Folio</div><div class="m-field-val">${p.folio||'—'}</div></div><div><div class="m-field-lbl">Primer Contacto</div><div class="m-field-val">${fd(p.primerContacto)}</div></div><div><div class="m-field-lbl">Última Actualización</div><div class="m-field-val">${fd(p.ultimaActualizacion)}</div></div>`;
+  if(p.origen==='CAMPO'){
+    const rv=p.revisitas?Object.values(p.revisitas).map(r=>fd(r.fecha)).sort().join(', '):'—';
+    document.getElementById('m-grid').innerHTML+=`
+      <div><div class="m-field-lbl">Origen</div><div class="m-field-val"><span class="badge-campo" style="margin:0">🚗 Vendedor de campo</span></div></div>
+      <div><div class="m-field-lbl">Capturado por</div><div class="m-field-val">${p.capturadoPor||'—'}${p.actualizadoPor&&p.actualizadoPor!==p.capturadoPor?' · editó '+p.actualizadoPor:''}</div></div>
+      <div><div class="m-field-lbl">Fecha de visita</div><div class="m-field-val">${fd(p.fechaVisita)}</div></div>
+      <div><div class="m-field-lbl">Giro / Zona</div><div class="m-field-val">${[p.giro,p.zona].filter(Boolean).join(' · ')||'—'}</div></div>
+      <div><div class="m-field-lbl">Razón social</div><div class="m-field-val">${p.razonSocial||'—'}</div></div>
+      <div><div class="m-field-lbl">Domicilio</div><div class="m-field-val">${p.domicilio||'—'}</div></div>
+      <div><div class="m-field-lbl">Cotizado</div><div class="m-field-val">${fd(p.fechaCotizacion)}</div></div>
+      <div><div class="m-field-lbl">Cliente activado</div><div class="m-field-val">${p.fechaActivacion?'<span style="color:var(--green)">'+fd(p.fechaActivacion)+'</span>':'—'}</div></div>
+      ${p.derivadoDe?`<div><div class="m-field-lbl">Enviado a campo por</div><div class="m-field-val">${p.derivadoDe} · ${fd(p.fechaDerivacion)}</div></div><div><div class="m-field-lbl">Motivo</div><div class="m-field-val">${String(p.motivoDerivacion||'—').replace(/</g,'&lt;')}</div></div>`:''}
+      <div><div class="m-field-lbl">Visitas de seguimiento</div><div class="m-field-val">${rv}</div></div>
+      <div><div class="m-field-lbl">Días sin avance</div><div class="m-field-val">${['PROSPECTO','EN NEGOCIACION'].includes(p.estado)?diasSinAvance(p)+' días'+(necesitaRevisita(p)?' <span class="badge-rv" style="margin:0">🔁 Volver a visitar</span>':''):'—'}</div></div>`;
+  }
+  document.getElementById('m-obs').textContent=p.observaciones||'Sin observaciones.';
+  document.getElementById('modal-overlay').classList.remove('hide');
+}
+function closeModal(){document.getElementById('modal-overlay').classList.add('hide');}
+
+/* ══════════════════════════════════════════
+   VENDEDOR DE CAMPO  ·  misma lógica que PROSPECCION_CLIENTES.html
+   (si cambias metas aquí, cámbialas también allá)
+═══════════════════════════════════════════ */
+const CAMPO='VENDEDOR DE CAMPO';
+const META_EFECT=0.70, META_PRUEBA_TOTAL=38, DIAS_SIN_AVANCE=7;
+const METAS=[
+  {n:'Mes 1 (con gerente)', vis:60,  cot:42, cli:3,  conv:.15},
+  {n:'Mes 2',               vis:100, cot:70, cli:14, conv:.20},
+  {n:'Mes 3',               vis:120, cot:84, cli:21, conv:.25},
+  {n:'Planta',              vis:120, cot:84, cli:21, conv:.25, llave:14}
+];
+function addDays(s,n){const d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n);return ymd(d);}
+function diasEntre(a,b){return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/86400000);}
+function enRango(f,a,b){return !!f&&f>=a&&f<=b;}
+function campoList(){return allProspects.filter(p=>p.responsable===CAMPO);}
+function esActivado(p){return !!p.fechaActivacion;}
+function ultimoAvance(p){return [p.fechaVisita,p.fechaAvance,p.fechaCotizacion,p.ultimaRevisita].filter(Boolean).sort().pop()||p.primerContacto||'';}
+function diasSinAvance(p){const u=ultimoAvance(p);return u?diasEntre(u,today()):0;}
+function necesitaRevisita(p){return !!p.fechaVisita&&(p.estado==='PROSPECTO'||p.estado==='EN NEGOCIACION')&&diasSinAvance(p)>=DIAS_SIN_AVANCE;}
+// Fecha de inicio: la configurada; si no hay, la primera visita registrada; si no hay visitas, hoy.
+function inicioCampo(){
+  if(cfgCampo.inicio)return{fecha:cfgCampo.inicio,estimada:false};
+  const v=campoList().filter(p=>p.fechaVisita).map(p=>p.fechaVisita).sort();
+  return{fecha:v[0]||today(),estimada:true};
+}
+function periodoActual(){
+  const t=today(),ini=inicioCampo().fecha;
+  if(ini&&t>=ini){const idx=Math.floor(diasEntre(ini,t)/30);
+    if(idx<3)return{meta:METAS[idx],idx,desde:addDays(ini,idx*30),hasta:addDays(ini,idx*30+29),prueba:true};}
+  const d=new Date();
+  return{meta:METAS[3],idx:3,desde:ymd(new Date(d.getFullYear(),d.getMonth(),1)),hasta:ymd(new Date(d.getFullYear(),d.getMonth()+1,0)),prueba:false};
+}
+function contar(m,a,b){
+  const vis=m.filter(p=>enRango(p.fechaVisita,a,b)).length;
+  const cot=m.filter(p=>enRango(p.fechaCotizacion,a,b)).length;
+  const cli=m.filter(p=>esActivado(p)&&enRango(p.fechaActivacion,a,b)).length;
+  return{vis,cot,cli};
+}
+function semaforo(pct){return pct>=1?'ok':(pct>=.7?'mid':'bad');}
+function tile(lbl,val,meta,pct,nota){const s=semaforo(pct);
+  return `<div class="cp-tile"><div class="cp-lbl">${lbl}</div><div class="cp-val c-${s}">${val}${meta!==null?` <span class="cp-meta">/ ${meta}</span>`:''}</div><div class="cp-bar"><div class="b-${s}" style="width:${Math.min(100,Math.round(pct*100))}%"></div></div><div class="cp-note">${nota}</div></div>`;}
+
+function renderCampo(){
+  if(!document.getElementById('cp-grid'))return;
+  const m=campoList(),per=periodoActual(),M=per.meta,{vis,cot,cli}=contar(m,per.desde,per.hasta);
+  const efect=vis?cot/vis:0,conv=cot?cli/cot:0,restan=diasEntre(today(),per.hasta);
+  const visHoy=m.filter(p=>p.fechaVisita===today()).length;
+  document.getElementById('cp-periodo').textContent=per.prueba?`Mes en curso · ${M.n} del periodo de prueba`:'Mes en curso · en planta';
+  document.getElementById('cp-rango').textContent=`Del ${fd(per.desde)} al ${fd(per.hasta)} · ${restan>=0?`quedan ${restan} día${restan===1?'':'s'}`:'periodo cerrado'} · ${m.length} prospectos registrados en total`;
+  document.getElementById('cp-grid').innerHTML=
+    tile('Visitas',vis,M.vis,vis/M.vis,`Hoy: ${visHoy}`)+
+    tile('Cotizaciones',cot,M.cot,cot/M.cot,'Estado: Negociación')+
+    tile('Clientes activados',cli,M.cli,cli/M.cli,per.idx===3?`Llave: ${M.llave} · ${cli>=M.llave?'<b class="c-ok">cobra residual</b>':'<b class="c-bad">sin residual</b>'}`:'Estado: Cerrada')+
+    tile('Efectividad visita → cotización',Math.round(efect*100)+'%',null,efect/META_EFECT,`Meta: ${Math.round(META_EFECT*100)}%`)+
+    tile('Conversión cotización → cliente',Math.round(conv*100)+'%',null,M.conv?conv/M.conv:0,`Meta: ${Math.round(M.conv*100)}%`);
+
+  // Pie + tabla del periodo de prueba
+  let foot='',tr='';
+  const IN=inicioCampo();
+  {
+    const ini=IN.fecha,fin90=addDays(ini,89);
+    const acum=m.filter(p=>esActivado(p)&&enRango(p.fechaActivacion,ini,fin90)).length;
+    foot+=`<span>Acumulado periodo de prueba (${fd(ini)} – ${fd(fin90)}): <b>${acum} / ${META_PRUEBA_TOTAL} clientes</b></span>`;
+    if(today()>fin90){
+      foot+=`<span>${acum>=38?'<b class="c-ok">Cumplió: pasa a planta</b>':acum>=28?'<b class="c-mid">28–37: valoración de Gerencia / extensión de 30 días</b>':'<b class="c-bad">Menos de 28: no cumplió</b>'}</span>`;
+    } else {
+      const dRest=diasEntre(today(),fin90), falta=Math.max(0,META_PRUEBA_TOTAL-acum);
+      foot+=`<span>Faltan <b>${falta}</b> clientes en <b>${dRest}</b> días${falta&&dRest>0?` (≈ ${(falta/Math.max(1,dRest)*7).toFixed(1)} por semana)`:''}</span>`;
+    }
+    const rows=[0,1,2].map(i=>{
+      const a=addDays(ini,i*30),b=addDays(ini,i*30+29),r=contar(m,a,b),Mi=METAS[i],now=per.prueba&&per.idx===i,fut=today()<a;
+      const c=(v,mt)=>fut?'<span style="color:var(--text3)">—</span>':`<b class="c-${semaforo(v/mt)}">${v}</b> <span style="color:var(--text3)">/ ${mt}</span>`;
+      const ef=r.vis?Math.round(r.cot/r.vis*100)+'%':'—';
+      return `<tr class="${now?'tr-now':''}"><td><b>${Mi.n}</b>${now?' <span class="badge-campo" style="margin-left:4px">actual</span>':''}<div class="td-m">${fd(a)} – ${fd(b)}</div></td>
+        <td class="tr-cell">${c(r.vis,Mi.vis)}</td><td class="tr-cell">${c(r.cot,Mi.cot)}</td><td class="tr-cell">${c(r.cli,Mi.cli)}</td><td class="tr-cell">${fut?'—':ef}</td></tr>`;
+    }).join('');
+    tr=`<table class="tr-table"><thead><tr><th>Periodo</th><th>Visitas</th><th>Cotizaciones</th><th>Activados</th><th>Efect.</th></tr></thead><tbody>${rows}
+      <tr><td><b>Total 90 días</b></td><td></td><td></td><td class="tr-cell"><b class="c-${semaforo(acum/META_PRUEBA_TOTAL)}">${acum}</b> <span style="color:var(--text3)">/ ${META_PRUEBA_TOTAL}</span></td><td></td></tr></tbody></table>`;
+  }
+  if(IN.estimada)foot+=`<span class="cp-warn">⚙ Fecha de inicio estimada (${fd(IN.fecha)}, primera visita registrada). Configúrala para que los meses 1, 2 y 3 sean exactos.</span>`;
+  document.getElementById('cp-foot').innerHTML=foot;
+  document.getElementById('tr-body').innerHTML=tr;
+  renderAnual(m);
+  renderRevisitasMaster(m);
+  renderAgendaMaster();
+  { const el=document.getElementById('corte-n'); if(el) el.textContent=corteVencidos().length; }
+  renderChartCampo(m);
+}
+
+/* ── Acumulado del año: meta prorrateada por día (mes 1, 2 y 3 del periodo de prueba; después, meta de planta) ── */
+function metaDia(d,ini,k){
+  if(d<ini)return 0;
+  const i=Math.floor(diasEntre(ini,d)/30);
+  if(i<3)return METAS[i][k]/30;
+  const x=new Date(d+'T12:00:00');return METAS[3][k]/new Date(x.getFullYear(),x.getMonth()+1,0).getDate();
+}
+function renderAnual(m){
+  const t=today(),y=t.slice(0,4),ini=inicioCampo().fecha,desde=y+'-01-01';
+  const r=contar(m,desde,t);
+  const meta={vis:0,cot:0,cli:0};
+  for(let d=(ini>desde?ini:desde);d<=t;d=addDays(d,1)){meta.vis+=metaDia(d,ini,'vis');meta.cot+=metaDia(d,ini,'cot');meta.cli+=metaDia(d,ini,'cli');}
+  Object.keys(meta).forEach(k=>meta[k]=Math.max(1,Math.round(meta[k])));
+  const efect=r.vis?r.cot/r.vis:0,conv=r.cot?r.cli/r.cot:0;
+  const ref=t<addDays(ini,90)?METAS[Math.min(2,Math.floor(diasEntre(ini,t)/30))].conv:METAS[3].conv;
+  document.getElementById('ca-title').textContent=`Acumulado del año ${y}`;
+  document.getElementById('ca-rango').textContent=`Del ${fd(ini>desde?ini:desde)} al ${fd(t)} · meta acumulada a hoy, prorrateada por día según el mes en que va`;
+  document.getElementById('ca-grid').innerHTML=
+    tile('Visitas',r.vis,meta.vis,r.vis/meta.vis,'Meta acumulada a hoy')+
+    tile('Cotizaciones',r.cot,meta.cot,r.cot/meta.cot,'Meta acumulada a hoy')+
+    tile('Clientes activados',r.cli,meta.cli,r.cli/meta.cli,'Meta acumulada a hoy')+
+    tile('Efectividad visita → cotización',Math.round(efect*100)+'%',null,efect/META_EFECT,`Meta: ${Math.round(META_EFECT*100)}%`)+
+    tile('Conversión cotización → cliente',Math.round(conv*100)+'%',null,ref?conv/ref:0,`Meta actual: ${Math.round(ref*100)}%`);
+}
+
+function renderRevisitasMaster(m){
+  const lista=m.filter(necesitaRevisita).sort((a,b)=>diasSinAvance(b)-diasSinAvance(a));
+  const sec=document.getElementById('rv-section');
+  const der=m.filter(p=>p.derivadoDe&&!p.fechaVisita&&p.estado!=='CERRADA'&&p.estado!=='PERDIDA').sort((a,b)=>String(a.fechaDerivacion).localeCompare(String(b.fechaDerivacion)));
+  const derHtml=der.length?`<div class="rv-panel" style="box-shadow:0 2px 12px rgba(40,53,147,.12),0 0 0 2px rgba(40,53,147,.2)">
+    <div class="rv-head" style="background:linear-gradient(135deg,#1a237e 0%,#3949ab 100%)"><div style="font-size:24px">↪</div><div><div class="rv-title">Enviados por telemarketing · pendientes de visita</div><div class="rv-sub">Clientes que las vendedoras pasaron al vendedor de campo para que ayude a cerrarlos</div></div><div class="rv-badge" style="color:#283593">${der.length}</div></div>
+    ${der.map(p=>{const d=diasEntre(p.fechaDerivacion||today(),today());return `<div class="rv-item" onclick='openModal(${sj(p)})'>
+      <div class="rv-days"><div class="rv-days-n" style="color:#283593">${d}</div><div class="rv-days-l">día${d===1?'':'s'} esperando</div></div>
+      <div class="rv-info"><div class="rv-name">${p.cliente}</div><div class="rv-meta"><span class="bst ${eKey(p.estado)}">${eLbl(p.estado)}</span><span>Enviado por <b>${p.derivadoDe}</b> el ${fd(p.fechaDerivacion)}</span>${p.motivoDerivacion?`<span>💬 ${String(p.motivoDerivacion).replace(/</g,'&lt;')}</span>`:''}</div></div>
+    </div>`;}).join('')}</div>`:'';
+  if(!m.length){sec.innerHTML=derHtml;return;}
+  if(!lista.length){sec.innerHTML=derHtml+`<div class="rv-panel" style="box-shadow:var(--shadow)"><div class="rv-empty">✓ Sin segundas visitas pendientes: ningún prospecto lleva ${DIAS_SIN_AVANCE} días o más sin avance.</div></div>`;return;}
+  const ord=n=>n+'ª';
+  sec.innerHTML=derHtml+`<div class="rv-panel">
+    <div class="rv-head"><div style="font-size:24px">🚗</div><div><div class="rv-title">Segundas visitas pendientes del vendedor de campo</div><div class="rv-sub">${DIAS_SIN_AVANCE} días o más sin avance · solo lectura (el vendedor marca "Ya lo visité" desde su vista)</div></div><div class="rv-badge">${lista.length}</div></div>
+    ${lista.map(p=>{const n=(p.revisitas?Object.keys(p.revisitas).length:0)+2;return `<div class="rv-item" onclick='openModal(${sj(p)})'>
+      <div class="rv-days"><div class="rv-days-n">${diasSinAvance(p)}</div><div class="rv-days-l">días sin avance</div></div>
+      <div class="rv-info"><div class="rv-name">${p.cliente}<span class="badge-rv">🔁 ${ord(n)} visita</span></div>
+        <div class="rv-meta"><span class="bst ${eKey(p.estado)}">${eLbl(p.estado)}</span>${p.contacto?`<span>👤 ${p.contacto}</span>`:''}${p.telefono?`<span>📱 ${p.telefono}</span>`:''}${p.zona?`<span>📍 ${p.zona}</span>`:''}<span>Último avance: ${fd(ultimoAvance(p))}</span>${p.capturadoPor?`<span>Capturó: ${p.capturadoPor}</span>`:''}</div></div>
+    </div>`;}).join('')}
+  </div>`;
+}
+
+function renderChartCampo(m){
+  if(typeof Chart==='undefined')return;
+  const d=new Date(),dow=(d.getDay()+6)%7; d.setDate(d.getDate()-dow);  // lunes de esta semana
+  const lunes=ymd(d),weeks=[];
+  for(let i=7;i>=0;i--){const a=addDays(lunes,-7*i);weeks.push({a,b:addDays(a,6)});}
+  const labels=weeks.map(w=>new Date(w.a+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short'}));
+  const data=weeks.map(w=>contar(m,w.a,w.b));
+  if(charts.campo)charts.campo.destroy();
+  charts.campo=new Chart(document.getElementById('chartCampo').getContext('2d'),{type:'bar',
+    data:{labels,datasets:[
+      {label:'Visitas',data:data.map(x=>x.vis),backgroundColor:'#185FA5'},
+      {label:'Cotizaciones',data:data.map(x=>x.cot),backgroundColor:'#BA7517'},
+      {label:'Activados',data:data.map(x=>x.cli),backgroundColor:'#3B6D11'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#6b6b66',font:{size:11}}}},
+      scales:{x:{ticks:{color:'#6b6b66',font:{size:10}},grid:{display:false}},y:{beginAtZero:true,ticks:{color:'#6b6b66',precision:0},grid:{color:'rgba(224,223,216,.8)'}}}}});
+}
+
+/* ── Agenda de visitas del vendedor de campo (la organiza telemarketing; aquí solo lectura) ── */
+const RT_MAX=10, AG_DIAS=12;
+function agListaDias(){const out=[],d=new Date();while(out.length<AG_DIAS){if(d.getDay()!==0)out.push(ymd(d));d.setDate(d.getDate()+1);}return out;}
+function agParadas(f){const r=agenda[f];return r&&r.paradas?Object.values(r.paradas).filter(Boolean):[];}
+function agEtiquetaDia(f){const d=new Date(f+'T12:00:00'),t=today();const b=d.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});return (f===t?'Hoy · ':(f===ymd(new Date(Date.now()+864e5))?'Mañana · ':''))+b;}
+function agPor(f,id){const a=agenda[f]&&agenda[f].asignados&&agenda[f].asignados[id];if(a&&a.por)return nr(a.por);const p=allProspects.find(x=>x.id===id);return nr((p&&(p.derivadoDe||p.capturadoPor))||'VENDEDOR DE CAMPO');}
+function agColor(n){return n>=RT_MAX?'var(--red)':(n>=8?'var(--amber)':'var(--green)');}
+function renderAgendaMaster(){
+  const sec=document.getElementById('ag-section'); if(!sec)return;
+  const dias=agListaDias(), cnt=dias.map(f=>agParadas(f).length), total=cnt.reduce((a,b)=>a+b,0);
+  const llenos=cnt.filter(n=>n>=RT_MAX).length, vacios=cnt.filter(n=>n===0).length;
+  const porTm={}; dias.forEach(f=>{const asg=(agenda[f]&&agenda[f].asignados)||{};agParadas(f).forEach(id=>{const k=agPor(f,id);porTm[k]=(porTm[k]||0)+1;});});
+  // visitas de días pasados (últimos 7) que siguen sin fecha de visita registrada
+  const t=today(), atrasadas=Object.keys(agenda).filter(f=>f<t).reduce((a,f)=>a+agParadas(f).filter(id=>{const p=allProspects.find(x=>x.id===id);return p&&!p.fechaVisita;}).length,0);
+  const card=f=>{const ids=agParadas(f),n=ids.length,asg=(agenda[f]&&agenda[f].asignados)||{};
+    return `<div class="ag-day"><div class="ag-day-h"><div class="ag-day-t">${agEtiquetaDia(f)}</div><div class="ag-day-n" style="color:${agColor(n)}">${n}/${RT_MAX}</div></div>
+      <div class="ag-bar"><div style="width:${n/RT_MAX*100}%;background:${agColor(n)}"></div></div>
+      <div class="ag-list" style="padding-bottom:6px">${ids.map((id,i)=>{const p=allProspects.find(x=>x.id===id);if(!p)return'';const por=agPor(f,id).replace('TELEMARKETING','TLMK').replace('VENDEDOR DE CAMPO','Vendedor');
+        return `<div class="ag-it" style="cursor:pointer" onclick='openModal(${sj(p)})'><span class="ag-num">${i+1}</span><span class="ag-cli" title="${String(p.cliente).replace(/"/g,'&quot;')}">${p.cliente}</span><span class="ag-por">${por}</span></div>`;}).join('')||'<div class="ag-empty">Sin visitas</div>'}</div></div>`;};
+  sec.innerHTML=`<div class="ag-panel">
+    <div class="ag-head"><div><div class="ag-title">📅 Agenda de visitas próximas del vendedor de campo</div>
+      <div class="ag-sub">Próximos ${AG_DIAS} días (sin domingos) · máximo ${RT_MAX} por día · la organizan las vendedoras desde Prospección de clientes</div></div></div>
+    <div class="ag-scroll">${dias.map(card).join('')}</div>
+    <div class="ag-sum"><span><b>${total}</b> visitas agendadas</span><span><b>${llenos}</b> día${llenos===1?'':'s'} lleno${llenos===1?'':'s'}</span><span><b>${vacios}</b> día${vacios===1?'':'s'} sin visitas</span>
+      ${Object.entries(porTm).sort().map(([k,v])=>`<span>${k.replace('TELEMARKETING','TLMK').replace('VENDEDOR DE CAMPO','Vendedor')}: <b>${v}</b></span>`).join('')}
+      ${atrasadas?`<span class="cp-warn">⚠ ${atrasadas} visita${atrasadas===1?'':'s'} de días pasados sin registrar</span>`:''}</div>
+  </div>`;
+}
+// la agenda también se refresca cuando cambian los prospectos
+function openCfg(){document.getElementById('cfg-inicio').value=cfgCampo.inicio||today();document.getElementById('cfg-overlay').classList.remove('hide');}
+function closeCfg(){document.getElementById('cfg-overlay').classList.add('hide');}
+function saveCfg(){const v=document.getElementById('cfg-inicio').value;if(!v)return alert('Elige una fecha');
+  db.ref(DB+'/config/campo').update({inicio:v}).then(closeCfg).catch(e=>alert('Error: '+e.message));}
+
+/* ══════════════════════════════════════════
+   CORTE DIARIO DEL VENDEDOR DE CAMPO (solo seguimientos vencidos)
+   Vencido = prospecto abierto con 7+ días sin avance, o con una visita agendada en un día pasado que no se registró.
+═══════════════════════════════════════════ */
+function corteVencidos(){
+  const t=today(), out=[];
+  campoList().filter(p=>p.estado==='PROSPECTO'||p.estado==='EN NEGOCIACION').forEach(p=>{
+    const razones=[]; let dias=0;
+    const dsa=diasSinAvance(p);
+    if(dsa>=DIAS_SIN_AVANCE){ razones.push(p.fechaVisita?`${dsa} días sin avance`:`Enviado hace ${dsa} días y sin visitar`); dias=Math.max(dias,dsa-DIAS_SIN_AVANCE); }
+    // visita agendada que ya pasó y no se registró después de esa fecha
+    const perdidas=Object.keys(agenda).filter(f=>f<t && agParadas(f).includes(p.id) && !(p.fechaVisita&&p.fechaVisita>=f) && !(p.ultimaRevisita&&p.ultimaRevisita>=f)).sort();
+    if(perdidas.length){ const f=perdidas[perdidas.length-1]; razones.push(`Visita agendada ${fd(f)} no realizada`); dias=Math.max(dias,diasEntre(f,t)); }
+    if(razones.length) out.push({p, razones, dias, dsa});
+  });
+  return out.sort((a,b)=>b.dsa-a.dsa);
+}
+function cortePor(p){ return p.derivadoDe ? nr(p.derivadoDe).replace('TELEMARKETING','Telemarketing') : 'Propio (vendedor)'; }
+function corteNotas(p){
+  const partes=[];
+  if(p.motivoDerivacion) partes.push('Motivo: '+p.motivoDerivacion);
+  const obs=String(p.observaciones||'').split('\n').map(x=>x.trim()).filter(Boolean)
+    .filter(x=>!(p.motivoDerivacion && x.includes('Enviado al vendedor de campo')));
+  if(obs.length) partes.push(obs.slice(-2).join(' · '));
+  const s=partes.join(' | ');
+  return s.length>260 ? s.slice(0,257)+'…' : s;
+}
+function corteEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function abrirCorte(){
+  const lista=corteVencidos(), conApoyo=lista.filter(x=>x.p.derivadoDe).length;
+  const hoyLargo=new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const filas=lista.map((x,i)=>`<tr>
+      <td class="c">${i+1}</td>
+      <td><b>${corteEsc(x.p.cliente)}</b>${x.p.contacto||x.p.telefono?`<div class="s">${corteEsc([x.p.contacto,x.p.telefono].filter(Boolean).join(' · '))}</div>`:''}</td>
+      <td>${corteEsc(x.p.folio||'—')}</td>
+      <td>${corteEsc(cortePor(x.p))}</td>
+      <td><span class="v">${corteEsc(x.razones.join(' · '))}</span><div class="s">Último avance: ${fd(ultimoAvance(x.p))} · ${eLbl(x.p.estado)}</div></td>
+      <td class="n">${corteEsc(corteNotas(x.p))||'—'}</td>
+      <td class="w"></td>
+    </tr>`).join('');
+  const html=`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Corte diario · Vendedor de campo · ${today()}</title>
+  <style>
+    @page{size:letter landscape;margin:12mm}
+    *{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#1a1a18;margin:0;padding:18px;font-size:11px}
+    h1{font-size:18px;color:#0f2744;margin:0 0 2px}.sub{color:#6b6b66;margin-bottom:10px}
+    .res{display:flex;gap:22px;margin:8px 0 12px;font-size:12px}.res b{font-size:14px}
+    table{width:100%;border-collapse:collapse}th{background:#0f2744;color:#fff;text-align:left;padding:6px;font-size:10px;text-transform:uppercase}
+    td{border:1px solid #c8c7c0;padding:6px;vertical-align:top}tr{page-break-inside:avoid}
+    .c{text-align:center;font-weight:700;width:26px}.s{color:#6b6b66;font-size:10px;margin-top:2px}.v{color:#A32D2D;font-weight:700}
+    .n{font-size:10px;max-width:260px}.w{width:150px}
+    .firmas{display:flex;gap:60px;margin-top:28px;font-size:12px}.firmas div{flex:1;border-top:1px solid #1a1a18;padding-top:4px}
+    .bar{position:sticky;top:0;background:#fff;padding:8px 0 12px;display:flex;gap:8px}.bar button{padding:8px 14px;border-radius:7px;border:1px solid #c8c7c0;background:#f7f7f5;font-weight:700;cursor:pointer}
+    .bar button.p{background:#0f2744;color:#fff;border-color:#0f2744}
+    .vacio{padding:30px;text-align:center;color:#3B6D11;font-size:14px;font-weight:700;border:1px dashed #c8e6b8;background:#EAF3DE;border-radius:8px}
+    @media print{.bar{display:none}body{padding:0}}
+  </style></head><body>
+  <div class="bar"><button class="p" onclick="print()">🖨 Imprimir</button><button onclick="close()">Cerrar</button></div>
+  <h1>Corte diario · Seguimientos vencidos del vendedor de campo</h1>
+  <div class="sub">Surtidora de Higiénicos y Servicios (SHS) · ${hoyLargo.charAt(0).toUpperCase()+hoyLargo.slice(1)}</div>
+  <div class="res"><span>Vencidos: <b>${lista.length}</b></span><span>Con apoyo de telemarketing: <b>${conApoyo}</b></span><span>Propios del vendedor: <b>${lista.length-conApoyo}</b></span>
+    <span style="color:#6b6b66">Vencido = ${DIAS_SIN_AVANCE}+ días sin avance, o visita agendada que no se realizó</span></div>
+  ${lista.length?`<table><thead><tr><th>#</th><th>Prospecto</th><th>Folio cotización</th><th>Vendedora que apoya</th><th>Por qué está vencido</th><th>Notas</th><th>Compromiso / nueva fecha</th></tr></thead><tbody>${filas}</tbody></table>`
+    :`<div class="vacio">✓ Sin seguimientos vencidos hoy.</div>`}
+  <div class="firmas"><div>Vendedor de campo</div><div>Gerente de ventas</div></div>
+  </body></html>`;
+  const w=window.open('','_blank');
+  if(!w){ alert('El navegador bloqueó la ventana. Permite ventanas emergentes para este archivo.'); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+}
+
+function exportCSV(){
+  if(!filtered.length)return alert('No hay datos para exportar.');
+  const h=['ID','Mes','Folio','Cliente','Contacto','Email','Teléfono','Estado','Primer Contacto','Próxima Acción','Última Actualización','Valor Potencial','Responsable','Observaciones','Origen','Capturado por','Fecha visita','Giro','Zona','Razón social','Domicilio','Fecha cotización','Fecha activación','Visitas de seguimiento','Días sin avance','Enviado a campo por','Fecha de envío','Motivo del envío'];
+  const rows=filtered.map(p=>[p.id,p.mes,p.folio,p.cliente,p.contacto,p.email,p.telefono,p.estado,fd(p.primerContacto),p.proximaAccion,fd(p.ultimaActualizacion),p.valorPotencial,p.responsable,p.observaciones,
+    p.origen==='CAMPO'?'CAMPO':'TELEMARKETING',p.capturadoPor,p.fechaVisita?fd(p.fechaVisita):'',p.giro,p.zona,p.razonSocial,p.domicilio,p.fechaCotizacion?fd(p.fechaCotizacion):'',p.fechaActivacion?fd(p.fechaActivacion):'',
+    p.revisitas?Object.keys(p.revisitas).length:0,(p.origen==='CAMPO'&&['PROSPECTO','EN NEGOCIACION'].includes(p.estado))?diasSinAvance(p):'',p.derivadoDe,p.fechaDerivacion?fd(p.fechaDerivacion):'',p.motivoDerivacion]);
+  const csv=[h,...rows].map(r=>r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download='Prospectos_SHS_'+new Date().toLocaleDateString('es-MX').replace(/\//g,'-')+'.csv';a.click();
+}
+</script>
+</body>
+</html>
