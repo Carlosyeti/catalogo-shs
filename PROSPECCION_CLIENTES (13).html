@@ -6,7 +6,6 @@
 <title>Prospectos · SHS</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -123,12 +122,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-seri
 .up-done{padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:1.5px solid var(--green);background:var(--green-bg);color:var(--green)}
 .up-done:hover{background:var(--green);color:white}
 
-/* ══ UPLOAD ══ */
-.upload-card{background:var(--bg);border-radius:10px;border:1.5px dashed var(--border2);padding:11px 16px;cursor:pointer;display:flex;align-items:center;gap:12px;margin-bottom:12px;transition:all .15s}
-.upload-card:hover,.upload-card.drag{border-color:var(--blue);background:var(--blue-bg)}
-.upload-icon{font-size:22px;flex-shrink:0}.upload-title{font-weight:600;font-size:13px}
-.upload-msg{font-size:12px;color:var(--text2);margin-top:2px}.upload-msg.ok{color:var(--green);font-weight:500}.upload-msg.err{color:var(--red)}
-#xlsInput{display:none}
 
 /* ══ FILTROS ══ */
 .filter-bar{background:var(--bg);border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:12px;box-shadow:var(--shadow)}
@@ -377,7 +370,6 @@ body.rol-campo .rol-campo-only{display:inline-flex!important}
     <div class="hdr-right">
       <span title="Firebase"><span class="sync-dot syncing" id="sync-dot"></span></span>
       <button class="hbtn hbtn-blue" id="btn-nuevo" onclick="openProspectModal(null)">+ Prospecto</button>
-      <button class="hbtn tlmk-only" onclick="document.getElementById('xlsInput').click()">⬆ Excel</button>
       <button class="hbtn hbtn-blue rol-campo-only" onclick="rtAbrir()">🗺 Planear recorrido</button>
       <button class="hbtn" onclick="doLogout()">🔄 Cambiar perfil</button>
     </div>
@@ -450,12 +442,6 @@ body.rol-campo .rol-campo-only{display:inline-flex!important}
       </div>
     </div>
 
-    <!-- UPLOAD -->
-    <div class="upload-card tlmk-only" id="upload-card" onclick="document.getElementById('xlsInput').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondrop="dropXls(event)" ondragleave="this.classList.remove('drag')">
-      <div class="upload-icon">📂</div>
-      <div><div class="upload-title" id="upload-title">Cargar / Actualizar desde Excel</div><div class="upload-msg" id="upload-msg">Sube el reporte Excel. Los datos se sincronizan en Firebase para todas las vistas.</div></div>
-    </div>
-    <input type="file" id="xlsInput" accept=".xlsx,.xls" onchange="loadXls(event)">
 
     <!-- FILTROS -->
     <div class="filter-bar">
@@ -724,42 +710,6 @@ function startApp(){
   });
 }
 
-/* ── EXCEL ── */
-function dropXls(e){ e.preventDefault(); document.getElementById('upload-card').classList.remove('drag'); if(e.dataTransfer.files[0]) processXls(e.dataTransfer.files[0]); }
-function loadXls(e){ if(e.target.files[0]) processXls(e.target.files[0]); e.target.value=''; }
-function processXls(file){
-  const r = new FileReader();
-  r.onload = ev => {
-    try{
-      const wb = XLSX.read(ev.target.result, {type:'array'});
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
-      let hdr = -1;
-      for(let i=0;i<rows.length;i++){ if(String(rows[i][0]).trim()==='ID'){hdr=i;break;} }
-      if(hdr<0) hdr=1;
-      const upd={}, seen=new Set(); let n=0;
-      for(let i=hdr+1;i<rows.length;i++){
-        const r2=rows[i]; const id=String(r2[0]||'').trim();
-        if(!id||id==='ID'||seen.has(id)) continue; seen.add(id);
-        upd[DB+'/prospectos/'+id]={id, mes:String(r2[1]||'').trim(), folio:String(r2[2]||'').trim(),
-          cliente:String(r2[3]||'').trim(), contacto:String(r2[4]||'').trim(), email:String(r2[5]||'').trim(),
-          telefono:String(r2[6]||'').trim(), estado:String(r2[7]||'').trim().toUpperCase(),
-          primerContacto:xd(r2[8]), proximaAccion:String(r2[9]||'').trim().toUpperCase(),
-          ultimaActualizacion:xd(r2[10]), valorPotencial:Number(r2[11])||0,
-          responsable:nr(String(r2[12]||'').trim().toUpperCase()), observaciones:String(r2[13]||'').trim(), source:'excel'};
-        n++;
-      }
-      db.ref().update(upd).then(()=>{
-        document.getElementById('upload-title').textContent='✓ Sincronizado con Firebase';
-        document.getElementById('upload-msg').textContent=n+' prospectos actualizados en tiempo real';
-        document.getElementById('upload-msg').className='upload-msg ok';
-        toast('✓ '+n+' prospectos sincronizados');
-      }).catch(e=>{ document.getElementById('upload-msg').textContent='Error: '+e.message; document.getElementById('upload-msg').className='upload-msg err'; });
-    }catch(e){ document.getElementById('upload-msg').textContent='Error al leer el archivo.'; document.getElementById('upload-msg').className='upload-msg err'; }
-  };
-  r.readAsArrayBuffer(file);
-}
-function xd(s){ if(!s||isNaN(Number(s))) return String(s||''); return new Date(Math.round((Number(s)-25569)*86400000)).toISOString().split('T')[0]; }
 
 /* ── HELPERS ── */
 function mine(){
