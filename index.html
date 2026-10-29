@@ -14,100 +14,219 @@
 <meta property="og:site_name" content="Pedidos SHS">
 <meta name="description" content="Realiza tu pedido de productos de limpieza de forma fácil y rápida. Surtidora de Higiénicos y Servicios.">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
 <style>
+/* ── Splash ── */
 .splash{position:fixed;inset:0;background:#ffffff;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.5s ease}
 .splash.oculto{opacity:0;pointer-events:none}
 .splash-logo{font-size:56px;font-weight:900;color:#1e4bcc;letter-spacing:-2px}
 .splash-logo span{color:#7ac143}
 .splash-sub{color:#64748b;font-size:14px;margin-top:8px;font-family:'Nunito',sans-serif}
 .splash-spinner{width:32px;height:32px;border:3px solid #e2e8f0;border-top-color:#1e4bcc;border-radius:50%;animation:spin 0.7s linear infinite;margin-top:32px}
-[data-theme="dark"]{--azul:#4d7cff;--azul-dark:#3d6be8;--azul-light:#1a2744;--verde:#7ac143;--verde-dark:#5fa030;--gris:#0f1117;--texto:#e8eaf0;--texto-suave:#8b92a5;--borde:#2a2d3a;--blanco:#1a1d2e;--sombra:0 2px 16px rgba(0,0,0,0.4);}
-[data-theme="dark"] body{background:#0f1117}
-[data-theme="dark"] .producto-card,[data-theme="dark"] .carrito-panel,[data-theme="dark"] .tabs,[data-theme="dark"] .modal{background:#1a1d2e}
-[data-theme="dark"] .header{background:#0d1b3e}
-[data-theme="dark"] .bienvenida{background:linear-gradient(135deg,#0d1b3e 0%,#1a2d6e 100%)}
-[data-theme="dark"] .carrito-campo input,[data-theme="dark"] .carrito-campo textarea{background:#0f1117;color:var(--texto);border-color:var(--borde)}
-[data-theme="dark"] .cat-tab{background:#1a1d2e;border-color:#2a2d3a;color:var(--texto-suave)}
-[data-theme="dark"] .historial-card{background:#0f1117}
-.btn-dark{background:rgba(255,255,255,0.15);border:none;color:white;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:background 0.2s}
-.btn-dark:hover{background:rgba(255,255,255,0.25)}
-.btn-whatsapp{position:fixed;bottom:24px;right:24px;background:#25D366;color:white;border:none;border-radius:50px;padding:12px 20px;font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 4px 16px rgba(37,211,102,0.4);display:flex;align-items:center;gap:8px;z-index:150;transition:all 0.2s}
-.btn-whatsapp:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(37,211,102,0.5)}
-:root{--azul:#1e4bcc;--azul-dark:#163799;--azul-light:#e8eefb;--verde:#7ac143;--verde-dark:#5fa030;--gris:#ffffff;--texto:#1a1a2e;--texto-suave:#64748b;--borde:#e2e8f0;--blanco:#ffffff;--sombra:0 2px 16px rgba(30,75,204,0.10);}
+
+/* ── Tokens ── */
+:root{
+  --azul:#1e4bcc;--azul-dark:#163799;--azul-900:#0f2a7a;--azul-light:#e8eefb;
+  --verde:#7ac143;--verde-dark:#5fa030;
+  --btn-verde:#22a447;--btn-verde-dark:#1b8a3b;
+  --amarillo:#ffc93c;
+  --fondo:#f3f5fa;--blanco:#ffffff;--borde:#e3e8f2;
+  --texto:#14213d;--texto-suave:#64748b;
+  --gris:#f6f8fc;
+  --sombra:0 1px 3px rgba(20,33,61,.06),0 4px 14px rgba(20,33,61,.05);
+}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html{background:#ffffff}body{font-family:'Nunito',sans-serif;background:#ffffff;color:var(--texto);min-height:100vh;padding-top:60px}
-.header{background:var(--azul);padding:0 16px;position:fixed;top:0;left:0;right:0;z-index:100;box-shadow:0 2px 12px rgba(30,75,204,0.25)}
-.header-inner{max-width:700px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:60px}
-.logo-text{color:white;font-size:22px;font-weight:900;letter-spacing:-0.5px}
-.logo-text span{color:var(--verde)}
-.carrito-btn{background:var(--verde);border:none;border-radius:50px;color:white;font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;padding:8px 16px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background 0.2s}
-.carrito-btn:hover{background:var(--verde-dark)}
-.carrito-badge{background:white;color:var(--azul);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900}
-.bienvenida{background:linear-gradient(135deg,var(--azul) 0%,#2d5ee8 100%);padding:20px 16px;width:100%;margin-top:0}
-.bienvenida-inner{max-width:700px;margin:0 auto}
-.bienvenida h2{color:white;font-size:18px;font-weight:800}
-.bienvenida p{color:rgba(255,255,255,0.75);font-size:13px;margin-top:2px}
-.bienvenida-nombre{color:var(--verde)}
-.tabs{background:#ffffff;border-bottom:2px solid var(--borde);position:sticky;top:60px;z-index:99;overflow-x:auto;width:100%}
-.tabs-inner{max-width:700px;margin:0 auto;display:flex;min-width:max-content}
-.tab{padding:14px 18px;text-align:center;font-weight:700;font-size:13px;color:var(--texto-suave);cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s;white-space:nowrap}
-.tab.activo{color:var(--azul);border-bottom-color:var(--azul)}
-.tab-count{background:var(--azul-light);color:var(--azul);border-radius:50px;padding:1px 7px;font-size:11px;margin-left:4px}
-.contenido{width:100%;background:#ffffff;min-height:calc(100vh - 200px)}
-.seccion{display:none;background:#ffffff}
-.seccion.activa{display:block}
-.busqueda-box{position:relative;margin-bottom:16px}
-.busqueda-box input{width:100%;padding:12px 16px 12px 44px;border:2px solid var(--borde);border-radius:12px;font-family:'Nunito',sans-serif;font-size:15px;background:#ffffff;outline:none;transition:border-color 0.2s}
-.busqueda-box input:focus{border-color:var(--azul)}
-.busqueda-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--texto-suave)}
-.cat-tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;margin-bottom:8px;scrollbar-width:none}
-.cat-tabs::-webkit-scrollbar{display:none}
-.cat-tab{background:white;border:2px solid var(--borde);border-radius:50px;padding:7px 14px;font-family:'Nunito',sans-serif;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;transition:all 0.2s;flex-shrink:0}
-.cat-tab.activo{background:var(--azul);border-color:var(--azul);color:white}
-.producto-card{background:#ffffff;border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:0 2px 12px rgba(30,75,204,0.08);display:flex;align-items:center;gap:14px;transition:transform 0.15s;border:1px solid #f0f4ff}
-.producto-card:active{transform:scale(0.98)}
-.producto-icono{width:44px;height:44px;background:var(--azul-light);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
-.producto-icono img{width:44px;height:44px;border-radius:10px;object-fit:cover;display:block}
-.producto-info{flex:1;min-width:0}
-.producto-nombre{font-weight:700;font-size:14px;color:var(--texto);line-height:1.3}
-.producto-precio{font-weight:800;font-size:15px;color:var(--azul);margin-top:2px}
-.producto-precio.cargando{color:var(--texto-suave);font-size:13px;font-weight:600}
-.producto-unidad{font-size:11px;color:var(--texto-suave);font-weight:600}
-.frecuente-badge{background:#fff8e1;color:#f59e0b;font-size:10px;font-weight:800;padding:2px 6px;border-radius:50px;display:inline-block;margin-top:2px}
-.producto-controles{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.btn-cantidad{width:32px;height:32px;border-radius:8px;border:none;background:var(--azul-light);color:var(--azul);font-size:18px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s}
-.btn-cantidad:hover{background:var(--azul);color:white}
-.btn-agregar{background:var(--verde);color:white;border:none;border-radius:8px;padding:8px 14px;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;transition:background 0.15s;white-space:nowrap}
-.btn-agregar:hover{background:var(--verde-dark)}
-.cantidad-display{font-weight:900;font-size:16px;color:var(--texto);min-width:20px;text-align:center}
-.cantidad-input{font-weight:900;font-size:16px;color:var(--texto);width:44px;text-align:center;border:2px solid transparent;border-radius:6px;background:transparent;font-family:'Nunito',sans-serif;padding:4px 2px;-moz-appearance:textfield}
-.cantidad-input:focus{border-color:var(--azul);outline:none;background:var(--azul-light)}
-.cantidad-input::-webkit-outer-spin-button,.cantidad-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-.loading{text-align:center;padding:40px;color:var(--texto-suave)}
-.spinner{width:36px;height:36px;border:3px solid var(--azul-light);border-top-color:var(--azul);border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 12px}
+html{background:var(--fondo)}
+body{font-family:'Nunito',sans-serif;background:var(--fondo);color:var(--texto);min-height:100vh;padding-top:78px}
+button,input,select,textarea{font-family:inherit}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes splashBounce{0%{transform:scale(0.5);opacity:0}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
-.empty{text-align:center;padding:48px 24px;color:var(--texto-suave)}
-.empty-icon{font-size:48px;margin-bottom:12px}
-.empty h3{font-weight:800;color:var(--texto);margin-bottom:6px}
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200}
+
+/* ── Encabezado ── */
+.header{position:fixed;top:0;left:0;right:0;z-index:100;background:linear-gradient(90deg,#1a43bd 0%,#1e4bcc 55%,#2456d8 100%);box-shadow:0 2px 14px rgba(15,42,122,.25)}
+.header-inner{max-width:1320px;margin:0 auto;height:78px;padding:0 18px;display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:22px}
+.logo{display:flex;flex-direction:column;line-height:1;text-decoration:none}
+.logo-text{color:#fff;font-size:30px;font-weight:900;letter-spacing:-1px}
+.logo-text span{color:var(--verde)}
+.logo-sub{color:rgba(255,255,255,.85);font-size:9.5px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;margin-top:4px}
+.buscador{position:relative;max-width:560px;width:100%;justify-self:center}
+.buscador i{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:#64748b;font-size:18px}
+.buscador input{width:100%;height:46px;border:none;border-radius:12px;padding:0 92px 0 46px;font-size:14.5px;color:var(--texto);background:#fff;outline:none;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.buscador input:focus{box-shadow:0 0 0 3px rgba(255,201,60,.55)}
+.buscador kbd{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-family:inherit;font-size:11px;font-weight:700;color:#64748b;background:#f1f4f9;border:1px solid #e2e8f0;border-radius:6px;padding:3px 7px}
+.usuario{display:flex;align-items:center;gap:10px;color:#fff;max-width:250px}
+.usuario-avatar{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.usuario-txt{font-size:13px;font-weight:800;line-height:1.25;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.usuario-id{font-size:11.5px;font-weight:600;opacity:.8;margin-top:2px}
+.carrito-btn{display:flex;align-items:center;gap:10px;height:48px;padding:0 14px 0 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.55);background:rgba(255,255,255,.06);color:#fff;font-weight:800;font-size:15px;cursor:pointer;transition:background .15s}
+.carrito-btn:hover{background:rgba(255,255,255,.14)}
+.carrito-ico{position:relative;font-size:24px;display:flex}
+.carrito-badge{position:absolute;top:-8px;right:-10px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--amarillo);color:#14213d;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center}
+
+/* ── Estructura de 3 columnas ── */
+.layout{max-width:1320px;margin:0 auto;padding:18px;display:grid;grid-template-columns:228px minmax(0,1fr) 290px;gap:18px;align-items:start}
+.sidebar,.lateral{position:sticky;top:96px;display:flex;flex-direction:column;gap:16px}
+
+/* ── Categorías ── */
+.cat-list{background:#fff;border:1px solid var(--borde);border-radius:14px;padding:8px;box-shadow:var(--sombra);display:flex;flex-direction:column;gap:2px}
+.cat-item{display:flex;align-items:center;gap:10px;width:100%;border:none;background:none;border-radius:10px;padding:10px 10px;font-size:13.5px;font-weight:700;color:#2b3a55;cursor:pointer;text-align:left;transition:background .12s}
+.cat-item:hover{background:var(--gris)}
+.cat-item .cat-ico{width:24px;text-align:center;font-size:17px;flex-shrink:0}
+.cat-item .cat-nom{flex:1;min-width:0}
+.cat-item .cat-count{font-size:11px;font-weight:800;color:#64748b;background:#eef1f6;border-radius:10px;padding:2px 8px}
+.cat-item.activo{background:var(--azul);color:#fff}
+.cat-item.activo .cat-count{background:rgba(255,255,255,.22);color:#fff}
+.cat-skel{padding:14px;color:var(--texto-suave);font-size:13px}
+
+/* ── Promo lateral ── */
+.promo{position:relative;overflow:hidden;border-radius:14px;min-height:230px;padding:20px 18px;background:linear-gradient(160deg,#0f2a7a 0%,#1e4bcc 70%,#2b63f0 100%);color:#fff}
+.promo strong{display:block;font-size:24px;font-weight:900;line-height:1.1}
+.promo strong span{color:var(--amarillo)}
+.promo p{font-size:12.5px;font-weight:600;opacity:.88;margin-top:8px;max-width:150px;line-height:1.4}
+.promo-logo{font-size:26px;font-weight:900;margin-top:16px;letter-spacing:-1px}
+.promo-logo span{color:var(--verde)}
+.promo-img{position:absolute;right:-14px;bottom:-8px;width:120px;height:auto;filter:drop-shadow(0 6px 14px rgba(0,0,0,.25))}
+
+/* ── Banner principal ── */
+.contenido{min-width:0}
+.hero{position:relative;overflow:hidden;border-radius:16px;background:linear-gradient(115deg,#0f2a7a 0%,#1a43bd 48%,#2b63f0 100%);color:#fff;padding:28px 30px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;align-items:center;box-shadow:var(--sombra)}
+.hero::after{content:"";position:absolute;right:-80px;top:-80px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.12),transparent 70%);pointer-events:none}
+.hero h1{font-size:34px;font-weight:900;line-height:1.08;letter-spacing:-.5px}
+.hero h1 span{color:var(--amarillo)}
+.hero p{font-size:15.5px;font-weight:600;opacity:.9;margin-top:10px;max-width:400px;line-height:1.45}
+.hero-features{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+.hero-features div{width:92px;padding:12px 6px;border-radius:12px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);text-align:center;font-size:11px;font-weight:800;line-height:1.25}
+.hero-features i{display:block;font-size:24px;margin-bottom:6px}
+.hero-collage{position:relative;z-index:1;display:grid;grid-template-columns:repeat(2,112px);gap:10px}
+.hero-collage .hc-tile{width:112px;height:112px;border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center;padding:8px;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.hero-collage .hc-tile img{max-width:100%;max-height:100%;object-fit:contain}
+.hero-collage .hc-tile:nth-child(2){transform:translateY(14px)}
+.hero-collage .hc-tile:nth-child(4){transform:translateY(14px)}
+.hero-mascota{width:170px;height:auto;filter:drop-shadow(0 8px 18px rgba(0,0,0,.3))}
+.hero-collage.solo{grid-template-columns:auto}
+
+/* ── Pestañas y barra de herramientas ── */
+.tabs{margin-top:18px}
+.tabs-inner{display:flex;gap:8px;flex-wrap:wrap}
+.tab{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:22px;border:1px solid var(--borde);background:#fff;font-weight:800;font-size:13px;color:#4a5874;cursor:pointer;transition:all .12s}
+.tab:hover{border-color:var(--azul);color:var(--azul)}
+.tab.activo{background:var(--azul);border-color:var(--azul);color:#fff}
+.tab-count{background:rgba(30,75,204,.1);color:var(--azul);border-radius:10px;padding:1px 8px;font-size:11px}
+.tab.activo .tab-count{background:rgba(255,255,255,.22);color:#fff}
+.toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin:18px 0 14px;flex-wrap:wrap}
+.toolbar h2{font-size:22px;font-weight:900;color:var(--texto)}
+.toolbar-sub{font-size:13px;color:var(--texto-suave);font-weight:600;margin-top:2px}
+.toolbar-der{display:flex;align-items:center;gap:10px}
+.toolbar-der label{font-size:13px;font-weight:700;color:#4a5874}
+.toolbar-der select{height:40px;border:1px solid var(--borde);border-radius:10px;background:#fff;padding:0 12px;font-size:13px;font-weight:700;color:var(--texto);outline:none;cursor:pointer}
+.vista-btns{display:flex;gap:6px}
+.vista-btns button{width:40px;height:40px;border-radius:10px;border:1px solid var(--borde);background:#fff;color:#4a5874;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.vista-btns button.activo{background:var(--azul);border-color:var(--azul);color:#fff}
+
+/* ── Rejilla de productos ── */
+.seccion{display:none}
+.seccion.activa{display:block}
+.grid-productos{display:grid;grid-template-columns:repeat(auto-fill,minmax(146px,1fr));gap:12px}
+.grid-productos>.loading,.grid-productos>.empty,.grid-productos>.error-box{grid-column:1/-1}
+.producto-card{background:#fff;border:1px solid var(--borde);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--sombra);transition:box-shadow .15s,transform .15s}
+.producto-card:hover{box-shadow:0 6px 22px rgba(20,33,61,.1);transform:translateY(-2px)}
+.producto-icono{height:112px;border-radius:10px;background:var(--gris);display:flex;align-items:center;justify-content:center;font-size:46px;overflow:hidden;margin-bottom:4px}
+.producto-icono img{max-width:100%;max-height:100%;object-fit:contain;display:block;mix-blend-mode:multiply}
+.producto-info{display:flex;flex-direction:column;gap:5px;flex:1}
+.producto-nombre{font-size:12.5px;font-weight:800;line-height:1.3;color:var(--texto);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:49px}
+.badge-cat,.frecuente-badge{align-self:flex-start;display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:10px;background:#fff6dc;color:#9a6b00;border:1px solid #fde7a6;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.frecuente-badge{background:#fff1d6;color:#b45309;border-color:#fcd9a0}
+.precio-fila{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.producto-precio{font-size:19px;font-weight:900;color:var(--azul)}
+.producto-precio.cargando{font-size:12.5px;font-weight:700;color:var(--texto-suave)}
+.precio-iva{font-size:10.5px;font-weight:700;color:var(--texto-suave)}
+.producto-unidad{font-size:11px;color:var(--texto-suave);font-weight:700}
+.producto-controles{margin-top:auto;padding-top:6px;display:flex;align-items:center;gap:6px}
+.btn-agregar{width:100%;height:38px;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--btn-verde);color:#fff;border:none;border-radius:9px;font-weight:800;font-size:13.5px;cursor:pointer;transition:background .15s}
+.btn-agregar:hover{background:var(--btn-verde-dark)}
+.btn-cantidad{width:38px;height:38px;flex-shrink:0;border-radius:9px;border:1px solid var(--borde);background:#fff;color:var(--azul);font-size:18px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s}
+.btn-cantidad:hover{background:var(--azul);border-color:var(--azul);color:#fff}
+.cantidad-input{flex:1;min-width:0;height:38px;text-align:center;font-weight:900;font-size:16px;color:var(--texto);border:1px solid var(--borde);border-radius:9px;background:var(--azul-light);-moz-appearance:textfield}
+.cantidad-input:focus{border-color:var(--azul);outline:none;background:#fff}
+.cantidad-input::-webkit-outer-spin-button,.cantidad-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+
+/* Vista de lista */
+.grid-productos.vista-lista{grid-template-columns:1fr;gap:8px}
+.vista-lista .producto-card{flex-direction:row;align-items:center;gap:14px;padding:10px 14px}
+.vista-lista .producto-card:hover{transform:none}
+.vista-lista .producto-icono{width:64px;height:64px;flex-shrink:0;margin:0;font-size:30px}
+.vista-lista .producto-nombre{min-height:0;-webkit-line-clamp:2}
+.vista-lista .producto-controles{margin:0;padding:0;width:190px;flex-shrink:0}
+
+/* ── Carrito lateral (columna derecha) ── */
+.mini-carrito,.ayuda,.info{background:#fff;border:1px solid var(--borde);border-radius:14px;box-shadow:var(--sombra)}
+.mini-head{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 10px}
+.mini-head h3{font-size:17px;font-weight:900;color:var(--azul);display:flex;align-items:center;gap:8px}
+.mini-head h3 span{background:var(--azul);color:#fff;font-size:11px;border-radius:10px;padding:2px 8px}
+#miniItems{max-height:340px;overflow-y:auto;padding:0 16px}
+.mini-item{display:grid;grid-template-columns:56px minmax(0,1fr);gap:10px;padding:12px 0;border-top:1px solid #eef1f6}
+.mini-img{width:56px;height:56px;border-radius:10px;background:var(--gris);display:flex;align-items:center;justify-content:center;font-size:26px;overflow:hidden}
+.mini-img img{max-width:100%;max-height:100%;object-fit:contain;mix-blend-mode:multiply}
+.mini-nombre{font-size:12px;font-weight:800;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.mini-precio{font-size:13px;font-weight:900;color:var(--azul);margin-top:3px}
+.mini-ctrl{display:flex;align-items:center;justify-content:flex-end;gap:5px;margin-top:6px}
+.mini-ctrl button{width:28px;height:28px;border-radius:7px;border:1px solid var(--borde);background:#fff;color:#4a5874;font-size:15px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.mini-ctrl button:hover{border-color:var(--azul);color:var(--azul)}
+.mini-ctrl .mini-del{margin-right:auto;color:#94a3b8}
+.mini-ctrl .mini-del:hover{border-color:#ef4444;color:#ef4444}
+.mini-ctrl .mini-qty{min-width:34px;text-align:center;font-size:13px;font-weight:900;border:1px solid var(--borde);border-radius:7px;height:28px;line-height:26px}
+.mini-vacio{text-align:center;padding:22px 6px 18px;color:var(--texto-suave);font-size:13px;font-weight:600;border-top:1px solid #eef1f6}
+.mini-vacio i{display:block;font-size:34px;color:#c3cbd9;margin-bottom:6px}
+.mini-foot{padding:12px 16px 16px;border-top:1px solid #eef1f6}
+.mini-sub{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;font-weight:700;color:var(--texto-suave)}
+.mini-sub strong{font-size:17px;font-weight:900;color:var(--texto)}
+.mini-nota{font-size:11px;color:var(--texto-suave);font-weight:600;margin-top:2px}
+.btn-continuar{width:100%;height:48px;margin-top:12px;display:flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:11px;background:var(--btn-verde);color:#fff;font-size:15px;font-weight:900;cursor:pointer;transition:background .15s}
+.btn-continuar:hover{background:var(--btn-verde-dark)}
+.btn-continuar:disabled{background:#b6c2d4;cursor:not-allowed}
+.ayuda{padding:16px}
+.ayuda-top{display:flex;gap:12px;align-items:flex-start}
+.ayuda-ico{width:44px;height:44px;border-radius:50%;background:var(--azul);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.ayuda h4{font-size:14px;font-weight:900}
+.ayuda p{font-size:12px;color:var(--texto-suave);font-weight:600;margin-top:3px;line-height:1.4}
+.btn-ayuda{width:100%;height:40px;margin-top:12px;border-radius:10px;border:1.5px solid var(--azul);background:#f5f8ff;color:var(--azul);font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-ayuda:hover{background:var(--azul-light)}
+.info{padding:14px 16px;background:#f2f6ff;border-color:#dbe5fb}
+.info h4{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:900;color:var(--azul-900)}
+.info ul{list-style:none;margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.info li{display:flex;gap:6px;font-size:12px;font-weight:600;color:#3d4b66;line-height:1.35}
+.info li i{color:var(--btn-verde);font-size:15px;flex-shrink:0}
+
+/* ── Botón WhatsApp flotante (solo celular) ── */
+.btn-whatsapp{position:fixed;bottom:20px;right:20px;background:#25D366;color:white;border:none;border-radius:50px;padding:12px 18px;font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 4px 16px rgba(37,211,102,0.4);display:flex;align-items:center;gap:8px;z-index:150}
+
+/* ── Estados ── */
+.loading{text-align:center;padding:48px;color:var(--texto-suave);font-weight:700}
+.spinner{width:36px;height:36px;border:3px solid var(--azul-light);border-top-color:var(--azul);border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 12px}
+.empty{text-align:center;padding:48px 24px;color:var(--texto-suave);background:#fff;border:1px dashed var(--borde);border-radius:14px}
+.empty-icon{font-size:44px;margin-bottom:10px}
+.empty h3{font-weight:900;color:var(--texto);margin-bottom:6px}
+.error-box{background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;border-radius:12px;padding:16px;margin-bottom:16px;font-weight:700;font-size:14px}
+
+/* ── Panel de checkout (se abre con "Continuar compra") ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:200}
 .overlay.abierto{display:block}
-.carrito-panel{position:fixed;right:0;top:0;bottom:0;width:min(400px,100vw);background:white;z-index:201;transform:translateX(100%);transition:transform 0.3s ease;display:flex;flex-direction:column}
+.carrito-panel{position:fixed;right:0;top:0;bottom:0;width:min(420px,100vw);background:white;z-index:201;transform:translateX(100%);transition:transform 0.3s ease;display:flex;flex-direction:column}
 .carrito-panel.abierto{transform:translateX(0)}
-.carrito-header{background:var(--azul);color:white;padding:20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.carrito-header h3{font-weight:800;font-size:18px}
+.carrito-header{background:linear-gradient(90deg,#1a43bd,#1e4bcc);color:white;padding:20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.carrito-header h3{font-weight:900;font-size:18px;display:flex;align-items:center;gap:8px}
 .btn-cerrar{background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center}
 .carrito-scroll{flex:1;overflow-y:auto;min-height:0}
 .carrito-items{padding:16px}
 .carrito-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--borde)}
 .carrito-item-info{flex:1;min-width:0}
-.carrito-item-nombre{font-weight:700;font-size:13px;line-height:1.3}
-.carrito-item-precio{font-weight:800;color:var(--azul);font-size:14px}
+.carrito-item-nombre{font-weight:800;font-size:13px;line-height:1.3}
+.carrito-item-precio{font-weight:900;color:var(--azul);font-size:14px}
 .carrito-item-qty{font-size:12px;color:var(--texto-suave)}
 .btn-quitar{background:#fef2f2;border:none;color:#ef4444;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .carrito-footer{padding:16px;border-top:2px solid var(--borde);flex-shrink:0}
 .carrito-resumen{margin-bottom:16px;border-top:2px solid var(--borde);padding-top:12px}
-.btn-cliente-nuevo{width:100%;padding:12px;border-radius:12px;border:2px dashed #1e4bcc;background:#f0f6ff;color:#1e4bcc;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:12px;transition:all 0.2s}
+.btn-cliente-nuevo{width:100%;padding:12px;border-radius:12px;border:2px dashed #1e4bcc;background:#f0f6ff;color:#1e4bcc;font-size:14px;font-weight:800;cursor:pointer;margin-bottom:12px;transition:all 0.2s}
 .btn-cliente-nuevo:hover{background:#dbeafe}
 .modal-cliente{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;padding:16px}
 .modal-cliente.abierto{display:flex}
@@ -128,25 +247,24 @@ html{background:#ffffff}body{font-family:'Nunito',sans-serif;background:#ffffff;
 .carrito-linea.total{margin-top:8px;padding-top:8px;border-top:1px solid var(--borde)}
 .carrito-linea.total span{font-weight:700;font-size:15px;color:var(--texto-suave)}
 .carrito-linea.total strong{font-weight:900;font-size:22px;color:var(--azul)}
-.carrito-linea.comision{margin-top:10px;padding-top:10px;border-top:1px dashed #fde68a;background:#fffbeb;border-radius:8px;padding:8px 10px;margin-top:8px}
+.carrito-linea.comision{border-top:1px dashed #fde68a;background:#fffbeb;border-radius:8px;padding:8px 10px;margin-top:8px}
 .carrito-linea.comision span:first-child{color:#92400e;font-size:13px}
 .carrito-linea.total-tarjeta{margin-top:4px;padding:6px 10px;background:#fffbeb;border-radius:8px}
 .carrito-linea.total-tarjeta span{font-weight:700;font-size:14px;color:#92400e}
-.btn-enviar{width:100%;background:var(--verde);color:white;border:none;border-radius:12px;padding:16px;font-family:'Nunito',sans-serif;font-weight:800;font-size:16px;cursor:pointer;transition:background 0.2s}
-.btn-enviar:hover{background:var(--verde-dark)}
+.btn-enviar{width:100%;background:var(--btn-verde);color:white;border:none;border-radius:12px;padding:16px;font-weight:900;font-size:16px;cursor:pointer;transition:background 0.2s}
+.btn-enviar:hover{background:var(--btn-verde-dark)}
 .btn-enviar:disabled{background:#94a3b8;cursor:not-allowed}
-.btn-pagar{width:100%;background:white;color:var(--azul);border:2px solid var(--azul);border-radius:12px;padding:14px;font-family:'Nunito',sans-serif;font-weight:800;font-size:16px;cursor:pointer;transition:all 0.2s;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-pagar{width:100%;background:white;color:var(--azul);border:2px solid var(--azul);border-radius:12px;padding:14px;font-weight:800;font-size:16px;cursor:pointer;transition:all 0.2s;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px}
 .btn-pagar:hover{background:var(--azul-light)}
 .btn-pagar:disabled{opacity:0.5;cursor:not-allowed}
 .stripe-badge{font-size:11px;color:var(--texto-suave);text-align:center;margin-top:8px}
 .carrito-extras{padding:0 0 12px 0}
 .carrito-campo{margin-bottom:10px}
 .carrito-campo label{font-size:12px;font-weight:700;color:var(--texto-suave);display:block;margin-bottom:4px}
-.carrito-campo input,.carrito-campo textarea,.carrito-campo select{width:100%;padding:10px 12px;border:2px solid var(--borde);border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s}
+.carrito-campo input,.carrito-campo textarea,.carrito-campo select{width:100%;padding:10px 12px;border:2px solid var(--borde);border-radius:10px;font-size:14px;outline:none;transition:border-color 0.2s}
 .carrito-campo input:focus,.carrito-campo textarea:focus{border-color:var(--azul)}
 .carrito-campo textarea{resize:none;height:60px}
-.alerta-hora{background:#FFF3CD;border:1px solid #FFC107;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:700;color:#856404;margin-bottom:10px;display:none}
-.alerta-rollo{background:#FFF3CD;border:1px solid #FFC107;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:700;color:#856404;margin-bottom:10px;display:none}
+.alerta-hora,.alerta-rollo{background:#FFF3CD;border:1px solid #FFC107;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:700;color:#856404;margin-bottom:10px;display:none}
 .modal-gracias{font-size:13px;color:var(--texto-suave);margin-bottom:12px;line-height:1.5}
 .historial-section{margin-top:20px;border-top:2px solid var(--borde);padding-top:16px}
 .historial-title{font-size:14px;font-weight:800;color:var(--texto);margin-bottom:12px}
@@ -154,7 +272,6 @@ html{background:#ffffff}body{font-family:'Nunito',sans-serif;background:#ffffff;
 .historial-fecha{font-size:11px;color:var(--texto-suave);font-weight:700}
 .historial-items{font-size:12px;color:var(--texto);margin-top:4px}
 .historial-total{font-size:13px;font-weight:800;color:var(--azul);margin-top:4px}
-.cat-count{font-size:10px;color:var(--texto-suave);background:var(--gris);border-radius:50px;padding:1px 6px;margin-left:4px}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:300;align-items:center;justify-content:center}
 .modal-overlay.abierto{display:flex}
 .modal{background:white;border-radius:20px;padding:40px 32px;max-width:340px;width:90%;text-align:center}
@@ -162,9 +279,49 @@ html{background:#ffffff}body{font-family:'Nunito',sans-serif;background:#ffffff;
 .modal h3{font-weight:900;font-size:22px;color:var(--texto);margin-bottom:8px}
 .modal p{color:var(--texto-suave);font-size:15px;margin-bottom:24px}
 .modal-folio{background:var(--azul-light);color:var(--azul);font-weight:900;font-size:18px;padding:12px 24px;border-radius:10px;display:inline-block;margin-bottom:20px}
-.btn-modal{background:var(--azul);color:white;border:none;border-radius:12px;padding:14px 32px;font-family:'Nunito',sans-serif;font-weight:800;font-size:15px;cursor:pointer}
-.error-box{background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;border-radius:12px;padding:16px;margin-bottom:16px;font-weight:600;font-size:14px}
-.info-precios{background:var(--azul-light);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--azul);font-weight:700;margin-bottom:12px;display:none}
+.btn-modal{background:var(--azul);color:white;border:none;border-radius:12px;padding:14px 32px;font-weight:800;font-size:15px;cursor:pointer}
+
+/* ── Responsivo ── */
+@media (min-width:1101px){ .btn-whatsapp{display:none !important} }
+@media (max-width:1100px){
+  .layout{grid-template-columns:200px minmax(0,1fr)}
+  .lateral{display:none}
+  .usuario{max-width:200px}
+}
+@media (max-width:820px){
+  body{padding-top:118px}
+  .header-inner{height:118px;grid-template-columns:auto 1fr auto;grid-template-rows:56px 46px;row-gap:6px;column-gap:12px;padding:6px 14px 10px}
+  .buscador{grid-column:1/-1;grid-row:2;max-width:none}
+  .buscador kbd{display:none}
+  .buscador input{padding-right:16px}
+  .usuario{justify-self:end}
+  .usuario-txt{-webkit-line-clamp:2;font-size:12px}
+  .usuario-avatar{display:none}
+  .carrito-lbl,.carrito-btn .ti-chevron-right{display:none}
+  .layout{grid-template-columns:minmax(0,1fr);padding:12px;gap:12px}
+  .sidebar{position:static;min-width:0}
+  .promo{display:none}
+  .cat-list{flex-direction:row;overflow-x:auto;scrollbar-width:none;padding:6px;gap:6px}
+  .cat-list::-webkit-scrollbar{display:none}
+  .cat-item{width:auto;white-space:nowrap;flex-shrink:0;padding:8px 12px;border:1px solid var(--borde)}
+  .cat-item.activo{border-color:var(--azul)}
+  .hero{grid-template-columns:1fr;padding:22px 20px}
+  .hero h1{font-size:26px}
+  .hero-collage{display:none}
+  .toolbar-der label{display:none}
+  .tab{padding:7px 11px;font-size:12px}
+  .hero-features div{padding:10px 4px}
+  .grid-productos{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .producto-icono{height:104px}
+  .vista-lista .producto-card{flex-wrap:wrap}
+  .vista-lista .producto-controles{width:100%}
+}
+@media (max-width:480px){
+  .logo-sub{display:none}
+  .logo-text{font-size:26px}
+  .hero-features div{width:auto;flex:1}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -179,48 +336,132 @@ html{background:#ffffff}body{font-family:'Nunito',sans-serif;background:#ffffff;
 </div>
 
 <button class="btn-whatsapp" id="btnWhatsApp" onclick="abrirWhatsApp()" style="display:none">
-  💬 Contactar vendedora
+  <i class="ti ti-brand-whatsapp"></i> Contactar vendedora
 </button>
 
-<div class="header">
+<header class="header">
   <div class="header-inner">
-    <div class="logo-text">SHS<span>✓</span></div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <button class="carrito-btn" onclick="abrirCarrito()">
-        🛒 Carrito <div class="carrito-badge" id="carritoCount">0</div>
-      </button>
+    <div class="logo">
+      <span class="logo-text">SHS<span>✓</span></span>
+      <span class="logo-sub">Surtidora de Higiénicos y Servicios</span>
     </div>
-  </div>
-</div>
-
-<div class="bienvenida">
-  <div class="bienvenida-inner">
-    <h2>¡Hola, <span class="bienvenida-nombre" id="clienteNombre">...</span>! 👋</h2>
-    <p>Realiza tu pedido de material de limpieza</p>
-  </div>
-</div>
-
-<div class="tabs">
-  <div class="tabs-inner">
-    <div class="tab activo" id="tab-frecuentes" onclick="cambiarTab('frecuentes')">⭐ Mis productos <span class="tab-count" id="countFrecuentes">0</span></div>
-    <div class="tab" id="tab-catalogo" onclick="cambiarTab('catalogo')">📦 Catálogo completo</div>
-  </div>
-</div>
-
-<div class="contenido"><div style="max-width:700px;margin:0 auto;padding:16px">
-  <div id="error-global" class="error-box" style="display:none"></div>
-  <div class="seccion activa" id="sec-frecuentes">
-    <div id="lista-frecuentes"><div class="loading"><div class="spinner"></div>Cargando tus productos...</div></div>
-  </div>
-  <div class="seccion" id="sec-catalogo">
-    <div class="busqueda-box">
-      <span class="busqueda-icon">🔍</span>
-      <input type="text" id="busquedaCatalogo" placeholder="Buscar producto..." oninput="filtrarCatalogo()"/>
+    <div class="buscador">
+      <i class="ti ti-search" aria-hidden="true"></i>
+      <input type="text" id="busquedaCatalogo" placeholder="Buscar productos... (nombre o código)" oninput="filtrarCatalogo()" autocomplete="off" aria-label="Buscar productos">
+      <kbd>Ctrl + K</kbd>
     </div>
-    <div class="cat-tabs" id="catTabs"></div>
-    <div id="lista-catalogo"><div class="loading"><div class="spinner"></div>Cargando catálogo...</div></div>
+    <div class="usuario">
+      <div class="usuario-avatar"><i class="ti ti-user" aria-hidden="true"></i></div>
+      <div class="usuario-txt">
+        ¡Hola, <span id="clienteNombre">...</span>!
+        <div class="usuario-id" id="clienteClave"></div>
+      </div>
+    </div>
+    <button class="carrito-btn" onclick="abrirCarrito()" aria-label="Abrir carrito">
+      <span class="carrito-ico"><i class="ti ti-shopping-cart" aria-hidden="true"></i><span class="carrito-badge" id="carritoCount">0</span></span>
+      <span class="carrito-lbl">Carrito</span>
+      <i class="ti ti-chevron-right" aria-hidden="true"></i>
+    </button>
   </div>
-</div></div>
+</header>
+
+<div class="layout">
+
+  <aside class="sidebar">
+    <nav class="cat-list" id="catTabs" aria-label="Categorías">
+      <div class="cat-skel">Cargando categorías...</div>
+    </nav>
+    <div class="promo">
+      <strong>Todo para<br><span>tu negocio</span></strong>
+      <p>Limpieza, higiene y desechables con precios para ti.</p>
+      <div class="promo-logo">SHS<span>✓</span></div>
+      <img class="promo-img" src="https://pedidos.surtidorahigienicos.com/mascota.png" alt="">
+    </div>
+  </aside>
+
+  <main class="contenido">
+    <div id="error-global" class="error-box" style="display:none"></div>
+
+    <section class="hero">
+      <div class="hero-txt">
+        <h1>Encuentra todo<br><span>lo que necesitas</span></h1>
+        <p>Productos de limpieza, higiene y desechables para tu negocio.</p>
+        <div class="hero-features">
+          <div><i class="ti ti-tag" aria-hidden="true"></i>Precios especiales</div>
+          <div><i class="ti ti-shield-check" aria-hidden="true"></i>Compra segura</div>
+          <div><i class="ti ti-truck-delivery" aria-hidden="true"></i>Entrega oportuna</div>
+        </div>
+      </div>
+      <div class="hero-collage solo" id="heroCollage">
+        <img class="hero-mascota" src="https://pedidos.surtidorahigienicos.com/mascota.png" alt="">
+      </div>
+    </section>
+
+    <div class="tabs">
+      <div class="tabs-inner">
+        <div class="tab activo" id="tab-frecuentes" onclick="cambiarTab('frecuentes')"><i class="ti ti-star" aria-hidden="true"></i> Mis productos <span class="tab-count" id="countFrecuentes">0</span></div>
+        <div class="tab" id="tab-catalogo" onclick="cambiarTab('catalogo')"><i class="ti ti-layout-grid" aria-hidden="true"></i> Catálogo completo</div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div>
+        <h2 id="tituloLista">Mis productos</h2>
+        <div class="toolbar-sub" id="productosCount"></div>
+      </div>
+      <div class="toolbar-der">
+        <label for="ordenSel">Ordenar por:</label>
+        <select id="ordenSel" onchange="cambiarOrden()">
+          <option value="relevantes">Más relevantes</option>
+          <option value="precio-asc">Precio: menor a mayor</option>
+          <option value="precio-desc">Precio: mayor a menor</option>
+          <option value="nombre">Nombre (A-Z)</option>
+        </select>
+        <div class="vista-btns">
+          <button id="vistaGrid" class="activo" onclick="setVista('grid')" title="Ver en cuadrícula" aria-label="Ver en cuadrícula"><i class="ti ti-layout-grid" aria-hidden="true"></i></button>
+          <button id="vistaLista" onclick="setVista('lista')" title="Ver en lista" aria-label="Ver en lista"><i class="ti ti-list" aria-hidden="true"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="seccion activa" id="sec-frecuentes">
+      <div id="lista-frecuentes" class="grid-productos"><div class="loading"><div class="spinner"></div>Cargando tus productos...</div></div>
+    </div>
+    <div class="seccion" id="sec-catalogo">
+      <div id="lista-catalogo" class="grid-productos"><div class="loading"><div class="spinner"></div>Cargando catálogo...</div></div>
+    </div>
+  </main>
+
+  <aside class="lateral">
+    <div class="mini-carrito">
+      <div class="mini-head"><h3>Mi carrito <span id="miniCount">0</span></h3></div>
+      <div id="miniItems"></div>
+      <div class="mini-foot">
+        <div class="mini-sub"><span id="miniSubLbl">Subtotal (0 productos)</span><strong id="miniSubtotal">$0.00</strong></div>
+        <div class="mini-nota">Precios sin IVA · el total con IVA se ve al continuar</div>
+        <button class="btn-continuar" id="btnContinuar" onclick="abrirCarrito()" disabled><i class="ti ti-shopping-cart" aria-hidden="true"></i> Continuar compra <i class="ti ti-arrow-right" aria-hidden="true"></i></button>
+      </div>
+    </div>
+    <div class="ayuda">
+      <div class="ayuda-top">
+        <div class="ayuda-ico"><i class="ti ti-message-circle" aria-hidden="true"></i></div>
+        <div>
+          <h4>¿Necesitas ayuda?</h4>
+          <p>Tu vendedora te ayuda a encontrar lo que buscas.</p>
+        </div>
+      </div>
+      <button class="btn-ayuda" onclick="abrirWhatsApp()"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i> Contactar vendedora</button>
+    </div>
+    <div class="info">
+      <h4><i class="ti ti-info-circle" aria-hidden="true"></i> Información importante</h4>
+      <ul>
+        <li><i class="ti ti-check" aria-hidden="true"></i>Precios sin IVA y sujetos a disponibilidad</li>
+        <li><i class="ti ti-check" aria-hidden="true"></i>Pedidos después de las 2:00 pm pueden entregarse al día siguiente</li>
+        <li><i class="ti ti-check" aria-hidden="true"></i>Pago con tarjeta seguro por Stripe (+3% de comisión)</li>
+      </ul>
+    </div>
+  </aside>
+</div>
 
 <div class="overlay" id="overlay" onclick="cerrarCarrito()"></div>
 <div class="carrito-panel" id="carritoPanel">
@@ -350,6 +591,7 @@ async function init() {
     preciosCliente = {};
     historialArticulos = [];
     document.getElementById('clienteNombre').textContent = 'Visitante';
+    document.getElementById('clienteClave').textContent = 'Precios públicos';
     mostrarSaludoSplash('Visitante');
     setTimeout(ocultarSplash, 3000);
     document.getElementById('countFrecuentes').textContent = '0';
@@ -375,6 +617,7 @@ async function init() {
       return;
     }
     document.getElementById('clienteNombre').textContent = clienteData.nombre;
+    document.getElementById('clienteClave').textContent = 'Cliente: ' + CLIENTE_ID;
     mostrarBtnWhatsApp();
     mostrarSaludoSplash(clienteData.nombre);
     setTimeout(ocultarSplash, 3000);
@@ -408,22 +651,111 @@ function iniciarRefrescoCatalogo() {
 }
 // ──────────────────────────────────────────────────────────────────────────
 
+// ── Utilidades del diseño nuevo ─────────────────────────────────────────
+let ordenActual = 'relevantes';
+let tabActiva = 'frecuentes';
+
+function tituloCat(cat) {
+  return cat.charAt(0) + cat.slice(1).toLowerCase();
+}
+
+// Precio que ve ESTE cliente: primero su precio especial, luego el de lista.
+function precioDe(nombre, art) {
+  if (preciosCliente[nombre] !== undefined) return preciosCliente[nombre];
+  if (preciosCache[nombre] !== undefined) return preciosCache[nombre];
+  return art ? getPrecio1(art.precios) : null;
+}
+
+function ordenar(lista, getNombre, getPrecio) {
+  if (ordenActual === 'relevantes') return lista;
+  const copia = lista.slice();
+  if (ordenActual === 'nombre') copia.sort((a, b) => getNombre(a).localeCompare(getNombre(b), 'es'));
+  else {
+    const dir = ordenActual === 'precio-asc' ? 1 : -1;
+    copia.sort((a, b) => {
+      const pa = getPrecio(a), pb = getPrecio(b);
+      if (pa == null) return 1;
+      if (pb == null) return -1;
+      return (pa - pb) * dir;
+    });
+  }
+  return copia;
+}
+
+function cambiarOrden() {
+  ordenActual = document.getElementById('ordenSel').value;
+  if (tabActiva === 'frecuentes') renderFrecuentes(); else renderCatalogo();
+}
+
+function setVista(vista) {
+  ['lista-frecuentes', 'lista-catalogo'].forEach(id => {
+    document.getElementById(id).classList.toggle('vista-lista', vista === 'lista');
+  });
+  document.getElementById('vistaGrid').classList.toggle('activo', vista !== 'lista');
+  document.getElementById('vistaLista').classList.toggle('activo', vista === 'lista');
+  try { localStorage.setItem('shs_vista', vista); } catch (e) {}
+}
+
+function actualizarTitulo(n) {
+  const q = document.getElementById('busquedaCatalogo').value.trim();
+  let titulo;
+  if (tabActiva === 'frecuentes') titulo = 'Mis productos frecuentes';
+  else if (q) titulo = `Resultados para "${q}"`;
+  else titulo = catActiva === 'TODAS' ? 'Nuestros productos' : tituloCat(catActiva);
+  document.getElementById('tituloLista').textContent = titulo;
+  document.getElementById('productosCount').textContent =
+    n === 1 ? '1 producto disponible' : `${n} productos disponibles`;
+}
+
+function imagenDe(nombre) {
+  const art = catalogoCompleto.find(a => a.nombre === nombre);
+  const clave = art ? art.clave : '';
+  const url = clave ? fixImageUrl(imagenesMap[clave] || null) : null;
+  return { url, emoji: getEmoji(nombre, clave ? (CLAVE_CAT[clave] || '') : '') };
+}
+
+// Banner: fotos reales de productos del catálogo (prioriza los del cliente).
+function renderHeroCollage() {
+  const cont = document.getElementById('heroCollage');
+  if (!cont) return;
+  const candidatos = [];
+  const vistos = new Set();
+  const frecuentes = new Set(historialArticulos.map(a => a.nombre));
+  const ordenados = catalogoCompleto.slice().sort((a, b) => (frecuentes.has(b.nombre) ? 1 : 0) - (frecuentes.has(a.nombre) ? 1 : 0));
+  for (const art of ordenados) {
+    const url = imagenesMap[art.clave];
+    const cat = CLAVE_CAT[art.clave];
+    if (!url || vistos.has(cat)) continue;
+    vistos.add(cat);
+    candidatos.push({ url: fixImageUrl(url), nombre: art.nombre });
+    if (candidatos.length === 4) break;
+  }
+  if (candidatos.length < 4) return; // se queda la mascota
+  cont.classList.remove('solo');
+  cont.innerHTML = candidatos.map(c =>
+    `<div class="hc-tile"><img src="${c.url}" alt="${c.nombre.replace(/"/g, '&quot;')}" onerror="this.parentElement.style.visibility='hidden'"></div>`
+  ).join('');
+}
+
 async function renderFrecuentes() {
   const lista = document.getElementById('lista-frecuentes');
   if (historialArticulos.length === 0) {
     lista.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><h3>Sin historial aún</h3><p>Ve al catálogo para hacer tu primer pedido</p></div>`;
+    if (tabActiva === 'frecuentes') actualizarTitulo(0);
     return;
   }
   if (!catalogoCargado) await cargarCatalogo();
   const nombreAClave = {};
+  const nombreAArt = {};
   for (const art of catalogoCompleto) {
-    if (art.nombre && art.clave) nombreAClave[art.nombre] = art.clave;
+    if (art.nombre && art.clave) { nombreAClave[art.nombre] = art.clave; nombreAArt[art.nombre] = art; }
   }
-  lista.innerHTML = historialArticulos.map((art, i) => {
+  const arts = ordenar(historialArticulos, a => a.nombre, a => precioDe(a.nombre, nombreAArt[a.nombre]));
+  lista.innerHTML = arts.map((art, i) => {
     const clave = nombreAClave[art.nombre] || '';
     return cardHTML(art.nombre, '', '', i, 'frec', true, clave);
   }).join('');
-  historialArticulos.forEach((art, i) => {
+  arts.forEach((art, i) => {
     const el = document.getElementById(`precio-frec-${i}`);
     if (!el) return;
     if (preciosCliente[art.nombre] !== undefined) {
@@ -431,16 +763,11 @@ async function renderFrecuentes() {
       preciosCache[art.nombre] = p;
       el.textContent = fmt(p);
       el.classList.remove('cargando');
+    } else {
+      cargarPrecio(art.nombre, i, 'frec');
     }
   });
-  const sinPrecio = historialArticulos.filter(art => preciosCliente[art.nombre] === undefined);
-  if (sinPrecio.length > 0) {
-    if (!catalogoCargado) await cargarCatalogo();
-    sinPrecio.forEach((art) => {
-      const i = historialArticulos.findIndex(a => a.nombre === art.nombre);
-      cargarPrecio(art.nombre, i, 'frec');
-    });
-  }
+  if (tabActiva === 'frecuentes') actualizarTitulo(arts.length);
 }
 
 async function cargarCatalogo() {
@@ -462,6 +789,8 @@ async function cargarCatalogo() {
     catalogoCargado = true;
     renderCatTabs();
     renderCatalogo();
+    renderHeroCollage();
+    actualizarCarritoUI();
   } catch(err) {
     document.getElementById('lista-catalogo').innerHTML = `<div class="error-box">Error al cargar el catálogo. Recarga la página.</div>`;
   }
@@ -470,23 +799,24 @@ async function cargarCatalogo() {
 function renderCatTabs() {
   const misNombres = new Set(historialArticulos.map(a => a.nombre));
   const cats = ['TODAS', ...Object.keys(CAT_EMOJIS).filter(c => catalogoPorCat[c])];
+  const activa = tabActiva === 'catalogo' ? catActiva : null;
   document.getElementById('catTabs').innerHTML = cats.map(cat => {
     const count = cat === 'TODAS'
       ? catalogoCompleto.filter(a => !misNombres.has(a.nombre)).length
       : (catalogoPorCat[cat] || []).filter(a => !misNombres.has(a.nombre)).length;
-    return `<button class="cat-tab ${cat === catActiva ? 'activo' : ''}" onclick="selCat('${cat}')">
-      ${cat === 'TODAS' ? '🔍 Todas' : (CAT_EMOJIS[cat] || '📦') + ' ' + cat}
-      <span class="cat-count">${count}</span>
+    const icono = cat === 'TODAS' ? '<i class="ti ti-layout-grid"></i>' : (CAT_EMOJIS[cat] || '📦');
+    const nombre = cat === 'TODAS' ? 'Todos los productos' : tituloCat(cat);
+    return `<button class="cat-item ${cat === activa ? 'activo' : ''}" data-cat="${cat}" onclick="selCat('${cat}')">
+      <span class="cat-ico">${icono}</span><span class="cat-nom">${nombre}</span><span class="cat-count">${count}</span>
     </button>`;
   }).join('');
 }
 
 function selCat(cat) {
   catActiva = cat;
-  document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('activo'));
-  event.target.classList.add('activo');
   document.getElementById('busquedaCatalogo').value = '';
-  renderCatalogo();
+  if (tabActiva !== 'catalogo') cambiarTab('catalogo');
+  else { renderCatTabs(); renderCatalogo(); }
 }
 
 function renderCatalogo() {
@@ -494,26 +824,30 @@ function renderCatalogo() {
   const q = document.getElementById('busquedaCatalogo').value.trim().toUpperCase();
   const misNombres = new Set(historialArticulos.map(a => a.nombre));
   let arts = (catalogoPorCat[catActiva] || catalogoCompleto).filter(a => !misNombres.has(a.nombre));
-  if (q) arts = catalogoCompleto.filter(a => a.nombre.toUpperCase().includes(q) && !misNombres.has(a.nombre));
+  // Al buscar se incluyen también los productos frecuentes del cliente, y se busca por nombre o código.
+  if (q) arts = catalogoCompleto.filter(a => a.nombre.toUpperCase().includes(q) || String(a.clave || '').toUpperCase().includes(q));
+  arts = ordenar(arts, a => a.nombre, a => precioDe(a.nombre, a));
+  if (tabActiva === 'catalogo') actualizarTitulo(arts.length);
   if (arts.length === 0) {
-    lista.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><h3>Sin resultados</h3></div>`;
+    lista.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><h3>Sin resultados</h3><p>Prueba con otra palabra o con el código del producto</p></div>`;
     return;
   }
-  lista.innerHTML = arts.map((art, i) => cardHTML(art.nombre, art.precios, art.unidadmed, i, 'cat', false, art.clave)).join('');
+  lista.innerHTML = arts.map((art, i) => cardHTML(art.nombre, art.precios, art.unidadmed, i, 'cat', misNombres.has(art.nombre), art.clave)).join('');
   arts.forEach((art, i) => {
-    const p1 = getPrecio1(art.precios);
-    if (p1 !== null) {
+    const p = precioDe(art.nombre, art);
+    if (p !== null && p !== undefined) {
       const el = document.getElementById(`precio-cat-${i}`);
-      if (el) { el.textContent = fmt(p1); el.classList.remove('cargando'); }
-      preciosCache[art.nombre] = p1;
+      if (el) { el.textContent = fmt(p); el.classList.remove('cargando'); }
+      preciosCache[art.nombre] = p;
     }
   });
 }
 
 function filtrarCatalogo() {
+  const q = document.getElementById('busquedaCatalogo').value.trim();
   catActiva = 'TODAS';
-  document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('activo'));
-  document.querySelector('.cat-tab')?.classList.add('activo');
+  if (q && tabActiva !== 'catalogo') { cambiarTab('catalogo'); return; }
+  renderCatTabs();
   renderCatalogo();
 }
 
@@ -548,29 +882,32 @@ async function cargarPrecio(nombre, index, tipo) {
   // ─────────────────────────────────────────────────────────────────────
 }
 
-function cardHTML(nombre, precios, unidad, index, tipo, frecuente, clave) {
+function ctrlHTML(nombre, tipo, index) {
   const cant = carrito[nombre]?.cantidad || 0;
+  return cant > 0
+    ? `<button class="btn-cantidad" onclick="cambiarCant('${esc(nombre)}','${tipo}',${index},-1)" aria-label="Quitar uno">−</button><input type="number" class="cantidad-input" value="${cant}" min="1" step="1" inputmode="numeric" pattern="[0-9]*" onclick="this.select()" onchange="setCant('${esc(nombre)}','${tipo}',${index},this.value)" onkeydown="if(event.key==='Enter'){this.blur()}" aria-label="Cantidad"><button class="btn-cantidad" onclick="cambiarCant('${esc(nombre)}','${tipo}',${index},1)" aria-label="Agregar uno">+</button>`
+    : `<button class="btn-agregar" onclick="agregar('${esc(nombre)}','${tipo}',${index})"><i class="ti ti-shopping-cart-plus" aria-hidden="true"></i> Agregar</button>`;
+}
+
+function cardHTML(nombre, precios, unidad, index, tipo, frecuente, clave) {
   const cat = clave ? (CLAVE_CAT[clave] || '') : '';
   const imgUrl = clave ? fixImageUrl(imagenesMap[clave] || null) : null;
   const iconoHTML = imgUrl
-    ? `<img src="${imgUrl}" alt="${nombre}" onerror="this.parentElement.innerHTML='${getEmoji(nombre,cat)}';">`
+    ? `<img src="${imgUrl}" alt="${nombre}" loading="lazy" onerror="this.parentElement.innerHTML='${getEmoji(nombre,cat)}';">`
     : getEmoji(nombre, cat);
+  const badge = frecuente
+    ? '<span class="frecuente-badge">⭐ Frecuente</span>'
+    : (cat ? `<span class="badge-cat">${CAT_EMOJIS[cat] || ''} ${tituloCat(cat)}</span>` : '');
   return `
   <div class="producto-card" id="card-${tipo}-${index}">
     <div class="producto-icono">${iconoHTML}</div>
     <div class="producto-info">
       <div class="producto-nombre">${nombre}</div>
-      ${frecuente ? '<span class="frecuente-badge">⭐ Frecuente</span>' : ''}
-      <div class="producto-precio cargando" id="precio-${tipo}-${index}">Cargando precio...</div>
+      ${badge}
+      <div class="precio-fila"><span class="producto-precio cargando" id="precio-${tipo}-${index}">Cargando precio...</span><span class="precio-iva">+ IVA</span></div>
       ${unidad ? `<div class="producto-unidad">${unidad}</div>` : ''}
     </div>
-    <div class="producto-controles" id="ctrl-${tipo}-${index}">
-      ${cant > 0 ? `
-        <button class="btn-cantidad" onclick="cambiarCant('${esc(nombre)}','${tipo}',${index},-1)">−</button>
-        <input type="number" class="cantidad-input" value="${cant}" min="1" step="1" inputmode="numeric" pattern="[0-9]*" onclick="this.select()" onchange="setCant('${esc(nombre)}','${tipo}',${index},this.value)" onkeydown="if(event.key==='Enter'){this.blur()}">
-        <button class="btn-cantidad" onclick="cambiarCant('${esc(nombre)}','${tipo}',${index},1)">+</button>
-      ` : `<button class="btn-agregar" onclick="agregar('${esc(nombre)}','${tipo}',${index})">Agregar</button>`}
-    </div>
+    <div class="producto-controles" id="ctrl-${tipo}-${index}">${ctrlHTML(nombre, tipo, index)}</div>
   </div>`;
 }
 
@@ -608,10 +945,7 @@ function setCant(nombre, tipo, index, valor) {
 function actualizarCtrl(nombre, tipo, index) {
   const ctrl = document.getElementById(`ctrl-${tipo}-${index}`);
   if (!ctrl) return;
-  const cant = carrito[nombre]?.cantidad || 0;
-  ctrl.innerHTML = cant > 0
-    ? `<button class="btn-cantidad" onclick="cambiarCant('${esc(nombre)}','${tipo}',${index},-1)">−</button><input type="number" class="cantidad-input" value="${cant}" min="1" step="1" inputmode="numeric" pattern="[0-9]*" onclick="this.select()" onchange="setCant('${esc(nombre)}','${tipo}',${index},this.value)" onkeydown="if(event.key==='Enter'){this.blur()}"><button class="btn-cantidad" onclick="cambiarCant('${esc(nombre)}','${tipo}',${index},1)">+</button>`
-    : `<button class="btn-agregar" onclick="agregar('${esc(nombre)}','${tipo}',${index})">Agregar</button>`;
+  ctrl.innerHTML = ctrlHTML(nombre, tipo, index);
 }
 
 function verificarAlertas() {
@@ -658,6 +992,59 @@ function actualizarCarritoUI() {
         <button class="btn-quitar" onclick="quitarItem('${esc(item.nombre)}')">✕</button>
       </div>`).join('');
   }
+  renderMiniCarrito(items, totalPesos);
+}
+
+// ── Carrito de la columna derecha ──────────────────────────────────────
+let _miniItems = [];
+function renderMiniCarrito(items, totalPesos) {
+  _miniItems = items;
+  document.getElementById('miniCount').textContent = items.length;
+  document.getElementById('miniSubLbl').textContent = `Subtotal (${items.length} ${items.length === 1 ? 'producto' : 'productos'})`;
+  document.getElementById('miniSubtotal').textContent = fmt(totalPesos);
+  document.getElementById('btnContinuar').disabled = items.length === 0;
+  const cont = document.getElementById('miniItems');
+  if (items.length === 0) {
+    cont.innerHTML = `<div class="mini-vacio"><i class="ti ti-shopping-cart" aria-hidden="true"></i>Tu carrito está vacío</div>`;
+    return;
+  }
+  cont.innerHTML = items.map((item, i) => {
+    const img = imagenDe(item.nombre);
+    const thumb = img.url ? `<img src="${img.url}" alt="" onerror="this.parentElement.textContent='${img.emoji}'">` : img.emoji;
+    return `<div class="mini-item">
+      <div class="mini-img">${thumb}</div>
+      <div>
+        <div class="mini-nombre">${item.nombre}</div>
+        <div class="mini-precio">${fmt(item.precio)}</div>
+        <div class="mini-ctrl">
+          <button class="mini-del" onclick="miniCant(${i}, 0)" title="Quitar" aria-label="Quitar"><i class="ti ti-trash"></i></button>
+          <button onclick="miniCant(${i}, -1)" aria-label="Quitar uno">−</button>
+          <span class="mini-qty">${item.cantidad}</span>
+          <button onclick="miniCant(${i}, 1)" aria-label="Agregar uno">+</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function miniCant(i, delta) {
+  const item = _miniItems[i];
+  if (!item || !carrito[item.nombre]) return;
+  if (delta === 0) return quitarItem(item.nombre);
+  carrito[item.nombre].cantidad += delta;
+  if (carrito[item.nombre].cantidad <= 0) delete carrito[item.nombre];
+  actualizarCarritoUI();
+  refrescarCards(item.nombre);
+}
+
+function refrescarCards(nombre) {
+  document.querySelectorAll('[id^="card-"]').forEach(card => {
+    const el = card.querySelector('.producto-nombre');
+    if (el && el.textContent === nombre) {
+      const [, tipo, idx] = card.id.split('-');
+      actualizarCtrl(nombre, tipo, idx);
+    }
+  });
 }
 
 function quitarItem(nombre) {
@@ -777,12 +1164,26 @@ function getEmoji(nombre, cat) {
 }
 
 function cambiarTab(tab) {
+  tabActiva = tab;
   ['frecuentes','catalogo'].forEach(t => {
     document.getElementById(`tab-${t}`).classList.toggle('activo', t === tab);
     document.getElementById(`sec-${t}`).classList.toggle('activa', t === tab);
   });
-  if (tab === 'catalogo' && !catalogoCargado) cargarCatalogo();
+  if (tab === 'catalogo' && !catalogoCargado) { cargarCatalogo(); return; }
+  if (catalogoCargado) renderCatTabs();
+  if (tab === 'catalogo') renderCatalogo();
+  else actualizarTitulo(historialArticulos.length);
 }
+
+// Atajo Ctrl + K para buscar, y vista guardada (cuadrícula / lista)
+document.addEventListener('keydown', function(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault();
+    document.getElementById('busquedaCatalogo').focus();
+  }
+});
+try { if (localStorage.getItem('shs_vista') === 'lista') setVista('lista'); } catch (e) {}
+actualizarCarritoUI();
 
 function abrirCarrito() {
   const hoy = new Date().toISOString().split('T')[0];
