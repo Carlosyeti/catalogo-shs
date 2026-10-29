@@ -1,0 +1,1821 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prospectos · SHS</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f7f7f5;--bg3:#efefec;
+  --text:#1a1a18;--text2:#6b6b66;--text3:#adadaa;
+  --border:#e0dfd8;--border2:#c8c7c0;
+  --blue:#185FA5;--blue-bg:#e6f1fb;
+  --red:#A32D2D;--red-bg:#FCEBEB;
+  --amber:#BA7517;--amber-bg:#FAEEDA;
+  --green:#3B6D11;--green-bg:#EAF3DE;
+  --gray:#888780;--gray-bg:#F1EFE8;
+  --navy:#0f2744;
+  --shadow:0 1px 4px rgba(0,0,0,.07),0 4px 16px rgba(0,0,0,.05);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;font-size:14px;color:var(--text);background:var(--bg3);min-height:100vh}
+
+/* LOGIN */
+.screen{position:fixed;inset:0;background:var(--bg3);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px}
+.box{background:var(--bg);border-radius:16px;padding:32px;width:460px;max-width:100%;box-shadow:0 8px 40px rgba(0,0,0,.12)}
+.box-logo{font-size:36px;margin-bottom:8px}.box-title{font-size:20px;font-weight:700;margin-bottom:6px}
+.box-sub{font-size:13px;color:var(--text2);margin-bottom:24px;line-height:1.6}
+.btn-primary{width:100%;padding:12px;background:var(--navy);color:white;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-primary:disabled{opacity:.35;cursor:default}
+.btn-primary:not(:disabled):hover{background:#162f5a}
+.vd-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:22px}
+.vd-btn{padding:16px;border:2px solid var(--border);border-radius:12px;background:transparent;cursor:pointer;font-family:inherit;text-align:left;transition:all .15s;display:flex;align-items:center;gap:14px}
+.vd-btn:hover{border-color:var(--navy);background:var(--bg2)}
+.vd-btn.sel{border-color:var(--navy);background:var(--navy);color:white}
+.vd-icon{font-size:28px;flex-shrink:0}.vd-name{font-size:15px;font-weight:700}.vd-desc{font-size:12px;opacity:.55;margin-top:2px}
+
+/* APP */
+#app{display:none}
+.header{background:var(--navy);color:white;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.hdr-left{display:flex;flex-direction:column}
+.hdr-title{font-size:15px;font-weight:700}
+.hdr-sub{font-size:11px;color:rgba(255,255,255,.45);margin-top:2px}
+.hdr-stats{display:flex}
+.hdr-stat{text-align:center;padding:0 14px;border-right:1px solid rgba(255,255,255,.1)}
+.hdr-stat:last-child{border-right:none}
+.hdr-stat-val{font-size:18px;font-weight:700;line-height:1}
+.hdr-stat-lbl{font-size:10px;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.hdr-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hbtn{background:rgba(255,255,255,.1);color:white;border:1px solid rgba(255,255,255,.18);border-radius:7px;padding:6px 13px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .12s}
+.hbtn:hover{background:rgba(255,255,255,.2)}.hbtn-blue{background:#1e6bbf;border-color:#2278db}.hbtn-blue:hover{background:#1a5fb0}
+.role-pill{font-size:11px;padding:3px 10px;border-radius:99px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.9);font-weight:600}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#4ade80;display:inline-block;transition:background .5s}
+.sync-dot.off{background:#f87171}.sync-dot.syncing{background:#fbbf24;animation:blink .8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+.main{max-width:1100px;margin:0 auto;padding:14px 14px 70px}
+
+/* ══════════════════════════════════════════
+   PANEL LLAMADAS HOY — el elemento estrella
+═══════════════════════════════════════════ */
+#today-section{display:none;margin-bottom:16px}
+.today-panel{background:var(--bg);border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(186,117,23,.18),0 0 0 2px rgba(186,117,23,.25)}
+
+/* Encabezado grande con fondo ámbar */
+.today-head{background:linear-gradient(135deg,#8a5200 0%,var(--amber) 100%);padding:16px 20px;display:flex;align-items:center;gap:14px}
+.today-bell{font-size:32px;animation:ring 2s ease-in-out infinite}
+@keyframes ring{0%,100%{transform:rotate(0)}10%{transform:rotate(-15deg)}20%{transform:rotate(15deg)}30%{transform:rotate(-10deg)}40%{transform:rotate(10deg)}50%{transform:rotate(0)}}
+.today-head-text{flex:1}
+.today-head-title{font-size:18px;font-weight:800;color:white;line-height:1.2}
+.today-head-sub{font-size:13px;color:rgba(255,255,255,.8);margin-top:3px}
+.today-head-badge{background:white;color:var(--amber);font-size:22px;font-weight:800;border-radius:10px;padding:6px 16px;min-width:52px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.today-badge-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:rgba(186,117,23,.7);text-align:center;margin-top:1px}
+
+/* Lista de llamadas */
+.today-calls-list{padding:0}
+.today-call-item{display:flex;align-items:center;gap:0;border-bottom:1px solid var(--border);transition:background .1s}
+.today-call-item:last-child{border-bottom:none}
+.today-call-item:hover{background:#fffbf3}
+
+/* Bloque hora */
+.tci-time{width:70px;flex-shrink:0;text-align:center;padding:14px 0;border-right:1px solid var(--border)}
+.tci-hora{font-size:20px;font-weight:800;color:var(--navy);line-height:1}
+.tci-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+
+/* Info del prospecto */
+.tci-info{flex:1;padding:12px 16px}
+.tci-nombre{font-size:15px;font-weight:700;color:var(--text);line-height:1.2}
+.tci-meta{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:5px}
+.tci-phone{font-size:13px;color:var(--blue);font-weight:600;text-decoration:none;display:flex;align-items:center;gap:4px}
+.tci-phone:hover{text-decoration:underline}
+.tci-nota{font-size:12px;color:var(--text2);font-style:italic;background:var(--amber-bg);padding:2px 8px;border-radius:4px}
+.tci-estado{font-size:11px;padding:2px 8px;border-radius:99px;font-weight:600}
+
+/* Botones de acción */
+.tci-actions{display:flex;flex-direction:column;gap:6px;padding:12px 16px;flex-shrink:0}
+.tci-btn-call{background:var(--blue);color:white;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;white-space:nowrap;transition:all .12s}
+.tci-btn-call:hover{background:#1a5fb0}
+.tci-btn-done{background:var(--green-bg);color:var(--green);border:1.5px solid var(--green);border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .12s}
+.tci-btn-done:hover{background:var(--green);color:white}
+
+/* Footer resumen */
+.today-footer{background:var(--amber-bg);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid #e8d6b0}
+.today-footer-txt{font-size:12px;color:var(--amber);font-weight:600}
+.today-footer-link{font-size:12px;color:var(--amber);cursor:pointer;text-decoration:underline;background:none;border:none;font-family:inherit}
+
+/* ══ PRÓXIMAS LLAMADAS ══ */
+#upcoming-section{display:none;margin-bottom:14px}
+.upcoming-card{background:var(--bg);border-radius:10px;border-left:4px solid var(--blue);box-shadow:var(--shadow);overflow:hidden}
+.upcoming-hdr{padding:11px 16px;background:var(--blue-bg);display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.upcoming-hdr-title{font-size:13px;font-weight:700;color:var(--blue);flex:1;display:flex;align-items:center;gap:8px}
+.upcoming-toggle{font-size:12px;color:var(--blue)}
+.upcoming-date-lbl{padding:7px 16px;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;background:var(--bg2);border-bottom:1px solid var(--border)}
+.upcoming-row{display:grid;grid-template-columns:64px 1fr auto;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border)}
+.upcoming-row:last-child{border-bottom:none}
+.upcoming-row:hover{background:var(--bg2)}
+.up-hr{font-size:16px;font-weight:700;color:var(--navy);line-height:1;text-align:center}
+.up-lbl{font-size:10px;color:var(--text3);text-align:center}
+.up-name{font-size:13px;font-weight:700}
+.up-meta{font-size:12px;color:var(--text2);margin-top:3px;font-style:italic}
+.up-done{padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:1.5px solid var(--green);background:var(--green-bg);color:var(--green)}
+.up-done:hover{background:var(--green);color:white}
+
+/* ══ UPLOAD ══ */
+.upload-card{background:var(--bg);border-radius:10px;border:1.5px dashed var(--border2);padding:11px 16px;cursor:pointer;display:flex;align-items:center;gap:12px;margin-bottom:12px;transition:all .15s}
+.upload-card:hover,.upload-card.drag{border-color:var(--blue);background:var(--blue-bg)}
+.upload-icon{font-size:22px;flex-shrink:0}.upload-title{font-weight:600;font-size:13px}
+.upload-msg{font-size:12px;color:var(--text2);margin-top:2px}.upload-msg.ok{color:var(--green);font-weight:500}.upload-msg.err{color:var(--red)}
+#xlsInput{display:none}
+
+/* ══ FILTROS ══ */
+.filter-bar{background:var(--bg);border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:12px;box-shadow:var(--shadow)}
+.fbtn{padding:4px 12px;border-radius:99px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;transition:all .12s}
+.fbtn:hover{border-color:var(--navy);color:var(--navy)}.fbtn.on{border-color:var(--navy);background:var(--navy);color:white}
+.fbtn-amber{border-color:var(--amber)!important;background:var(--amber-bg)!important;color:var(--amber)!important}
+.fbtn-amber.on{background:var(--amber)!important;color:white!important;border-color:var(--amber)!important}
+.fbadge{border-radius:99px;padding:0 6px;font-size:11px;font-weight:600;background:var(--bg3);color:var(--text2)}.fbtn.on .fbadge{background:rgba(255,255,255,.22);color:white}
+.fbadge-amber{background:var(--amber-bg)!important;color:var(--amber)!important}
+.f-sep{width:1px;height:18px;background:var(--border);flex-shrink:0;margin:0 2px}
+.fsel{padding:5px 10px;border:1px solid var(--border);border-radius:99px;font-size:12px;font-family:inherit;color:var(--text2);background:var(--bg);outline:none;cursor:pointer}
+.fsearch{margin-left:auto;padding:5px 12px;border:1px solid var(--border);border-radius:99px;font-size:12px;width:190px;font-family:inherit;color:var(--text);background:var(--bg);outline:none}
+.fsearch:focus{border-color:var(--blue)}
+
+/* ══ TABLA ══ */
+.table-wrap{background:var(--bg);border-radius:10px;box-shadow:var(--shadow);overflow:hidden}
+.table-toolbar{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--bg2)}
+.tt-title{font-size:13px;font-weight:600}.tt-count{font-size:12px;color:var(--text2)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:var(--bg2);border-bottom:2px solid var(--border)}
+th{padding:8px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+td{padding:9px 12px;vertical-align:middle;border-bottom:1px solid var(--border)}
+tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#fafaf8}
+.td-cliente{font-weight:700;font-size:13px;cursor:pointer;color:var(--navy)}.td-cliente:hover{text-decoration:underline}
+.td-sub{font-size:11px;color:var(--text2);margin-top:2px}
+.td-phone a{color:var(--blue);text-decoration:none;font-size:12px}.td-phone a:hover{text-decoration:underline}
+
+/* Badge especial "Llamar hoy" en tabla */
+.badge-hoy{display:inline-flex;align-items:center;gap:4px;background:var(--amber);color:white;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;margin-left:6px;animation:glow 2s ease-in-out infinite}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(186,117,23,0)}50%{box-shadow:0 0 0 4px rgba(186,117,23,.3)}}
+
+.bst{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:600;white-space:nowrap}
+.bst-prospecto{background:var(--blue-bg);color:var(--blue)}.bst-negociacion{background:var(--amber-bg);color:var(--amber)}
+.bst-cerrada{background:var(--green-bg);color:var(--green)}.bst-perdida{background:var(--red-bg);color:var(--red)}.bst-gray{background:var(--gray-bg);color:var(--gray)}
+.bac{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;white-space:nowrap}
+.bac-propuesta{background:var(--blue-bg);color:var(--blue)}.bac-seguimiento{background:var(--amber-bg);color:var(--amber)}
+.bac-presentacion{background:#fff3e0;color:#c76f10}.bac-cierre{background:var(--green-bg);color:var(--green)}
+.row-acts{display:flex;gap:4px}
+.abtn{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .1s}
+.abtn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-bg)}
+.abtn-call{border-color:var(--amber-bg)}.abtn-call:hover{border-color:var(--amber);color:var(--amber);background:var(--amber-bg)}
+.empty{text-align:center;padding:50px 20px;color:var(--text2)}.empty-icon{font-size:36px;margin-bottom:10px}.empty-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:5px}
+
+/* ══ MODALES ══ */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.42);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px}
+.modal-overlay.hide{display:none}
+.modal{background:var(--bg);border-radius:14px;padding:24px;width:500px;max-width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.18);animation:su .2s ease}
+.modal-lg{width:640px}
+@keyframes su{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:3px}
+.modal-sub{font-size:12px;color:var(--text2);margin-bottom:18px;line-height:1.5}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fg{margin-bottom:13px}
+.fg label{display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px}
+.fg input,.fg select,.fg textarea{width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:8px;font-size:13px;font-family:inherit;color:var(--text);background:var(--bg);outline:none}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(24,95,165,.1)}
+.fg textarea{resize:vertical;line-height:1.5;min-height:72px}.fg.full{grid-column:1/-1}
+.quick-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.qb{padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .1s}
+.qb:hover{border-color:var(--blue);background:var(--blue-bg);color:var(--blue)}
+.prospect-mini{background:var(--bg2);border-radius:8px;padding:11px 14px;margin-bottom:16px;border:1px solid var(--border)}
+.pm-name{font-weight:700;font-size:14px;margin-bottom:4px}
+.pm-meta{font-size:12px;color:var(--text2);display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.modal-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px;background:var(--bg2);border-radius:8px;margin-bottom:14px}
+.mig-lbl{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px}
+.mig-val{font-size:13px;font-weight:600;word-break:break-word}.mig-val a{color:var(--blue);text-decoration:none}
+.obs-box{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text2);line-height:1.65;white-space:pre-wrap;max-height:150px;overflow-y:auto}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;align-items:center;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
+.mbtn{padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.mbtn-p{background:var(--navy);color:white;border:none}.mbtn-p:hover{background:#162f5a}
+.mbtn-g{background:var(--green);color:white;border:none}.mbtn-g:hover{background:#2e5a0c}
+.mbtn-cancel{background:none;border:1px solid var(--border2);color:var(--text)}
+.mbtn-danger{background:none;border:1px solid #f09595;color:var(--red);margin-right:auto}.mbtn-danger:hover{background:var(--red-bg)}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#1a1a18;color:white;padding:9px 20px;border-radius:99px;font-size:13px;font-weight:500;z-index:9999;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+/* ══ VENDEDOR DE CAMPO ══ */
+.campo-only{display:none!important}
+body.campo .campo-only{display:block!important}
+body.campo .tlmk-only{display:none!important}
+body.rol-campo .rol-tlmk-only{display:none!important}
+/* El avance del vendedor de campo solo lo ve él (aquí) y el gerente (en el master); telemarketing no */
+body:not(.rol-campo) #campo-panel{display:none!important}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.tab{padding:9px 16px;border-radius:10px;border:1px solid var(--border);background:var(--bg);font-size:13px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;box-shadow:var(--shadow);display:inline-flex;align-items:center;gap:8px}
+.tab:hover{border-color:var(--navy);color:var(--navy)}
+.tab.on{background:var(--navy);color:white;border-color:var(--navy)}
+.tab .fbadge{background:rgba(0,0,0,.08)}.tab.on .fbadge{background:rgba(255,255,255,.22);color:white}
+.rv-panel{background:var(--bg);border-radius:12px;overflow:hidden;margin-bottom:14px;box-shadow:0 2px 12px rgba(163,45,45,.14),0 0 0 2px rgba(163,45,45,.22)}
+.rv-head{background:linear-gradient(135deg,#7a1f1f 0%,var(--red) 100%);padding:14px 20px;display:flex;align-items:center;gap:14px;color:white}
+.rv-ico{font-size:28px}.rv-title{font-size:17px;font-weight:800;line-height:1.2}.rv-sub{font-size:12px;opacity:.85;margin-top:3px}
+.rv-badge{margin-left:auto;background:white;color:var(--red);font-size:22px;font-weight:800;border-radius:10px;padding:5px 15px;min-width:50px;text-align:center}
+.rv-item{display:flex;align-items:center;gap:0;border-bottom:1px solid var(--border)}
+.rv-item:last-child{border-bottom:none}.rv-item:hover{background:#fff7f7}
+.rv-days{width:78px;flex-shrink:0;text-align:center;padding:12px 0;border-right:1px solid var(--border)}
+.rv-days-n{font-size:22px;font-weight:800;color:var(--red);line-height:1}.rv-days-l{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;margin-top:2px}
+.rv-info{flex:1;padding:10px 16px;min-width:0}
+.rv-name{font-size:14px;font-weight:700;cursor:pointer;color:var(--navy)}.rv-name:hover{text-decoration:underline}
+.rv-meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:4px;font-size:12px;color:var(--text2)}
+.rv-meta a{color:var(--blue);font-weight:600;text-decoration:none}
+.rv-act{padding:10px 16px;flex-shrink:0}
+.rv-btn{background:var(--green-bg);color:var(--green);border:1.5px solid var(--green);border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
+.rv-btn:hover{background:var(--green);color:white}
+.rv-foot{background:var(--red-bg);padding:9px 20px;font-size:12px;color:var(--red);font-weight:600}
+.badge-rv{display:inline-flex;align-items:center;gap:3px;background:var(--red);color:white;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;margin-left:6px;vertical-align:middle}
+.abtn-campo:hover{border-color:#283593;color:#283593;background:#e8eaf6}
+.dv-panel{background:var(--bg);border-radius:12px;overflow:hidden;margin-bottom:14px;box-shadow:0 2px 12px rgba(40,53,147,.12),0 0 0 2px rgba(40,53,147,.2)}
+.dv-head{background:linear-gradient(135deg,#1a237e 0%,#3949ab 100%);padding:14px 20px;display:flex;align-items:center;gap:14px;color:white}
+.dv-badge{margin-left:auto;background:white;color:#283593;font-size:22px;font-weight:800;border-radius:10px;padding:5px 15px;min-width:50px;text-align:center}
+.dv-days-n{font-size:22px;font-weight:800;color:#283593;line-height:1}
+.dv-motivo{font-size:12px;color:var(--text);background:#e8eaf6;padding:3px 9px;border-radius:5px;margin-top:5px;display:inline-block}
+.dm-h{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px}
+.ro-note{background:var(--blue-bg);color:var(--blue);border-radius:8px;padding:9px 12px;font-size:12px;font-weight:600;margin-bottom:12px}
+.cp-card{background:var(--bg);border-radius:12px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden;border-top:4px solid var(--navy)}
+.cp-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.cp-title{font-size:16px;font-weight:800;color:var(--navy)}
+.cp-sub{font-size:12px;color:var(--text2);margin-top:2px}
+.cp-cfg{background:var(--bg2);border:1px solid var(--border2);border-radius:7px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.cp-cfg:hover{border-color:var(--navy)}
+.cp-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:0}
+.cp-tile{padding:14px 16px;border-right:1px solid var(--border)}
+.cp-tile:last-child{border-right:none}
+.cp-lbl{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px}
+.cp-val{font-size:24px;font-weight:800;line-height:1.1;margin-top:6px}
+.cp-meta{font-size:12px;color:var(--text2);font-weight:600}
+.cp-bar{height:7px;border-radius:99px;background:var(--bg3);margin-top:8px;overflow:hidden}
+.cp-bar>div{height:100%;border-radius:99px;transition:width .4s}
+.cp-note{font-size:11px;color:var(--text2);margin-top:5px}
+.cp-foot{padding:10px 18px;background:var(--bg2);border-top:1px solid var(--border);font-size:12px;color:var(--text2);display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+.cp-foot b{color:var(--text)}
+.cp-warn{color:var(--red);font-weight:700}
+.c-ok{color:var(--green)}.c-mid{color:var(--amber)}.c-bad{color:var(--red)}
+.b-ok{background:var(--green)}.b-mid{background:var(--amber)}.b-bad{background:var(--red)}
+.sec-h{font-size:12px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;padding:8px 0 4px;border-bottom:1px solid var(--border);margin:4px 0 2px}
+.chk{display:flex!important;align-items:center;gap:8px;font-size:13px!important;font-weight:500!important;text-transform:none!important;letter-spacing:0!important;color:var(--text)!important;cursor:pointer;margin-bottom:6px!important}
+.chk input{width:auto!important;accent-color:var(--navy);transform:scale(1.15)}
+.fhint{font-size:11px;color:var(--text2);margin-top:4px;line-height:1.4}
+.badge-campo{display:inline-block;background:#e8eaf6;color:#283593;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700;margin-left:6px;vertical-align:middle}
+.val-chip{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700}
+@media(max-width:900px){.cp-grid{grid-template-columns:repeat(2,1fr)}.cp-tile{border-bottom:1px solid var(--border)}}
+/* ══ AGENDA DE VISITAS ══ */
+.ag-panel{background:var(--bg);border-radius:12px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden;border-top:4px solid #185FA5}
+.ag-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.ag-title{font-size:16px;font-weight:800;color:var(--navy)}.ag-sub{font-size:12px;color:var(--text2);margin-top:2px}
+.ag-scroll{display:flex;gap:10px;overflow-x:auto;padding:12px 16px}
+.ag-day{flex:0 0 210px;border:1px solid var(--border);border-radius:10px;background:var(--bg2);display:flex;flex-direction:column}
+.ag-day-h{display:flex;justify-content:space-between;align-items:baseline;padding:9px 11px 4px}
+.ag-day-t{font-size:12px;font-weight:800;color:var(--navy);text-transform:capitalize}.ag-day-n{font-size:15px;font-weight:800}
+.ag-bar{height:5px;background:var(--bg3);margin:0 11px 6px;border-radius:99px;overflow:hidden}.ag-bar>div{height:100%}
+.ag-list{flex:1;padding:0 6px}
+.ag-it{display:flex;align-items:center;gap:5px;padding:4px 5px;border-radius:6px;font-size:12px;background:var(--bg);margin-bottom:3px;border:1px solid var(--border)}
+.ag-num{font-size:10px;font-weight:800;color:white;background:var(--navy);border-radius:50%;width:17px;height:17px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ag-cli{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;cursor:pointer}.ag-cli:hover{text-decoration:underline}
+.ag-por{font-size:9px;color:var(--text2);white-space:nowrap}
+.ag-x{background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;padding:0 2px}.ag-x:hover{color:var(--red)}
+.ag-empty{font-size:11px;color:var(--text3);padding:6px 5px}
+.ag-add{margin:6px;padding:6px;border:1px dashed var(--border2);border-radius:7px;background:transparent;font-size:12px;font-weight:700;color:var(--blue);cursor:pointer;font-family:inherit}
+.ag-add:hover{border-color:var(--blue);background:var(--blue-bg)}
+.ag-full{margin:6px;padding:6px;text-align:center;font-size:11px;font-weight:700;color:var(--red);background:var(--red-bg);border-radius:7px}
+.badge-ag{display:inline-block;background:var(--blue-bg);color:var(--blue);padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700;margin-left:6px;vertical-align:middle}
+.abtn-ag:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-bg)}
+/* ══ PLANIFICADOR DE RECORRIDO (vendedor de campo) ══ */
+.rol-campo-only{display:none!important}
+body.rol-campo .rol-campo-only{display:inline-flex!important}
+.rt-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1500;display:flex;align-items:stretch;justify-content:center;padding:16px}
+.rt-overlay.hide{display:none}
+.rt-box{background:var(--bg);border-radius:14px;width:1280px;max-width:100%;height:100%;max-height:100%;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.25)}
+.rt-top{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.rt-title{font-size:16px;font-weight:800;color:var(--navy)}
+.rt-top label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase}
+.rt-top input[type=date]{padding:6px 9px;border:1px solid var(--border2);border-radius:7px;font-family:inherit;font-size:13px}
+.rt-close{margin-left:auto;background:none;border:none;font-size:22px;color:var(--text2);cursor:pointer}
+.rt-body{display:grid;grid-template-columns:430px 1fr;flex:1;min-height:0;overflow:hidden}
+.rt-left{border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
+.rt-sec{padding:10px 16px 4px;font-size:11px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;display:flex;justify-content:space-between;align-items:center}
+.rt-cnt{font-size:12px;font-weight:800;color:var(--navy);text-transform:none;letter-spacing:0}
+.rt-item{display:flex;gap:8px;align-items:flex-start;padding:8px 16px;border-bottom:1px solid var(--border)}
+.rt-item.sel{background:#f4f8fd}
+.rt-item input[type=checkbox]{margin-top:3px;accent-color:var(--navy);transform:scale(1.15)}
+.rt-num{width:24px;height:24px;border-radius:50%;background:var(--navy);color:white;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rt-num.nogeo{background:var(--gray)}
+.rt-name{font-size:13px;font-weight:700;color:var(--navy)}
+.rt-meta{font-size:11px;color:var(--text2);margin-top:2px;line-height:1.4}
+.rt-tag{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;margin-right:4px}
+.rt-tag-der{background:#e8eaf6;color:#283593}.rt-tag-rv{background:var(--red-bg);color:var(--red)}.rt-tag-otro{background:var(--gray-bg);color:var(--gray)}
+.rt-acts{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}
+.rt-btn{background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)}
+.rt-btn:hover{border-color:var(--navy);color:var(--navy)}
+.rt-btn.on{background:var(--amber);border-color:var(--amber);color:white}
+.rt-geo-ok{color:var(--green);font-weight:700}.rt-geo-no{color:var(--red);font-weight:700}
+.rt-addr{display:flex;gap:4px;margin-top:6px}
+.rt-addr input{flex:1;min-width:0;padding:6px 8px;border:1.5px solid var(--blue);border-radius:6px;font-family:inherit;font-size:12px;background:#f7fbff}
+.rt-addr input:focus{outline:none;box-shadow:0 0 0 2px rgba(24,95,165,.15)}
+.rt-addr button{background:var(--blue);color:white;border:none;border-radius:6px;padding:0 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
+.rt-dir{font-size:11px;color:var(--green);margin-top:3px}
+.rt-busy{font-size:11px;color:var(--amber);font-weight:700;margin-top:4px}
+.rt-salida{padding:10px 16px;border-bottom:1px solid var(--border);background:var(--green-bg)}
+.rt-mv{display:flex;flex-direction:column;gap:2px;margin-left:auto}
+.rt-mv button{background:none;border:1px solid var(--border);border-radius:4px;font-size:10px;width:22px;height:18px;cursor:pointer;line-height:1}
+.rt-right{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.rt-search{display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center}
+.rt-search input{flex:1;min-width:200px;padding:7px 10px;border:1px solid var(--border2);border-radius:7px;font-family:inherit;font-size:13px}
+.rt-hint{font-size:12px;padding:7px 12px;background:var(--amber-bg);color:var(--amber);font-weight:600;display:none}
+.rt-hint.show{display:block}
+#rt-map{flex:1;min-height:240px;background:#e8e8e3}
+.rt-results{max-height:150px;overflow-y:auto;border-bottom:1px solid var(--border);display:none}
+.rt-res{padding:6px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--border)}.rt-res:hover{background:var(--blue-bg)}
+.rt-foot{display:flex;gap:8px;align-items:center;padding:12px 18px;border-top:1px solid var(--border);flex-wrap:wrap;flex-shrink:0;background:var(--bg);position:relative;z-index:500}
+.rt-foot .info{font-size:12px;color:var(--text2);margin-right:auto}
+.rt-pin{width:28px;height:28px;border-radius:50%;background:var(--navy);color:white;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.rt-pin.start{background:var(--green);font-size:15px}
+@media(max-width:900px){.rt-body{grid-template-columns:1fr;grid-template-rows:minmax(0,40%) 1fr}.rt-left{border-right:none;border-bottom:1px solid var(--border)}}
+@media(max-width:700px){.hdr-stats{display:none}.fsearch{width:130px}th:nth-child(4),td:nth-child(4),th:nth-child(6),td:nth-child(6){display:none}.frow{grid-template-columns:1fr}.tci-actions{flex-direction:row}.today-head-badge{display:none}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN: VENDEDORA -->
+<div class="screen" id="login-screen" style="display:none">
+  <div class="box">
+    <div class="box-logo">📋</div>
+    <div class="box-title">Gestor de Prospectos</div>
+    <div class="box-sub">Surtidora de Higiénicos y Servicios · SHS<br>Selecciona tu perfil para entrar.</div>
+    <div class="vd-grid">
+      <button class="vd-btn" onclick="selectVd('TELEMARKETING 1',this)"><span class="vd-icon">👤</span><div><div class="vd-name">Telemarketing 1</div></div></button>
+      <button class="vd-btn" onclick="selectVd('TELEMARKETING 2',this)"><span class="vd-icon">👤</span><div><div class="vd-name">Telemarketing 2</div></div></button>
+      <button class="vd-btn" onclick="selectVd('TELEMARKETING 3',this)"><span class="vd-icon">👤</span><div><div class="vd-name">Telemarketing 3</div></div></button>
+      <button class="vd-btn" onclick="selectVd('VENDEDOR DE CAMPO',this)"><span class="vd-icon">🚗</span><div><div class="vd-name">Vendedor de campo</div><div class="vd-desc">Prospección en calle · clientes nuevos</div></div></button>
+    </div>
+    <button class="btn-primary" id="login-btn" disabled onclick="doLogin()">Entrar a mi cartera →</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="header">
+    <div class="hdr-left">
+      <div class="hdr-title">Prospectos SHS &nbsp;·&nbsp; <span id="hdr-nombre" class="role-pill"></span></div>
+      <div class="hdr-sub" id="hdr-fecha"></div>
+    </div>
+    <div class="hdr-stats">
+      <div class="hdr-stat"><div class="hdr-stat-val" id="hs-total">0</div><div class="hdr-stat-lbl" id="hl-total">Total</div></div>
+      <div class="hdr-stat"><div class="hdr-stat-val" id="hs-neg">0</div><div class="hdr-stat-lbl" id="hl-neg">Negociación</div></div>
+      <div class="hdr-stat"><div class="hdr-stat-val" id="hs-cer">0</div><div class="hdr-stat-lbl" id="hl-cer">Cerradas</div></div>
+      <div class="hdr-stat"><div class="hdr-stat-val" id="hs-calls" style="color:#fde68a">0</div><div class="hdr-stat-lbl">Llamar hoy</div></div>
+    </div>
+    <div class="hdr-right">
+      <span title="Firebase"><span class="sync-dot syncing" id="sync-dot"></span></span>
+      <button class="hbtn hbtn-blue" id="btn-nuevo" onclick="openProspectModal(null)">+ Prospecto</button>
+      <button class="hbtn tlmk-only" onclick="document.getElementById('xlsInput').click()">⬆ Excel</button>
+      <button class="hbtn hbtn-blue rol-campo-only" onclick="rtAbrir()">🗺 Planear recorrido</button>
+      <button class="hbtn" onclick="doLogout()">🔄 Cambiar perfil</button>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- ══ PESTAÑAS (solo telemarketing) ══ -->
+    <div class="tabs rol-tlmk-only">
+      <button class="tab on" id="tab-mia" onclick="setVista(false)">📋 Mi cartera <span class="fbadge" id="tc-mia">0</span></button>
+      <button class="tab" id="tab-campo" onclick="setVista(true)">🚗 Prospección de campo <span class="fbadge" id="tc-campo">0</span></button>
+    </div>
+
+    <div class="ro-note" id="ro-note" style="display:none">👀 Aquí ves todos los prospectos que el equipo de ventas registró de tus visitas. Si falta alguno o hay un dato mal, avísale al equipo de ventas.</div>
+
+    <!-- ══ PANEL DE AVANCE · VENDEDOR DE CAMPO ══ -->
+    <div class="campo-only" id="campo-panel">
+      <div class="cp-card">
+        <div class="cp-head">
+          <div>
+            <div class="cp-title">🎯 Mi avance · <span id="cp-periodo">—</span></div>
+            <div class="cp-sub" id="cp-rango"></div>
+          </div>
+          <button class="cp-cfg" onclick="openCfg()">⚙ Fecha de inicio</button>
+        </div>
+        <div class="cp-grid" id="cp-grid"></div>
+        <div class="cp-foot" id="cp-foot"></div>
+      </div>
+    </div>
+
+    <!-- ══ SEGUNDAS VISITAS PENDIENTES (vendedor de campo) ══ -->
+    <div class="campo-only" id="rv-section" style="display:none"></div>
+
+    <!-- ══ AGENDA DE VISITAS DEL VENDEDOR DE CAMPO ══ -->
+    <div class="campo-only" id="ag-section" style="display:none"></div>
+
+    <!-- ══ CLIENTES ENVIADOS POR TELEMARKETING (pendientes de visita) ══ -->
+    <div class="campo-only" id="dv-section" style="display:none"></div>
+
+    <!-- ══ PANEL LLAMADAS HOY ══ -->
+    <div id="today-section">
+      <div class="today-panel">
+        <div class="today-head">
+          <div class="today-bell">🔔</div>
+          <div class="today-head-text">
+            <div class="today-head-title">¡Tienes llamadas para hacer hoy!</div>
+            <div class="today-head-sub" id="today-head-sub">Realiza y marca cada llamada como hecha</div>
+          </div>
+          <div>
+            <div class="today-head-badge" id="today-badge-num">0</div>
+            <div class="today-badge-lbl">pendientes</div>
+          </div>
+        </div>
+        <div class="today-calls-list" id="today-list"></div>
+        <div class="today-footer">
+          <span class="today-footer-txt" id="today-footer-txt"></span>
+          <button class="today-footer-link" onclick="setFiltro('HOY',document.getElementById('fbtn-hoy'))">Ver solo llamadas de hoy en la tabla ↓</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PRÓXIMAS LLAMADAS ══ -->
+    <div id="upcoming-section">
+      <div class="upcoming-card">
+        <div class="upcoming-hdr" onclick="toggleUpcoming()">
+          <div class="upcoming-hdr-title">📅 Próximas llamadas programadas <span class="fbadge" id="upcoming-count" style="background:var(--blue-bg);color:var(--blue)">0</span></div>
+          <span class="upcoming-toggle" id="upcoming-arrow">▼ ver</span>
+        </div>
+        <div id="upcoming-body" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- UPLOAD -->
+    <div class="upload-card tlmk-only" id="upload-card" onclick="document.getElementById('xlsInput').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondrop="dropXls(event)" ondragleave="this.classList.remove('drag')">
+      <div class="upload-icon">📂</div>
+      <div><div class="upload-title" id="upload-title">Cargar / Actualizar desde Excel</div><div class="upload-msg" id="upload-msg">Sube el reporte Excel. Los datos se sincronizan en Firebase para todas las vistas.</div></div>
+    </div>
+    <input type="file" id="xlsInput" accept=".xlsx,.xls" onchange="loadXls(event)">
+
+    <!-- FILTROS -->
+    <div class="filter-bar">
+      <button class="fbtn on" id="fbtn-all" onclick="setFiltro('',this)">Todos <span class="fbadge" id="fc-all">0</span></button>
+      <button class="fbtn fbtn-amber" id="fbtn-hoy" onclick="setFiltro('HOY',this)">🔔 Llamar hoy <span class="fbadge fbadge-amber" id="fc-hoy">0</span></button>
+      <button class="fbtn" id="fbtn-pro" onclick="setFiltro('PROSPECTO',this)"><span id="fl-pro">Prospecto</span> <span class="fbadge" id="fc-pro">0</span></button>
+      <button class="fbtn" id="fbtn-neg" onclick="setFiltro('EN NEGOCIACION',this)"><span id="fl-neg">Negociación</span> <span class="fbadge" id="fc-neg">0</span></button>
+      <button class="fbtn" id="fbtn-cer" onclick="setFiltro('CERRADA',this)"><span id="fl-cer">Cerradas</span> <span class="fbadge" id="fc-cer">0</span></button>
+      <button class="fbtn" id="fbtn-per" onclick="setFiltro('PERDIDA',this)">Perdidas <span class="fbadge" id="fc-per">0</span></button>
+      <div class="f-sep"></div>
+      <select class="fsel" id="fmes" onchange="renderTable()"><option value="">Todos los meses</option></select>
+      <input class="fsearch" type="text" id="fsearch" placeholder="Buscar cliente…" oninput="renderTable()">
+    </div>
+
+    <!-- TABLA -->
+    <div class="table-wrap">
+      <div class="table-toolbar"><div class="tt-title" id="tt-title">Mi Cartera de Prospectos</div><div class="tt-count" id="tt-count"></div></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Cliente</th><th>Contacto / Tel.</th><th>Estado</th><th>Próxima Acción</th><th>Valor</th><th>Observaciones</th><th></th></tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PROGRAMAR LLAMADA -->
+<div class="modal-overlay hide" id="call-overlay" onclick="if(event.target===this)closeCallModal()">
+  <div class="modal">
+    <div class="modal-title">📞 Programar Llamada</div>
+    <div class="modal-sub">La llamada aparecerá automáticamente el día que la programes.</div>
+    <div class="prospect-mini" id="cm-info"></div>
+    <div class="frow">
+      <div class="fg"><label>Fecha de la llamada</label><input type="date" id="cm-fecha">
+        <div class="quick-btns"><button class="qb" onclick="setFecha(0)">Hoy</button><button class="qb" onclick="setFecha(1)">Mañana</button><button class="qb" onclick="setFecha(3)">+3 días</button><button class="qb" onclick="setFecha(7)">+1 semana</button></div>
+      </div>
+      <div class="fg"><label>Hora acordada</label><input type="time" id="cm-hora" value="09:00">
+        <div class="quick-btns"><button class="qb" onclick="document.getElementById('cm-hora').value='09:00'">9 am</button><button class="qb" onclick="document.getElementById('cm-hora').value='11:00'">11 am</button><button class="qb" onclick="document.getElementById('cm-hora').value='14:00'">2 pm</button><button class="qb" onclick="document.getElementById('cm-hora').value='16:00'">4 pm</button></div>
+      </div>
+    </div>
+    <div class="fg full" style="margin-bottom:0"><label>Motivo / Nota de la llamada</label><textarea id="cm-nota" rows="3" placeholder="Ej: Cliente dijo que revisaría el miércoles. Dar seguimiento a cotización."></textarea></div>
+    <div class="modal-actions"><button class="mbtn mbtn-cancel" onclick="closeCallModal()">Cancelar</button><button class="mbtn mbtn-p" onclick="saveCall()">Programar Llamada</button></div>
+  </div>
+</div>
+
+<!-- MODAL: PROSPECTO -->
+<div class="modal-overlay hide" id="prospect-overlay" onclick="if(event.target===this)closeProspectModal()">
+  <div class="modal modal-lg">
+    <div class="modal-title" id="pm-title">Agregar Prospecto</div>
+    <div class="modal-sub" id="pm-sub"></div>
+    <div class="frow">
+      <div class="fg full"><label>Nombre del Cliente *</label><input type="text" id="pm-cliente" placeholder="Ej: HOTEL LAS PALMAS"></div>
+      <div class="fg"><label>Nombre Contacto</label><input type="text" id="pm-contacto"></div>
+      <div class="fg"><label>Teléfono</label><input type="tel" id="pm-telefono" placeholder="314 123 4567"></div>
+      <div class="fg full"><label>Correo Electrónico</label><input type="email" id="pm-email"></div>
+      <div class="fg"><label>Estado *</label><select id="pm-estado" onchange="onEstadoChange(this.value)"><option value="PROSPECTO">Prospecto</option><option value="EN NEGOCIACION">En Negociación</option><option value="CERRADA">Cerrada</option><option value="PERDIDA">Perdida</option></select><div class="fhint campo-only">Negociación = ya se le envió cotización · Cerrada = primera compra pagada de $2,000 o más (cuenta como cliente activado).</div></div>
+      <div class="fg"><label>Próxima Acción</label><select id="pm-accion"><option value="">— Sin acción —</option><option value="LLAMAR PARA PRESENTACIÓN">Llamar para Presentación</option><option value="ENVIAR PROPUESTA">Enviar Propuesta</option><option value="LLAMAR PARA SEGUIMIENTO">Llamar para Seguimiento</option><option value="REUNION DE CIERRE">Reunión de Cierre</option></select><div id="pm-accion-hint" style="display:none;font-size:11px;color:var(--red);margin-top:4px">Ciclo cerrado — sin acción futura</div></div>
+      <div class="fg"><label>Valor Potencial ($)</label><input type="number" id="pm-valor" min="0"></div>
+      <div class="fg"><label>Mes</label><select id="pm-mes"><option value="">—</option><option>ENERO</option><option>FEBRERO</option><option>MARZO</option><option>ABRIL</option><option>MAYO</option><option>JUNIO</option><option>JULIO</option><option>AGOSTO</option><option>SEPTIEMBRE</option><option>OCTUBRE</option><option>NOVIEMBRE</option><option>DICIEMBRE</option></select></div>
+      <div class="fg"><label id="pm-folio-lbl">Folio Cotización</label><input type="text" id="pm-folio"></div>
+
+      <!-- ── CAMPOS DEL VENDEDOR DE CAMPO ── -->
+      <div class="fg full campo-only"><div class="sec-h">🚗 Visita</div></div>
+      <div class="fg campo-only"><label>Fecha en que se visitó</label><input type="date" id="pm-fvisita"><div class="fhint">Solo si ya lo visitó. Déjala vacía si la visita todavía no ocurre.</div></div>
+      <div class="fg campo-only rol-tlmk-only"><label>📅 Agendar visita para</label><select id="pm-agenda"></select><div class="fhint" id="pm-agenda-hint">Máximo 10 visitas por día.</div></div>
+      <div class="fg campo-only"><label>Giro del negocio</label><select id="pm-giro"><option value="">—</option><option>RESTAURANTE / CAFETERÍA</option><option>HOTEL / MOTEL</option><option>ESCUELA</option><option>HOSPITAL / CLÍNICA / CONSULTORIO</option><option>OFICINA / CORPORATIVO</option><option>INDUSTRIA / BODEGA</option><option>CONDOMINIO / FRACCIONAMIENTO</option><option>GIMNASIO</option><option>GASOLINERA</option><option>COMERCIO / TIENDA</option><option>GOBIERNO</option><option>OTRO</option></select></div>
+      <div class="fg campo-only"><label>Ciudad / Zona</label><select id="pm-zona"><option value="">—</option><option>COLIMA</option><option>VILLA DE ÁLVAREZ</option><option>TECOMÁN</option><option>MANZANILLO</option><option>OTRA</option></select></div>
+      <div class="fg campo-only"><label>Razón social</label><input type="text" id="pm-razon"></div>
+      <div class="fg full campo-only"><label>Domicilio *</label><input type="text" id="pm-domicilio" placeholder="Calle, número, colonia"></div>
+      <div class="fg full"><label>Observaciones</label><textarea id="pm-obs" rows="3"></textarea></div>
+    </div>
+    <div class="modal-actions">
+      
+      <button class="mbtn mbtn-cancel" onclick="closeProspectModal()">Cancelar</button>
+      <button class="mbtn mbtn-p" onclick="saveProspect()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: DETALLE -->
+<div class="modal-overlay hide" id="detail-overlay" onclick="if(event.target===this)closeDetailModal()">
+  <div class="modal modal-lg">
+    <div class="modal-title" id="dm-title"></div>
+    <div id="dm-sub" style="margin-bottom:14px;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:8px"></div>
+    <div class="modal-info-grid" id="dm-grid"></div>
+    <div style="margin-bottom:18px"><div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">Observaciones</div><div class="obs-box" id="dm-obs"></div></div>
+    <div id="dm-calls-section" style="display:none;margin-bottom:14px"><div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">Llamadas Programadas</div><div id="dm-calls-list"></div></div>
+    <div class="modal-actions"><button class="mbtn mbtn-cancel" onclick="closeDetailModal()">Cerrar</button><button class="mbtn mbtn-p rol-tlmk-only" onclick="editFromDetail()">✏️ Editar</button><button class="mbtn mbtn-g rol-tlmk-only" onclick="callFromDetail()">📞 Programar Llamada</button><button class="mbtn tlmk-only" id="dm-derivar" style="background:#283593;color:white;border:none" onclick="derivarFromDetail()">🚗 Enviar a campo</button></div>
+  </div>
+</div>
+
+<!-- MODAL: AGENDAR VISITA -->
+<div class="modal-overlay hide" id="ag-overlay" onclick="if(event.target===this)closeAgendar()">
+  <div class="modal">
+    <div class="modal-title">📅 Agendar visita del vendedor de campo</div>
+    <div class="modal-sub">Máximo 10 visitas por día. Los días llenos no se pueden elegir.</div>
+    <div class="fg"><label>Cliente</label><select id="ag-cliente" onchange="agRefrescarDia()"></select></div>
+    <div class="fg" style="margin-bottom:4px"><label>Día de la visita</label><select id="ag-dia"></select></div>
+    <div class="fhint" id="ag-actual"></div>
+    <div class="modal-actions"><button class="mbtn mbtn-cancel" onclick="closeAgendar()">Cancelar</button><button class="mbtn mbtn-p" onclick="saveAgendar()">Guardar</button></div>
+  </div>
+</div>
+
+<!-- MODAL: ENVIAR AL VENDEDOR DE CAMPO -->
+<div class="modal-overlay hide" id="dv-overlay" onclick="if(event.target===this)closeDerivar()">
+  <div class="modal">
+    <div class="modal-title">🚗 Enviar al vendedor de campo</div>
+    <div class="modal-sub">El cliente pasa a la lista del vendedor de campo para que lo visite y ayude a cerrar la cuenta. Sale de tu cartera y lo sigues viendo en la pestaña "Prospección de campo".</div>
+    <div class="prospect-mini" id="dv-info"></div>
+    <div class="fg full"><label>Agendar visita para</label><select id="dv-dia"></select><div class="fhint">Opcional. Máximo 10 visitas por día; los días llenos no se pueden elegir.</div></div>
+    <div class="fg full" style="margin-bottom:0"><label>¿Por qué necesitas apoyo? *</label><textarea id="dv-motivo" rows="3" placeholder="Ej: Ya se le envió cotización 2 veces y no contesta. El encargado de compras solo atiende en persona."></textarea></div>
+    <div class="modal-actions"><button class="mbtn mbtn-cancel" onclick="closeDerivar()">Cancelar</button><button class="mbtn mbtn-p" onclick="saveDerivar()">Enviar a campo</button></div>
+  </div>
+</div>
+
+<!-- MODAL: CONFIGURACIÓN VENDEDOR DE CAMPO -->
+<div class="modal-overlay hide" id="cfg-overlay" onclick="if(event.target===this)closeCfg()">
+  <div class="modal">
+    <div class="modal-title">⚙ Periodo de prueba</div>
+    <div class="modal-sub">Indica el primer día de trabajo del vendedor de campo. Con esta fecha se calculan sus metas de los meses 1, 2 y 3 (periodos de 30 días). Del día 91 en adelante se mide por mes calendario con la meta de planta.</div>
+    <div class="fg"><label>Fecha de inicio</label><input type="date" id="cfg-inicio"></div>
+    <div class="modal-actions"><button class="mbtn mbtn-cancel" onclick="closeCfg()">Cancelar</button><button class="mbtn mbtn-p" onclick="saveCfg()">Guardar</button></div>
+  </div>
+</div>
+
+<!-- ══ PLANIFICADOR DE RECORRIDO ══ -->
+<div class="rt-overlay hide" id="rt-overlay">
+  <div class="rt-box">
+    <div class="rt-top">
+      <div class="rt-title">🗺 Planear recorrido</div>
+      <label>Día del recorrido</label><input type="date" id="rt-fecha" onchange="rtCargarDia()">
+      <span style="font-size:12px;color:var(--text2)">Máximo 10 clientes por bitácora</span>
+      <button class="rt-close" onclick="rtCerrar()">✕</button>
+    </div>
+    <div class="rt-body">
+      <div class="rt-left" id="rt-left"></div>
+      <div class="rt-right">
+        <div class="rt-search">
+          <input id="rt-q" placeholder="Buscar una zona en el mapa (opcional)" onkeydown="if(event.key==='Enter')rtBuscar()">
+          <button class="rt-btn" onclick="rtBuscar()">🔎 Buscar</button>
+          <button class="rt-btn" id="rt-capa" onclick="rtCapa()">🛰 Satélite</button>
+        </div>
+        <div class="rt-results" id="rt-results"></div>
+        <div class="rt-hint" id="rt-hint"></div>
+        <div id="rt-map"></div>
+      </div>
+    </div>
+    <div class="rt-foot">
+      <span class="info" id="rt-info"></span>
+      <button class="mbtn mbtn-cancel" onclick="rtOrdenar()">🔀 Ordenar ruta</button>
+      <button class="mbtn mbtn-cancel" onclick="rtAbrirGoogle()">📍 Ver ruta en Google Maps</button>
+      <button class="mbtn mbtn-cancel" onclick="rtGuardar()">💾 Guardar</button>
+      <button class="mbtn mbtn-p" onclick="rtWord()">📄 Descargar bitácora (Word)</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const LS_U='shs_user_v1', DB='shs_crm';
+let db=null, currentUser=null, allProspects=[], allCalls=[], filtroEstado='',
+    editingId=null, callProspect=null, detailProspect=null, upcomingOpen=false, selectedVd=null,
+    cfgCampo={};
+
+/* ── VENDEDOR DE CAMPO: metas del periodo de prueba ── */
+const CAMPO = 'VENDEDOR DE CAMPO';
+const META_EFECT = 0.70;          // visitas → cotización (pareja todo el periodo)
+const META_PRUEBA_TOTAL = 38;     // clientes activados en 90 días
+const METAS = [
+  {n:'Mes 1 (con gerente)', vis:60,  cot:42, cli:3,  conv:.15},
+  {n:'Mes 2',               vis:100, cot:70, cli:14, conv:.20},
+  {n:'Mes 3',               vis:120, cot:84, cli:21, conv:.25},
+  {n:'Planta',              vis:120, cot:84, cli:21, conv:.25, llave:14}
+];
+// Telemarketing 4 ahora se llama Telemarketing 2. Los registros viejos se leen con el nombre nuevo.
+const RENOMBRES = {'TELEMARKETING 4':'TELEMARKETING 2'};
+function nr(v){ return RENOMBRES[v] || v; }
+function normP(p){ ['responsable','capturadoPor','actualizadoPor','derivadoDe'].forEach(k=>{ if(p[k]) p[k]=nr(p[k]); }); return p; }
+function isCampo(){ return currentUser && currentUser.responsable === CAMPO; }
+let vistaCampo = false;   // telemarketing viendo la pestaña "Prospección de campo"
+function modoCampo(){ return isCampo() || vistaCampo; }
+
+/* ── ESTADO → ACCIÓN ── */
+function onEstadoChange(estado){
+  const accion = document.getElementById('pm-accion');
+  const hint   = document.getElementById('pm-accion-hint');
+  // Solo limpiar el valor si es PERDIDA — el campo siempre queda editable
+  if(estado === 'PERDIDA'){
+    accion.value = '';
+    if(hint) hint.style.display = 'block';
+  } else {
+    if(hint) hint.style.display = 'none';
+  }
+}
+
+/* ── FIREBASE INIT ── */
+window.addEventListener('DOMContentLoaded', () => { initFirebase(); });
+
+function initFirebase(){
+  try{
+    if(!firebase.apps.length) firebase.initializeApp({
+      apiKey:"AIzaSyDGBgicmvOge196PiSgmIHhseQUGMiko-E",
+      authDomain:"surtidora-de-higienicos.firebaseapp.com",
+      databaseURL:"https://surtidora-de-higienicos-default-rtdb.firebaseio.com",
+      projectId:"surtidora-de-higienicos",
+      storageBucket:"surtidora-de-higienicos.firebasestorage.app",
+      messagingSenderId:"232648877023",
+      appId:"1:232648877023:web:9e8a4a743b68f4e16d9a6a"
+    });
+    db = firebase.database();
+    db.ref('.info/connected').on('value', snap => {
+      const dot = document.getElementById('sync-dot');
+      if(dot) dot.className = 'sync-dot' + (snap.val() ? '' : ' off');
+    });
+    const u = JSON.parse(localStorage.getItem(LS_U) || 'null');
+    if(u){ u.responsable = nr(u.responsable); currentUser = u; localStorage.setItem(LS_U, JSON.stringify(u)); startApp(); }
+    else showLoginScreen();
+  } catch(e){ console.error(e); }
+}
+
+/* ── LOGIN ── */
+function showLoginScreen(){
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+function selectVd(name, btn){
+  selectedVd = name;
+  document.querySelectorAll('.vd-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  document.getElementById('login-btn').disabled = false;
+}
+function doLogin(){
+  if(!selectedVd) return;
+  currentUser = { responsable: selectedVd };
+  localStorage.setItem(LS_U, JSON.stringify(currentUser));
+  startApp();
+}
+function doLogout(){
+  localStorage.removeItem(LS_U);
+  currentUser = null; selectedVd = null;
+  document.querySelectorAll('.vd-btn').forEach(b => b.classList.remove('sel'));
+  document.getElementById('login-btn').disabled = true;
+  showLoginScreen();
+}
+
+/* ── APP START ── */
+function startApp(){
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('hdr-nombre').textContent = currentUser.responsable;
+  applyProfileLabels();
+  db.ref(DB+'/config/campo').on('value', snap => { cfgCampo = snap.val() || {}; renderAll(); });
+  db.ref(DB+'/recorridos').orderByKey().startAt(ymd(new Date(Date.now()-7*864e5))).on('value', snap => { agenda = snap.val() || {}; renderAll(); });
+  const now = new Date();
+  document.getElementById('hdr-fecha').textContent =
+    now.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  db.ref(DB+'/prospectos').on('value', snap => {
+    allProspects = snap.exists() ? Object.values(snap.val()).map(normP) : [];
+    refreshMes(); renderAll();
+  });
+  db.ref(DB+'/llamadas').on('value', snap => {
+    allCalls = snap.exists() ? Object.values(snap.val()).map(c=>{ c.responsable=nr(c.responsable); return c; }) : [];
+    renderAll();
+  });
+}
+
+/* ── EXCEL ── */
+function dropXls(e){ e.preventDefault(); document.getElementById('upload-card').classList.remove('drag'); if(e.dataTransfer.files[0]) processXls(e.dataTransfer.files[0]); }
+function loadXls(e){ if(e.target.files[0]) processXls(e.target.files[0]); e.target.value=''; }
+function processXls(file){
+  const r = new FileReader();
+  r.onload = ev => {
+    try{
+      const wb = XLSX.read(ev.target.result, {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+      let hdr = -1;
+      for(let i=0;i<rows.length;i++){ if(String(rows[i][0]).trim()==='ID'){hdr=i;break;} }
+      if(hdr<0) hdr=1;
+      const upd={}, seen=new Set(); let n=0;
+      for(let i=hdr+1;i<rows.length;i++){
+        const r2=rows[i]; const id=String(r2[0]||'').trim();
+        if(!id||id==='ID'||seen.has(id)) continue; seen.add(id);
+        upd[DB+'/prospectos/'+id]={id, mes:String(r2[1]||'').trim(), folio:String(r2[2]||'').trim(),
+          cliente:String(r2[3]||'').trim(), contacto:String(r2[4]||'').trim(), email:String(r2[5]||'').trim(),
+          telefono:String(r2[6]||'').trim(), estado:String(r2[7]||'').trim().toUpperCase(),
+          primerContacto:xd(r2[8]), proximaAccion:String(r2[9]||'').trim().toUpperCase(),
+          ultimaActualizacion:xd(r2[10]), valorPotencial:Number(r2[11])||0,
+          responsable:nr(String(r2[12]||'').trim().toUpperCase()), observaciones:String(r2[13]||'').trim(), source:'excel'};
+        n++;
+      }
+      db.ref().update(upd).then(()=>{
+        document.getElementById('upload-title').textContent='✓ Sincronizado con Firebase';
+        document.getElementById('upload-msg').textContent=n+' prospectos actualizados en tiempo real';
+        document.getElementById('upload-msg').className='upload-msg ok';
+        toast('✓ '+n+' prospectos sincronizados');
+      }).catch(e=>{ document.getElementById('upload-msg').textContent='Error: '+e.message; document.getElementById('upload-msg').className='upload-msg err'; });
+    }catch(e){ document.getElementById('upload-msg').textContent='Error al leer el archivo.'; document.getElementById('upload-msg').className='upload-msg err'; }
+  };
+  r.readAsArrayBuffer(file);
+}
+function xd(s){ if(!s||isNaN(Number(s))) return String(s||''); return new Date(Math.round((Number(s)-25569)*86400000)).toISOString().split('T')[0]; }
+
+/* ── HELPERS ── */
+function mine(){
+  const r = modoCampo() ? CAMPO : currentUser.responsable;   // en la pestaña de campo se ve la cartera del vendedor de campo
+  return allProspects.filter(p => p.responsable === r);
+}
+function myCalls(){ return allCalls.filter(c => c.responsable === currentUser.responsable); }
+function ymd(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function today(){ return ymd(new Date()); }   // fecha local (antes UTC: después de las 6 pm marcaba el día siguiente)
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
+function sj(o){ return JSON.stringify(o).replace(/'/g,"&#39;"); }
+function esc(s){ return String(s||'').replace(/"/g,'&quot;'); }
+function eKey(e){ return {PROSPECTO:'bst-prospecto','EN NEGOCIACION':'bst-negociacion',CERRADA:'bst-cerrada',PERDIDA:'bst-perdida'}[e]||'bst-gray'; }
+function eLbl(e){
+  if(modoCampo()) return {PROSPECTO:'VISITADO','EN NEGOCIACION':'COTIZADO',CERRADA:'CLIENTE ACTIVADO',PERDIDA:'PERDIDO'}[e]||(e||'—');
+  return e==='EN NEGOCIACION'?'EN NEGOCIACIÓN':(e||'—');
+}
+function aCls(a){ if(!a)return''; if(a.includes('PROPUESTA'))return'bac-propuesta'; if(a.includes('PRESENTACIÓN'))return'bac-presentacion'; if(a.includes('CIERRE'))return'bac-cierre'; return'bac-seguimiento'; }
+function fd(s){ if(!s)return'—'; try{return new Date(s+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});}catch{return s;} }
+function refreshMes(){
+  const ms = [...new Set(mine().map(p=>p.mes).filter(Boolean))];
+  const sel = document.getElementById('fmes'); const cur = sel.value;
+  sel.innerHTML = '<option value="">Todos los meses</option>';
+  ms.forEach(m=>{ const o=document.createElement('option'); o.value=m; o.textContent=m; if(m===cur)o.selected=true; sel.appendChild(o); });
+}
+
+/* ── RENDER ALL ── */
+function renderAll(){ renderStats(); renderCampo(); renderAgenda(); renderDerivados(); renderRevisitas(); renderTodayCalls(); renderUpcomingCalls(); renderTable(); }
+
+function renderStats(){
+  const m = mine(); const t = today();
+  const callsHoy = myCalls().filter(c=>!c.completada && c.fecha===t).length;
+  document.getElementById('hs-total').textContent = m.length;
+  document.getElementById('hs-neg').textContent = m.filter(p=>p.estado==='EN NEGOCIACION').length;
+  document.getElementById('hs-cer').textContent = m.filter(p=>p.estado==='CERRADA').length;
+  document.getElementById('hs-calls').textContent = callsHoy;
+  document.getElementById('fc-all').textContent = m.length;
+  document.getElementById('fc-hoy').textContent = callsHoy;
+  document.getElementById('fc-pro').textContent = m.filter(p=>p.estado==='PROSPECTO').length;
+  document.getElementById('fc-neg').textContent = m.filter(p=>p.estado==='EN NEGOCIACION').length;
+  document.getElementById('fc-cer').textContent = m.filter(p=>p.estado==='CERRADA').length;
+  document.getElementById('fc-per').textContent = m.filter(p=>p.estado==='PERDIDA').length;
+  document.getElementById('tc-mia').textContent = allProspects.filter(p=>p.responsable===currentUser.responsable).length;
+  document.getElementById('tc-campo').textContent = allProspects.filter(p=>p.responsable===CAMPO).length;
+}
+
+/* ══════════════════════════════════════════
+   VENDEDOR DE CAMPO
+═══════════════════════════════════════════ */
+function applyProfileLabels(){
+  const c = modoCampo();
+  document.body.classList.toggle('campo', c);
+  document.body.classList.toggle('rol-campo', isCampo());
+  const set = (id,t)=>{ const el=document.getElementById(id); if(el) el.textContent=t; };
+  set('hl-total', c?'Visitas':'Total');
+  set('hl-neg',   c?'Cotizados':'Negociación');
+  set('hl-cer',   c?'Activados':'Cerradas');
+  set('fl-pro',   c?'Visitados':'Prospecto');
+  set('fl-neg',   c?'Cotizados':'Negociación');
+  set('fl-cer',   c?'Activados':'Cerradas');
+  set('tt-title', isCampo()?'Mis prospectos de campo':(c?'Prospección del vendedor de campo':'Mi Cartera de Prospectos'));
+  set('btn-nuevo',c?'+ Registrar visita de campo':'+ Prospecto');
+  set('pm-folio-lbl', c?'Folio Microsip':'Folio Cotización');
+  // El vendedor de campo solo consulta: la captura la hace el equipo de ventas
+  document.getElementById('btn-nuevo').style.display = isCampo() ? 'none' : '';
+  document.getElementById('ro-note').style.display = isCampo() ? 'block' : 'none';
+  document.getElementById('tab-mia').classList.toggle('on', !vistaCampo);
+  document.getElementById('tab-campo').classList.toggle('on', vistaCampo);
+}
+function setVista(campo){
+  vistaCampo = campo;
+  filtroEstado = '';
+  document.querySelectorAll('.filter-bar .fbtn').forEach(b=>b.classList.remove('on'));
+  document.getElementById('fbtn-all').classList.add('on');
+  document.getElementById('fmes').value = '';
+  applyProfileLabels(); refreshMes(); renderAll();
+}
+
+// Cotizado = estado Negociación o Cerrada · Activado = estado Cerrada (las fechas se guardan solas)
+function esActivado(p){ return !!p.fechaActivacion; }
+
+function addDays(s,n){ const d=new Date(s+'T12:00:00'); d.setDate(d.getDate()+n); return ymd(d); }
+function diasEntre(a,b){ return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/86400000); }
+
+// Periodo actual: meses 1-3 son ventanas de 30 días desde la fecha de inicio; después, mes calendario
+// Fecha de inicio: la configurada; si no hay, la primera visita registrada; si no hay visitas, hoy.
+function inicioCampo(){
+  if(cfgCampo.inicio) return {fecha:cfgCampo.inicio, estimada:false};
+  const vis = allProspects.filter(p=>p.responsable===CAMPO && p.fechaVisita).map(p=>p.fechaVisita).sort();
+  return {fecha: vis[0] || today(), estimada:true};
+}
+function periodoActual(){
+  const t = today(), ini = inicioCampo().fecha;
+  if(ini && t >= ini){
+    const idx = Math.floor(diasEntre(ini,t)/30);
+    if(idx < 3){
+      const a = addDays(ini, idx*30), b = addDays(ini, idx*30+29);
+      return {meta:METAS[idx], idx, desde:a, hasta:b, prueba:true};
+    }
+  }
+  const d = new Date(), a = ymd(new Date(d.getFullYear(), d.getMonth(), 1)), b = ymd(new Date(d.getFullYear(), d.getMonth()+1, 0));
+  return {meta:METAS[3], idx:3, desde:a, hasta:b, prueba:false};
+}
+function enRango(f,a,b){ return !!f && f>=a && f<=b; }
+
+function semaforo(pct){ return pct>=1?'ok':(pct>=.7?'mid':'bad'); }
+function tile(lbl, val, meta, pct, nota){
+  const s = semaforo(pct);
+  return `<div class="cp-tile">
+    <div class="cp-lbl">${lbl}</div>
+    <div class="cp-val c-${s}">${val}${meta!==null?` <span class="cp-meta">/ ${meta}</span>`:''}</div>
+    <div class="cp-bar"><div class="b-${s}" style="width:${Math.min(100,Math.round(pct*100))}%"></div></div>
+    <div class="cp-note">${nota}</div>
+  </div>`;
+}
+
+function renderCampo(){
+  if(!modoCampo()) return;
+  const m = mine(), per = periodoActual(), M = per.meta;
+  const vis = m.filter(p=>enRango(p.fechaVisita, per.desde, per.hasta)).length;
+  const cot = m.filter(p=>enRango(p.fechaCotizacion, per.desde, per.hasta)).length;
+  const cli = m.filter(p=>esActivado(p) && enRango(p.fechaActivacion, per.desde, per.hasta)).length;
+  const efect = vis ? cot/vis : 0;
+  const conv = cot ? cli/cot : 0;
+  const visHoy = m.filter(p=>p.fechaVisita===today()).length;
+  const restan = diasEntre(today(), per.hasta);
+
+  document.getElementById('cp-periodo').textContent = per.prueba ? `Mes en curso · ${M.n} del periodo de prueba` : 'Mes en curso · en planta';
+  document.getElementById('cp-rango').textContent = `Del ${fd(per.desde)} al ${fd(per.hasta)} · ${restan>=0?`quedan ${restan} día${restan===1?'':'s'}`:'periodo cerrado'}`;
+
+  document.getElementById('cp-grid').innerHTML =
+    tile('Visitas', vis, M.vis, vis/M.vis, `Hoy: ${visHoy}`) +
+    tile('Cotizaciones', cot, M.cot, cot/M.cot, 'Estado: Negociación') +
+    tile('Clientes activados', cli, M.cli, cli/M.cli, per.idx===3?`Llave: ${M.llave} · ${cli>=M.llave?'<b class="c-ok">cobra residual</b>':'<b class="c-bad">sin residual</b>'}`:'Estado: Cerrada') +
+    tile('Efectividad visita → cotización', Math.round(efect*100)+'%', null, efect/META_EFECT, `Meta: ${Math.round(META_EFECT*100)}%`) +
+    tile('Conversión cotización → cliente', Math.round(conv*100)+'%', null, M.conv?conv/M.conv:0, `Meta: ${Math.round(M.conv*100)}%`);
+
+  // Pie: acumulado del periodo de prueba de 90 días
+  let foot = '';
+  const IN = inicioCampo(), fin90 = addDays(IN.fecha, 89);
+  const acum = m.filter(p=>esActivado(p) && enRango(p.fechaActivacion, IN.fecha, fin90)).length;
+  foot += `<span>Acumulado periodo de prueba (${fd(IN.fecha)} – ${fd(fin90)}): <b>${acum} / ${META_PRUEBA_TOTAL} clientes</b></span>`;
+  if(today() > fin90){
+    const dec = acum>=38 ? '<b class="c-ok">Cumplió: pasa a planta</b>' : acum>=28 ? '<b class="c-mid">28–37: valoración de Gerencia / extensión de 30 días</b>' : '<b class="c-bad">Menos de 28: no cumplió</b>';
+    foot += `<span>${dec}</span>`;
+  }
+  if(IN.estimada) foot += `<span class="cp-warn">⚙ Fecha de inicio estimada (${fd(IN.fecha)}, primera visita registrada). Configúrala para que los meses 1, 2 y 3 sean exactos.</span>`;
+  document.getElementById('cp-foot').innerHTML = foot;
+}
+
+function openCfg(){ document.getElementById('cfg-inicio').value = cfgCampo.inicio || today(); document.getElementById('cfg-overlay').classList.remove('hide'); }
+function closeCfg(){ document.getElementById('cfg-overlay').classList.add('hide'); }
+function saveCfg(){
+  const v = document.getElementById('cfg-inicio').value;
+  if(!v){ toast('⚠️ Elige una fecha'); return; }
+  db.ref(DB+'/config/campo').update({inicio:v}).then(()=>{ closeCfg(); toast('✓ Fecha de inicio guardada'); }).catch(e=>toast('Error: '+e.message));
+}
+
+/* ══ CLIENTES ENVIADOS POR TELEMARKETING AL VENDEDOR DE CAMPO ══ */
+let derivProspect = null;
+function openDerivar(p){ if(typeof p==='string')p=JSON.parse(p); derivProspect=p;
+  document.getElementById('dv-info').innerHTML=`<div class="pm-name">${p.cliente}</div><div class="pm-meta">${p.contacto?`<span>👤 ${p.contacto}</span>`:''} ${p.telefono?`<span>📱 ${p.telefono}</span>`:''} <span class="bst ${eKey(p.estado)}" style="font-size:10px">${eLbl(p.estado)}</span></div>`;
+  document.getElementById('dv-motivo').value='';
+  document.getElementById('dv-dia').innerHTML = agOpcionesDia('', null);
+  document.getElementById('dv-overlay').classList.remove('hide');
+  setTimeout(()=>document.getElementById('dv-motivo').focus(),100);
+}
+function closeDerivar(){ document.getElementById('dv-overlay').classList.add('hide'); derivProspect=null; }
+function derivarFromDetail(){ const p=detailProspect; closeDetailModal(); openDerivar(p); }
+function saveDerivar(){
+  const p = derivProspect; if(!p) return;
+  const motivo = document.getElementById('dv-motivo').value.trim();
+  if(!motivo){ toast('⚠️ Escribe por qué necesitas apoyo'); return; }
+  const original = allProspects.find(x=>x.id===p.id) || p;
+  const nota = `[${fd(today())}] Enviado al vendedor de campo por ${currentUser.responsable}: ${motivo}`;
+  const data = Object.assign({}, original, {
+    responsable: CAMPO, origen:'CAMPO',
+    derivadoDe: currentUser.responsable, fechaDerivacion: today(), motivoDerivacion: motivo,
+    capturadoPor: original.capturadoPor || currentUser.responsable, actualizadoPor: currentUser.responsable,
+    fechaVisita: '', fechaAvance: today(), ultimaActualizacion: today(),
+    observaciones: (original.observaciones ? original.observaciones+'\n' : '') + nota
+  });
+  if(data.estado==='PERDIDA') data.estado='PROSPECTO';   // se reactiva para que el vendedor lo trabaje
+  const dia = document.getElementById('dv-dia').value;
+  db.ref(DB+'/prospectos/'+p.id).set(data)
+    .then(()=> dia ? agAgregar(dia, p.id) : true)
+    .then(ok=>{ closeDerivar(); toast(ok ? ('✓ Enviado al vendedor de campo'+(dia?' · agendado '+agEtiquetaDia(dia,true):'')) : '✓ Enviado, pero ese día se llenó: agéndalo en otro día'); })
+    .catch(e=>toast('Error: '+e.message));
+}
+function renderDerivados(){
+  const sec = document.getElementById('dv-section');
+  if(!modoCampo()){ sec.innerHTML=''; return; }
+  const lista = mine().filter(p=>p.derivadoDe && !p.fechaVisita && p.estado!=='CERRADA' && p.estado!=='PERDIDA')
+    .sort((a,b)=>String(a.fechaDerivacion).localeCompare(String(b.fechaDerivacion)));
+  if(!lista.length){ sec.innerHTML=''; return; }
+  sec.innerHTML = `<div class="dv-panel">
+    <div class="dv-head">
+      <div class="rv-ico">↪</div>
+      <div><div class="rv-title">Clientes enviados por telemarketing</div>
+      <div class="rv-sub">La vendedora pidió apoyo para cerrar estas cuentas. Visítalos lo antes posible.</div></div>
+      <div class="dv-badge">${lista.length}</div>
+    </div>
+    ${lista.map(p=>{ const d=diasEntre(p.fechaDerivacion||today(), today()); return `<div class="rv-item">
+      <div class="rv-days"><div class="dv-days-n">${d}</div><div class="rv-days-l">día${d===1?'':'s'} esperando</div></div>
+      <div class="rv-info">
+        <div class="rv-name" onclick='openDetail(${sj(p)})'>${p.cliente}</div>
+        <div class="rv-meta">
+          <span class="bst ${eKey(p.estado)}">${eLbl(p.estado)}</span>
+          <span>Enviado por <b>${p.derivadoDe}</b> el ${fd(p.fechaDerivacion)}</span>
+          ${p.contacto?`<span>👤 ${p.contacto}</span>`:''}
+          ${p.telefono?`<a href="tel:${p.telefono}">📱 ${p.telefono}</a>`:''}
+          ${p.domicilio?`<span>📍 ${p.domicilio}</span>`:''}
+        </div>
+        ${p.motivoDerivacion?`<div class="dv-motivo">💬 ${String(p.motivoDerivacion).replace(/</g,'&lt;')}</div>`:''}
+      </div>
+    </div>`; }).join('')}
+    <div class="rv-foot" style="background:#e8eaf6;color:#283593">Cuando lo visites, avisa al equipo de ventas para que registre la fecha de visita.</div>
+  </div>`;
+}
+
+/* ══ SEGUNDA VISITA: 7 días sin avance ══ */
+const DIAS_SIN_AVANCE = 7;
+// Último avance = la fecha más reciente entre la visita, un cambio de estado o una nueva visita
+function ultimoAvance(p){
+  return [p.fechaVisita, p.fechaAvance, p.fechaCotizacion, p.ultimaRevisita].filter(Boolean).sort().pop() || p.primerContacto || '';
+}
+function diasSinAvance(p){ const u = ultimoAvance(p); return u ? diasEntre(u, today()) : 0; }
+function numRevisitas(p){ return p.revisitas ? Object.keys(p.revisitas).length : 0; }
+function necesitaRevisita(p){
+  return !!p.fechaVisita && (p.estado==='PROSPECTO' || p.estado==='EN NEGOCIACION') && diasSinAvance(p) >= DIAS_SIN_AVANCE;
+}
+function renderRevisitas(){
+  const sec = document.getElementById('rv-section');
+  if(!modoCampo()){ sec.innerHTML=''; return; }
+  const lista = mine().filter(necesitaRevisita).sort((a,b)=>diasSinAvance(b)-diasSinAvance(a));
+  if(!lista.length){ sec.innerHTML=''; return; }
+  const ord = n => n===2?'2ª':n===3?'3ª':n+'ª';
+  sec.innerHTML = `<div class="rv-panel">
+    <div class="rv-head">
+      <div class="rv-ico">🚗</div>
+      <div><div class="rv-title">Segundas visitas pendientes</div>
+      <div class="rv-sub">Prospectos con ${DIAS_SIN_AVANCE} días o más sin avance en la negociación. Visítalos de nuevo.</div></div>
+      <div class="rv-badge">${lista.length}</div>
+    </div>
+    ${lista.map(p=>{ const d=diasSinAvance(p), n=numRevisitas(p)+2; return `<div class="rv-item">
+      <div class="rv-days"><div class="rv-days-n">${d}</div><div class="rv-days-l">días sin avance</div></div>
+      <div class="rv-info">
+        <div class="rv-name" onclick='openDetail(${sj(p)})'>${p.cliente} <span class="badge-rv">🔁 ${ord(n)} visita</span></div>
+        <div class="rv-meta">
+          <span class="bst ${eKey(p.estado)}">${eLbl(p.estado)}</span>
+          ${p.contacto?`<span>👤 ${p.contacto}</span>`:''}
+          ${p.telefono?`<a href="tel:${p.telefono}">📱 ${p.telefono}</a>`:''}
+          ${p.domicilio?`<span>📍 ${p.domicilio}${p.zona?', '+p.zona:''}</span>`:(p.zona?`<span>📍 ${p.zona}</span>`:'')}
+          <span>Último avance: ${fd(ultimoAvance(p))}</span>
+        </div>
+      </div>
+      <div class="rv-act"><button class="rv-btn" onclick="marcarRevisita('${p.id}')">✓ Ya lo visité</button></div>
+    </div>`; }).join('')}
+    <div class="rv-foot">Al marcar "Ya lo visité" el contador se reinicia. Si en otros ${DIAS_SIN_AVANCE} días sigue sin avance, vuelve a aparecer.</div>
+  </div>`;
+}
+function marcarRevisita(id){
+  const p = allProspects.find(x=>x.id===id); if(!p) return;
+  if(!confirm(`¿Confirmas que ya visitaste de nuevo a ${p.cliente}?`)) return;
+  const rid = uid(), upd = {};
+  upd[DB+'/prospectos/'+id+'/revisitas/'+rid] = {fecha:today(), por:currentUser.responsable};
+  upd[DB+'/prospectos/'+id+'/ultimaRevisita'] = today();
+  db.ref().update(upd).then(()=>toast('✓ Visita registrada · se reinicia el conteo de 7 días')).catch(e=>toast('Error: '+e.message));
+}
+
+/* ── PANEL LLAMADAS HOY (el elemento estrella) ── */
+function renderTodayCalls(){
+  const t = today();
+  const calls = myCalls().filter(c=>!c.completada && c.fecha===t).sort((a,b)=>a.hora.localeCompare(b.hora));
+  const sec = document.getElementById('today-section');
+
+  if(!calls.length){ sec.style.display='none'; return; }
+  sec.style.display = 'block';
+
+  document.getElementById('today-badge-num').textContent = calls.length;
+  const now = new Date(); const nowMin = now.getHours()*60+now.getMinutes();
+  const pendientes = calls.filter(c=>{ const [h,m]=c.hora.split(':'); return parseInt(h)*60+parseInt(m) >= nowMin; }).length;
+  document.getElementById('today-head-sub').textContent =
+    pendientes > 0 ? `${pendientes} aún pendiente${pendientes>1?'s':''} · Márcalas como hechas cuando termines` : 'Todas realizadas — ¡Buen trabajo!';
+  const now2 = new Date(); const hoyFmt = now2.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+  document.getElementById('today-footer-txt').textContent = hoyFmt.charAt(0).toUpperCase()+hoyFmt.slice(1);
+
+  document.getElementById('today-list').innerHTML = calls.map(c => {
+    const p = allProspects.find(x=>x.id===c.prospectoId);
+    const estadoBadge = p ? `<span class="tci-estado ${eKey(p.estado)}">${eLbl(p.estado)}</span>` : '';
+    const [ch,cm] = c.hora.split(':'); const callMin = parseInt(ch)*60+parseInt(cm);
+    const isPast = callMin < nowMin;
+    return `<div class="today-call-item" style="${isPast?'opacity:.65':''}">
+      <div class="tci-time">
+        <div class="tci-hora">${c.hora}</div>
+        <div class="tci-lbl">${isPast?'pasada':'hrs'}</div>
+      </div>
+      <div class="tci-info">
+        <div class="tci-nombre">${c.clienteNombre}</div>
+        <div class="tci-meta">
+          ${c.clienteTelefono ? `<a href="tel:${c.clienteTelefono}" class="tci-phone">📱 ${c.clienteTelefono}</a>` : ''}
+          ${c.nota ? `<span class="tci-nota">${c.nota}</span>` : ''}
+          ${estadoBadge}
+        </div>
+      </div>
+      <div class="tci-actions">
+        ${c.clienteTelefono ? `<button class="tci-btn-call" onclick="window.location.href='tel:${c.clienteTelefono}'">📞 Llamar</button>` : ''}
+        <button class="tci-btn-done" onclick="markDone('${c.id}')">✓ Hecha</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ── PRÓXIMAS LLAMADAS ── */
+function renderUpcomingCalls(){
+  const t = today();
+  const lim = (()=>{ const d=new Date(); d.setDate(d.getDate()+7); return ymd(d); })();
+  const calls = myCalls().filter(c=>!c.completada && c.fecha>t && c.fecha<=lim).sort((a,b)=>(a.fecha+a.hora).localeCompare(b.fecha+b.hora));
+  const sec = document.getElementById('upcoming-section');
+  sec.style.display = calls.length ? 'block' : 'none';
+  if(!calls.length) return;
+  document.getElementById('upcoming-count').textContent = calls.length;
+  const bd = {}; calls.forEach(c=>{ if(!bd[c.fecha])bd[c.fecha]=[]; bd[c.fecha].push(c); });
+  let html = '';
+  Object.entries(bd).forEach(([f,cs])=>{
+    html += `<div class="upcoming-date-lbl">${new Date(f+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'})}</div>`;
+    cs.forEach(c=>{ html += `<div class="upcoming-row">
+      <div><div class="up-hr">${c.hora}</div><div class="up-lbl">hrs</div></div>
+      <div><div class="up-name">${c.clienteNombre}</div><div class="up-meta">${c.nota||''}</div></div>
+      <button class="up-done" onclick="markDone('${c.id}')">✓ Hecha</button>
+    </div>`; });
+  });
+  document.getElementById('upcoming-body').innerHTML = html;
+}
+function toggleUpcoming(){ upcomingOpen=!upcomingOpen; document.getElementById('upcoming-body').style.display=upcomingOpen?'block':'none'; document.getElementById('upcoming-arrow').textContent=upcomingOpen?'▲ ocultar':'▼ ver'; }
+
+/* ── TABLA ── */
+function renderTable(){
+  const t = today();
+  const search = document.getElementById('fsearch').value.toLowerCase();
+  const mes = document.getElementById('fmes').value;
+
+  // IDs de prospectos con llamada hoy
+  const callsHoyIds = new Set(myCalls().filter(c=>!c.completada&&c.fecha===t).map(c=>c.prospectoId));
+
+  let rows = mine().filter(p=>{
+    if(filtroEstado==='HOY') return callsHoyIds.has(p.id);
+    if(filtroEstado && p.estado!==filtroEstado) return false;
+    if(mes && p.mes!==mes) return false;
+    if(search && !String(p.cliente||'').toLowerCase().includes(search) && !String(p.contacto||'').toLowerCase().includes(search) && !String(p.razonSocial||'').toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  document.getElementById('tt-count').textContent = rows.length + ' prospectos';
+  const tb = document.getElementById('tbody');
+  if(!rows.length){ tb.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-icon">📋</div><div class="empty-title">Sin resultados</div></div></td></tr>`; return; }
+
+  tb.innerHTML = rows.map(p => {
+    const sk = eKey(p.estado);
+    const al = p.proximaAccion ? p.proximaAccion.replace('LLAMAR PARA ','') : '';
+    const pendCalls = myCalls().filter(c=>c.prospectoId===p.id&&!c.completada).length;
+    const tieneHoy = callsHoyIds.has(p.id);
+    const badgeHoy = tieneHoy ? `<span class="badge-hoy">🔔 Llamar hoy</span>` : '';
+    const badgeCampo = (!modoCampo() && p.origen==='CAMPO') ? `<span class="badge-campo">🚗 De campo</span>` : '';
+    const badgeRv = (modoCampo() && necesitaRevisita(p)) ? `<span class="badge-rv">🔁 Volver a visitar</span>` : '';
+    const sub = modoCampo()
+      ? [agFechaDe(p.id)?'📅 '+agEtiquetaDia(agFechaDe(p.id)):'', p.derivadoDe?'↪ Enviado por '+p.derivadoDe.replace('TELEMARKETING','TLMK'):'', p.giro, p.zona, p.fechaVisita?'Visita '+fd(p.fechaVisita):(p.derivadoDe?'Sin visitar':''), (!isCampo()&&p.capturadoPor&&!p.derivadoDe)?'Capturó '+p.capturadoPor.replace('TELEMARKETING','TLMK'):''].filter(Boolean).join(' · ')
+      : [p.folio,p.mes].filter(Boolean).join(' · ');
+    let extra = '';
+    return `<tr>
+      <td><div class="td-cliente" onclick='openDetail(${sj(p)})'>${p.cliente}${badgeHoy}${badgeCampo}${badgeRv}</div><div class="td-sub">${sub}</div></td>
+      <td><div style="font-size:12px;color:var(--text2)">${p.contacto||'—'}</div><div class="td-phone">${p.telefono?`<a href="tel:${p.telefono}">${p.telefono}</a>`:''}</div></td>
+      <td><span class="bst ${sk}">${eLbl(p.estado)}</span>${extra}</td>
+      <td>${al?`<span class="bac ${aCls(p.proximaAccion)}">${al}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
+      <td style="font-weight:700;color:var(--green);white-space:nowrap">${p.valorPotencial?'$'+Number(p.valorPotencial).toLocaleString('es-MX'):'—'}</td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text2)" title="${esc(p.observaciones||'')}">${p.observaciones||'—'}</td>
+      <td><div class="row-acts">
+        <button class="abtn abtn-call rol-tlmk-only" onclick='openCallModal(${sj(p)})'>📞${pendCalls?` <span style="font-size:10px;background:var(--amber);color:white;border-radius:99px;padding:0 5px">${pendCalls}</span>`:''}</button>
+        <button class="abtn rol-tlmk-only" onclick='openProspectModal(${sj(p)})'>✏️</button>
+        ${modoCampo() && !isCampo() && (p.estado==='PROSPECTO'||p.estado==='EN NEGOCIACION') && agPuedeAgendarP(p) && (!agFechaDe(p.id) || agPuedeEditar(agFechaDe(p.id),p.id)) ? `<button class="abtn abtn-ag" title="Agendar visita" onclick="openAgendar('${p.id}')">📅</button>` : ''}
+        ${!modoCampo() && p.origen!=='CAMPO' && p.estado!=='CERRADA' ? `<button class="abtn abtn-campo" title="Enviar al vendedor de campo" onclick='openDerivar(${sj(p)})'>🚗</button>` : ''}
+        <button class="abtn" onclick='openDetail(${sj(p)})'>👁</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function setFiltro(e, btn){
+  filtroEstado = e;
+  document.querySelectorAll('.filter-bar .fbtn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderTable();
+}
+
+/* ── LLAMADAS ── */
+function openCallModal(p){ if(typeof p==='string')p=JSON.parse(p); callProspect=p;
+  document.getElementById('cm-info').innerHTML=`<div class="pm-name">${p.cliente}</div><div class="pm-meta">${p.contacto?`<span>👤 ${p.contacto}</span>`:''} ${p.telefono?`<span>📱 ${p.telefono}</span>`:''} <span class="bst ${eKey(p.estado)}" style="font-size:10px">${eLbl(p.estado)}</span></div>`;
+  document.getElementById('cm-fecha').value = today();
+  document.getElementById('cm-hora').value = '09:00';
+  document.getElementById('cm-nota').value = p.proximaAccion ? p.proximaAccion.replace('LLAMAR PARA ','').replace('ENVIAR ','Enviar ') : '';
+  document.getElementById('call-overlay').classList.remove('hide');
+}
+function closeCallModal(){ document.getElementById('call-overlay').classList.add('hide'); callProspect=null; }
+function setFecha(d){ const dt=new Date(); dt.setDate(dt.getDate()+d); document.getElementById('cm-fecha').value=ymd(dt); }
+function saveCall(){
+  if(!callProspect) return;
+  const fecha=document.getElementById('cm-fecha').value, hora=document.getElementById('cm-hora').value;
+  if(!fecha||!hora){ toast('⚠️ Completa fecha y hora'); return; }
+  const id = uid();
+  const isToday = fecha === today();
+  db.ref(DB+'/llamadas/'+id).set({id, prospectoId:callProspect.id, clienteNombre:callProspect.cliente,
+    clienteTelefono:callProspect.telefono||'', responsable:currentUser.responsable, fecha, hora,
+    nota:document.getElementById('cm-nota').value.trim(), completada:false, creadaEn:new Date().toISOString()})
+    .then(()=>{
+      closeCallModal();
+      const d = new Date(fecha+'T12:00:00');
+      const cuandoLbl = isToday ? '¡para HOY!' : 'para el '+d.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});
+      toast(`✓ Llamada programada ${cuandoLbl} a las ${hora} hrs`);
+    })
+    .catch(e=>toast('Error: '+e.message));
+}
+function markDone(id){
+  db.ref(DB+'/llamadas/'+id).update({completada:true, completadaEn:new Date().toISOString()})
+    .then(()=>toast('✓ ¡Llamada marcada como realizada!'))
+    .catch(e=>toast('Error: '+e.message));
+}
+function delCall(id){ if(!confirm('¿Eliminar esta llamada?'))return; db.ref(DB+'/llamadas/'+id).remove().then(()=>toast('Llamada eliminada')); }
+
+/* ── PROSPECTO MODAL ── */
+function openProspectModal(p){ if(typeof p==='string')p=JSON.parse(p); editingId=p?p.id:null;
+  document.getElementById('pm-title').textContent=p?'Editar Prospecto':'Agregar Prospecto';
+  document.getElementById('pm-sub').textContent=p?`Editando: ${p.cliente}`:'Registra un nuevo prospecto en Firebase.';
+
+  ['cliente','contacto','telefono','email'].forEach(f=>document.getElementById('pm-'+f).value=p?.[f]||'');
+  document.getElementById('pm-estado').value=p?.estado||'PROSPECTO';
+  document.getElementById('pm-accion').value=(p?.estado==='PERDIDA')?'':p?.proximaAccion||'';
+  onEstadoChange(p?.estado||'PROSPECTO');
+  document.getElementById('pm-valor').value=p?.valorPotencial||'';
+  document.getElementById('pm-mes').value=p?.mes||'';
+  document.getElementById('pm-folio').value=p?.folio||'';
+  document.getElementById('pm-obs').value=p?.observaciones||'';
+  // Campos del vendedor de campo
+  // Si por error quedó una "fecha de visita" futura, se trata como agenda
+  const fvFutura = p?.fechaVisita && p.fechaVisita > today();
+  document.getElementById('pm-fvisita').value = fvFutura ? '' : (p?.fechaVisita || (modoCampo()&&!p ? today() : ''));
+  document.getElementById('pm-fvisita').max = today();
+  { const sel=document.getElementById('pm-agenda'), act = p ? agFechaDe(p.id) : '', ajena = act && !agPuedeEditar(act, p.id);
+    sel.innerHTML = agOpcionesDia(fvFutura ? p.fechaVisita : act, p ? p.id : null);
+    if(fvFutura && !ajena) sel.value = p.fechaVisita;      // la fecha futura que se capturó es la que se quería agendar
+    sel.disabled = !!ajena || (p && !agPuedeAgendarP(p));
+    document.getElementById('pm-agenda-hint').innerHTML = ajena ? `Lo agendó <b>${agDueno(act,p.id)===CAMPO?'el vendedor':agDueno(act,p.id).replace('TELEMARKETING','Telemarketing')}</b>; solo quien lo agendó puede cambiarlo.`
+      : (p && !agPuedeAgendarP(p)) ? `Este cliente lo envió ${nr(p.derivadoDe).replace('TELEMARKETING','Telemarketing')}; solo ella puede agendarlo.` : 'Máximo 10 visitas por día. Los días llenos no se pueden elegir.'; }
+  document.getElementById('pm-giro').value = p?.giro||'';
+  document.getElementById('pm-zona').value = p?.zona||'';
+  document.getElementById('pm-razon').value = p?.razonSocial||'';
+  document.getElementById('pm-domicilio').value = p?.domicilio||'';
+  if(modoCampo()){
+    document.getElementById('pm-title').textContent = p ? 'Editar visita de campo' : 'Registrar visita de campo';
+    document.getElementById('pm-sub').textContent = p ? `Editando: ${p.cliente}` : 'Captura aquí la hoja que mandó el vendedor de campo. El prospecto queda a su nombre y el estado (visitado, cotizado, activado) se calcula solo.';
+  }
+  document.getElementById('prospect-overlay').classList.remove('hide');
+  setTimeout(()=>document.getElementById('pm-cliente').focus(),100);
+}
+function closeProspectModal(){ document.getElementById('prospect-overlay').classList.add('hide'); editingId=null; }
+function saveProspect(){
+  const cliente=document.getElementById('pm-cliente').value.trim();
+  if(!cliente){ toast('⚠️ Ingresa el nombre del cliente'); return; }
+  const eVal=document.getElementById('pm-estado').value;
+const data={cliente:cliente.toUpperCase(), contacto:document.getElementById('pm-contacto').value.trim(),
+    telefono:document.getElementById('pm-telefono').value.trim(), email:document.getElementById('pm-email').value.trim(),
+    estado:document.getElementById('pm-estado').value, proximaAccion:eVal==='PERDIDA'?'':document.getElementById('pm-accion').value,
+    valorPotencial:Number(document.getElementById('pm-valor').value)||0, mes:document.getElementById('pm-mes').value,
+    folio:document.getElementById('pm-folio').value.trim(), observaciones:document.getElementById('pm-obs').value.trim(),
+    responsable:currentUser.responsable, ultimaActualizacion:today()};
+  const id=editingId||('M-'+uid()); data.id=id;
+  if(!editingId){data.source='manual'; data.primerContacto=today();}
+
+  if(modoCampo()){
+    const g = k => document.getElementById(k);
+    const original = editingId ? allProspects.find(x=>x.id===editingId) : null;
+    Object.assign(data, {
+      origen:'CAMPO',
+      responsable: CAMPO,
+      actualizadoPor: currentUser.responsable,
+      fechaVisita: g('pm-fvisita').value,
+      giro: g('pm-giro').value, zona: g('pm-zona').value,
+      razonSocial: g('pm-razon').value.trim().toUpperCase(),
+      domicilio: g('pm-domicilio').value.trim()
+    });
+    if(!original) data.capturadoPor = currentUser.responsable;
+    // Agenda: lo elegido en "Agendar visita para"; una fecha de visita futura también se toma como agenda
+    let diaAgenda = g('pm-agenda').disabled ? null : g('pm-agenda').value;
+    if(data.fechaVisita && data.fechaVisita > today()){ if(!g('pm-agenda').disabled) diaAgenda = data.fechaVisita; data.fechaVisita = ''; }
+    if(!data.mes) data.mes = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'][new Date((data.fechaVisita||today())+'T12:00:00').getMonth()];
+    // Fechas automáticas según el estado: así el panel sabe en qué mes se cotizó y en qué mes se activó
+    const prevCot = original?.fechaCotizacion || '', prevAct = original?.fechaActivacion || '';
+    if(!original || original.estado !== data.estado) data.fechaAvance = today();   // cambio de estado = avance
+    if(data.estado === 'EN NEGOCIACION' || data.estado === 'CERRADA') data.fechaCotizacion = prevCot || today();
+    else if(data.estado === 'PROSPECTO') data.fechaCotizacion = '';
+    else data.fechaCotizacion = prevCot;                     // PERDIDA conserva el historial
+    if(data.estado === 'CERRADA') data.fechaActivacion = prevAct || today();
+    else if(data.estado === 'PERDIDA') data.fechaActivacion = prevAct;
+    else data.fechaActivacion = '';
+    const upd = {};
+    upd[DB+'/prospectos/'+id] = original ? Object.assign({}, original, data) : data;
+    const eraEdicion = !!editingId;
+    const cambiaAgenda = diaAgenda !== null && diaAgenda !== agFechaDe(id) && (diaAgenda || agFechaDe(id));
+    db.ref().update(upd)
+      .then(()=> cambiaAgenda ? agMover(id, diaAgenda) : true)
+      .then(ok=>{
+        closeProspectModal();
+        if(ok==='ajena') toast('✓ Guardado. La agenda no se cambió: esa visita la agendó otra persona');
+        else if(ok===false) toast(`✓ Guardado, pero ese día ya tiene ${RT_MAX} visitas: elige otro día`);
+        else if(cambiaAgenda) toast(diaAgenda ? `✓ Guardado · visita agendada para ${agEtiquetaDia(diaAgenda,true)}` : '✓ Guardado · se quitó de la agenda');
+        else toast(eraEdicion?'✓ Visita actualizada':'✓ Visita registrada');
+      })
+      .catch(e=>toast('Error: '+e.message));
+    return;
+  }
+
+  db.ref(DB+'/prospectos/'+id).update(data)
+    .then(()=>{ toast(editingId?'✓ Prospecto actualizado':'✓ Prospecto guardado'); closeProspectModal(); })
+    .catch(e=>toast('Error: '+e.message));
+}
+// deleteProspect() deshabilitado — los prospectos no se pueden eliminar para mantener historial completo
+
+/* ── DETALLE ── */
+function openDetail(p){ if(typeof p==='string')p=JSON.parse(p); detailProspect=p;
+  document.getElementById('dm-title').textContent=p.cliente;
+  document.getElementById('dm-sub').innerHTML=`<span class="bst ${eKey(p.estado)}">${eLbl(p.estado)}</span> · ${p.responsable}${p.mes?' · '+p.mes:''}`;
+  document.getElementById('dm-grid').innerHTML=`
+    <div><div class="mig-lbl">Contacto</div><div class="mig-val">${p.contacto||'—'}</div></div>
+    <div><div class="mig-lbl">Teléfono</div><div class="mig-val">${p.telefono?`<a href="tel:${p.telefono}">${p.telefono}</a>`:'—'}</div></div>
+    <div><div class="mig-lbl">Correo</div><div class="mig-val" style="word-break:break-all">${p.email?`<a href="mailto:${p.email}">${p.email}</a>`:'—'}</div></div>
+    <div><div class="mig-lbl">Valor Potencial</div><div class="mig-val" style="color:var(--green)">${p.valorPotencial?'$'+Number(p.valorPotencial).toLocaleString('es-MX'):'—'}</div></div>
+    <div><div class="mig-lbl">Próxima Acción</div><div class="mig-val">${p.proximaAccion||'—'}</div></div>
+    <div><div class="mig-lbl">Folio</div><div class="mig-val">${p.folio||'—'}</div></div>
+    <div><div class="mig-lbl">Primer Contacto</div><div class="mig-val">${fd(p.primerContacto)}</div></div>
+    <div><div class="mig-lbl">Última Actualización</div><div class="mig-val">${fd(p.ultimaActualizacion)}</div></div>`
+    + (p.origen==='CAMPO' && modoCampo() ? `
+    <div><div class="mig-lbl">Giro / Zona</div><div class="mig-val">${[p.giro,p.zona].filter(Boolean).join(' · ')||'—'}</div></div>
+    <div><div class="mig-lbl">Fecha de visita</div><div class="mig-val">${fd(p.fechaVisita)}</div></div>
+    <div><div class="mig-lbl">Razón social</div><div class="mig-val">${p.razonSocial||'—'}</div></div>
+    <div><div class="mig-lbl">Domicilio</div><div class="mig-val">${p.domicilio||'—'}</div></div>
+    <div><div class="mig-lbl">Cotizado</div><div class="mig-val">${p.fechaCotizacion?fd(p.fechaCotizacion):'—'}</div></div>
+    <div><div class="mig-lbl">Cliente activado</div><div class="mig-val">${p.fechaActivacion?`<span class="c-ok">${fd(p.fechaActivacion)}</span>`:'—'}</div></div>
+    ${p.derivadoDe?`<div><div class="mig-lbl">Enviado por</div><div class="mig-val">${p.derivadoDe} · ${fd(p.fechaDerivacion)}</div></div><div><div class="mig-lbl">Motivo</div><div class="mig-val">${String(p.motivoDerivacion||'—').replace(/</g,'&lt;')}</div></div>`:''}
+    <div><div class="mig-lbl">Visitas de seguimiento</div><div class="mig-val">${numRevisitas(p)?Object.values(p.revisitas).map(r=>fd(r.fecha)).sort().join(', '):'—'}${necesitaRevisita(p)?` <span class="badge-rv" style="margin:0">🔁 Pendiente</span>`:''}</div></div>
+    <div><div class="mig-lbl">Capturado por</div><div class="mig-val">${p.capturadoPor||'—'}${p.actualizadoPor&&p.actualizadoPor!==p.capturadoPor?` · editó ${p.actualizadoPor}`:''}</div></div>` : '')
+    + (p.origen==='CAMPO' && !modoCampo() ? `<div><div class="mig-lbl">Origen</div><div class="mig-val"><span class="badge-campo" style="margin:0">🚗 Traído por el vendedor de campo</span></div></div>` : '');
+  document.getElementById('dm-obs').textContent = p.observaciones||'Sin observaciones.';
+  const pend = myCalls().filter(c=>c.prospectoId===p.id&&!c.completada).sort((a,b)=>(a.fecha+a.hora).localeCompare(b.fecha+b.hora));
+  const csec = document.getElementById('dm-calls-section');
+  if(pend.length){
+    csec.style.display='block';
+    document.getElementById('dm-calls-list').innerHTML = pend.map(c=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:${c.fecha===today()?'var(--amber-bg)':'var(--bg2)'};border-radius:8px;margin-bottom:6px;font-size:13px;border:1px solid ${c.fecha===today()?'#e8d6b0':'var(--border)'}">
+        <span style="font-weight:700;color:${c.fecha===today()?'var(--amber)':'var(--text2)'}">📅 ${fd(c.fecha)} · ${c.hora} hrs${c.fecha===today()?' 🔔':''}</span>
+        <span style="color:var(--text2);flex:1">${c.nota||''}</span>
+        <button class="tci-btn-done" style="font-size:11px;padding:4px 10px" onclick="markDone('${c.id}')">✓ Hecha</button>
+      </div>`).join('');
+  } else csec.style.display='none';
+  document.getElementById('dm-derivar').style.display = (!modoCampo() && p.origen!=='CAMPO' && p.estado!=='CERRADA') ? '' : 'none';
+  document.getElementById('detail-overlay').classList.remove('hide');
+}
+function closeDetailModal(){ document.getElementById('detail-overlay').classList.add('hide'); detailProspect=null; }
+function editFromDetail(){ const p=detailProspect; closeDetailModal(); openProspectModal(p); }
+function callFromDetail(){ const p=detailProspect; closeDetailModal(); openCallModal(p); }
+
+/* ══════════════════════════════════════════
+   AGENDA DE VISITAS DEL VENDEDOR DE CAMPO
+   · Telemarketing agenda; el vendedor la ve y la abre en el planificador; el gerente la ve en el master.
+   · Fuente única: shs_crm/recorridos/AAAA-MM-DD  { paradas:[ids], asignados:{id:{por,en}} } (la misma que usa el planificador)
+   · Tope: RT_MAX (10) visitas por día, protegido con transacción para que dos vendedoras no lo rebasen al mismo tiempo.
+═══════════════════════════════════════════ */
+const AG_DIAS = 12;            // días que se muestran (sin domingos)
+let agenda = {}, agProspect = null;
+function agListaDias(){
+  const out=[], d=new Date();
+  while(out.length<AG_DIAS){ if(d.getDay()!==0) out.push(ymd(d)); d.setDate(d.getDate()+1); }
+  return out;
+}
+function agParadas(f){ const r=agenda[f]; return r && r.paradas ? Object.values(r.paradas).filter(Boolean) : []; }
+// Próxima fecha agendada de un prospecto (hoy o después)
+function agFechaDe(id){ const t=today(); return Object.keys(agenda).filter(f=>f>=t && agParadas(f).includes(id)).sort()[0] || ''; }
+function agEtiquetaDia(f, larga){
+  const d=new Date(f+'T12:00:00'), t=today();
+  const base=d.toLocaleDateString('es-MX', larga?{weekday:'long',day:'numeric',month:'short'}:{weekday:'short',day:'numeric',month:'short'});
+  return (f===t?'Hoy · ':(f===ymd(new Date(Date.now()+864e5))?'Mañana · ':''))+base;
+}
+// Quién agendó la visita (si no hay registro, fue el propio vendedor desde su planificador)
+function agDuenoSinRegistro(id){ const p=allProspects.find(x=>x.id===id); return nr((p&&(p.derivadoDe||p.capturadoPor))||CAMPO); }
+function agDueno(f, id){ const a=agenda[f]&&agenda[f].asignados&&agenda[f].asignados[id]; return a&&a.por ? nr(a.por) : agDuenoSinRegistro(id); }
+// Cada vendedora solo quita o cambia de día lo que ella agendó
+function agPuedeEditar(f, id){ return !isCampo() && agDueno(f,id)===currentUser.responsable; }
+// Puede agendar un prospecto si no lo envió otra vendedora
+function agPuedeAgendarP(p){ return !p.derivadoDe || nr(p.derivadoDe)===currentUser.responsable; }
+function agColor(n){ return n>=RT_MAX?'var(--red)':(n>=8?'var(--amber)':'var(--green)'); }
+
+function agAgregar(fecha, id){
+  return db.ref(DB+'/recorridos/'+fecha).transaction(r=>{
+    r = r || {};
+    const par = r.paradas ? Object.values(r.paradas).filter(Boolean) : [];
+    if(par.includes(id)) return r;
+    if(par.length >= RT_MAX) return;                       // día lleno: se cancela
+    par.push(id);
+    r.paradas = par; r.fecha = fecha;
+    r.asignados = r.asignados || {}; r.asignados[id] = {por:currentUser.responsable, en:today()};
+    return r;
+  }).then(res=>res.committed);
+}
+function agQuitar(fecha, id){
+  return db.ref(DB+'/recorridos/'+fecha).transaction(r=>{
+    if(!r) return r;
+    const due = (r.asignados&&r.asignados[id]&&r.asignados[id].por) ? nr(r.asignados[id].por) : agDuenoSinRegistro(id);
+    if(due!==currentUser.responsable) return;                // no es suya: no se toca
+    r.paradas = (r.paradas ? Object.values(r.paradas).filter(Boolean) : []).filter(x=>x!==id);
+    if(r.asignados) delete r.asignados[id];
+    return r;
+  });
+}
+async function agMover(id, nueva){
+  const actual = agFechaDe(id);
+  if(actual===nueva) return true;
+  if(actual && !agPuedeEditar(actual, id)) return 'ajena';
+  if(nueva){ const ok = await agAgregar(nueva, id); if(!ok) return false; }
+  if(actual) await agQuitar(actual, id);
+  return true;
+}
+
+// Opciones de día con su ocupación (los días llenos no se pueden elegir)
+function agOpcionesDia(sel, idActual){
+  return `<option value="">— Sin agendar —</option>` + agListaDias().map(f=>{
+    const n=agParadas(f).length, mio=idActual && agParadas(f).includes(idActual), lleno=n>=RT_MAX && !mio;
+    return `<option value="${f}" ${f===sel?'selected':''} ${lleno?'disabled':''}>${agEtiquetaDia(f,true)} — ${n}/${RT_MAX}${lleno?' (lleno)':''}</option>`;
+  }).join('');
+}
+// Prospectos de campo que se pueden agendar
+function agCandidatos(){
+  return allProspects.filter(p=>p.responsable===CAMPO && (p.estado==='PROSPECTO'||p.estado==='EN NEGOCIACION'))
+    .sort((a,b)=>String(a.cliente).localeCompare(String(b.cliente)));
+}
+function openAgendar(id, fecha){
+  agProspect = id||null;
+  const sel = document.getElementById('ag-cliente');
+  sel.innerHTML = `<option value="">— Elige un cliente —</option>` + agCandidatos().filter(p=>agPuedeAgendarP(p)||p.id===id).map(p=>{
+    const f=agFechaDe(p.id), ajena = f && !agPuedeEditar(f,p.id);
+    const quien = ajena ? ' (agendado por '+(agDueno(f,p.id)===CAMPO?'el vendedor':agDueno(f,p.id).replace('TELEMARKETING','TLMK'))+')' : '';
+    return `<option value="${p.id}" ${p.id===id?'selected':''} ${ajena&&p.id!==id?'disabled':''}>${p.cliente}${f?' · agendado '+agEtiquetaDia(f)+quien:''}${p.derivadoDe&&!p.fechaVisita?' · pendiente de visita':''}</option>`;
+  }).join('');
+  sel.disabled = !!id;
+  agRefrescarDia(fecha);
+  document.getElementById('ag-overlay').classList.remove('hide');
+}
+function agRefrescarDia(fecha){
+  const id = document.getElementById('ag-cliente').value;
+  const f = fecha!==undefined ? fecha : (id ? agFechaDe(id) : '');
+  document.getElementById('ag-dia').innerHTML = agOpcionesDia(f || (id?agFechaDe(id):''), id);
+  if(fecha) document.getElementById('ag-dia').value = fecha;
+  const actual = id ? agFechaDe(id) : '';
+  const ajena = actual && !agPuedeEditar(actual,id);
+  document.getElementById('ag-actual').innerHTML = actual ? `Actualmente agendado: ${agEtiquetaDia(actual,true)}`+(ajena?` · <b style="color:var(--red)">lo agendó ${agDueno(actual,id)===CAMPO?'el vendedor':agDueno(actual,id).replace('TELEMARKETING','Telemarketing')}; no lo puedes cambiar</b>`:'') : '';
+}
+function closeAgendar(){ document.getElementById('ag-overlay').classList.add('hide'); agProspect=null; }
+async function saveAgendar(){
+  const id = document.getElementById('ag-cliente').value, f = document.getElementById('ag-dia').value;
+  if(!id){ toast('⚠️ Elige un cliente'); return; }
+  if(!f && !agFechaDe(id)){ toast('⚠️ Elige un día'); return; }
+  const ok = await agMover(id, f).catch(e=>{ toast('Error: '+e.message); return null; });
+  if(ok===null) return;
+  if(ok==='ajena'){ const f0=agFechaDe(id); toast(`⚠️ Esta visita la agendó ${agDueno(f0,id).replace('TELEMARKETING','Telemarketing')}; solo ella puede cambiarla`); return; }
+  if(!ok){ toast(`⚠️ Ese día ya tiene ${RT_MAX} visitas. Elige otro día.`); agRefrescarDia(); return; }
+  closeAgendar();
+  toast(f ? `✓ Visita agendada para ${agEtiquetaDia(f,true)}` : '✓ Visita quitada de la agenda');
+}
+async function agQuitarDeDia(f, id){
+  if(!agPuedeEditar(f,id)){ toast('⚠️ Solo quien agendó esta visita puede quitarla'); return; }
+  const p = allProspects.find(x=>x.id===id);
+  if(!confirm(`¿Quitar a ${p?p.cliente:'este cliente'} de la agenda del ${agEtiquetaDia(f,true)}?`)) return;
+  await agQuitar(f, id); toast('✓ Quitado de la agenda');
+}
+
+function renderAgenda(){
+  const sec = document.getElementById('ag-section');
+  if(!modoCampo()){ sec.innerHTML=''; return; }
+  const puedeEditar = !isCampo();
+  const dias = agListaDias();
+  const total = dias.reduce((s,f)=>s+agParadas(f).length,0);
+  const card = f=>{
+    const ids = agParadas(f), n = ids.length, asg = (agenda[f]&&agenda[f].asignados)||{};
+    return `<div class="ag-day">
+      <div class="ag-day-h"><div class="ag-day-t">${agEtiquetaDia(f)}</div><div class="ag-day-n" style="color:${agColor(n)}">${n}/${RT_MAX}</div></div>
+      <div class="ag-bar"><div style="width:${n/RT_MAX*100}%;background:${agColor(n)}"></div></div>
+      <div class="ag-list">${ids.map((id,i)=>{ const p=allProspects.find(x=>x.id===id); if(!p) return '';
+        const due = agDueno(f,id), por = due===CAMPO ? 'Vendedor' : due.replace('TELEMARKETING','TLMK'), mio = due===currentUser.responsable;
+        return `<div class="ag-it"><span class="ag-num">${i+1}</span><span class="ag-cli" onclick='openDetail(${sj(p)})' title="${esc(p.cliente)}">${p.cliente}</span><span class="ag-por" style="${mio?'color:var(--blue);font-weight:700':''}">${mio?'Tú':por}</span>${agPuedeEditar(f,id)?`<button class="ag-x" title="Quitar" onclick="agQuitarDeDia('${f}','${id}')">✕</button>`:''}</div>`; }).join('') || '<div class="ag-empty">Sin visitas</div>'}</div>
+      ${puedeEditar ? (n<RT_MAX?`<button class="ag-add" onclick="openAgendar(null,'${f}')">+ Agendar</button>`:`<div class="ag-full">Día lleno</div>`)
+                    : (n?`<button class="ag-add" onclick="rtAbrir('${f}')">🗺 Planear ruta</button>`:'')}
+    </div>`;
+  };
+  sec.innerHTML = `<div class="ag-panel">
+    <div class="ag-head"><div><div class="ag-title">📅 Agenda de visitas${isCampo()?'':' del vendedor de campo'}</div>
+      <div class="ag-sub">Próximos ${AG_DIAS} días (sin domingos) · máximo ${RT_MAX} visitas por día · ${total} agendadas${isCampo()?' · tu equipo de ventas organiza esta agenda':''}</div></div>
+      ${puedeEditar?`<button class="hbtn hbtn-blue" onclick="openAgendar()">+ Agendar visita</button>`:''}</div>
+    <div class="ag-scroll">${dias.map(card).join('')}</div>
+  </div>`;
+}
+
+/* ══════════════════════════════════════════
+   PLANIFICADOR DE RECORRIDO + BITÁCORA EN WORD (vendedor de campo)
+   · Mapa: Leaflet + OpenStreetMap (sin llave de API). Google Maps se abre aparte para buscar el negocio.
+   · Ubicación de cada cliente: se guarda en el prospecto (ubicacion) y se reutiliza en recorridos futuros.
+   · Recorrido del día: shs_crm/recorridos/AAAA-MM-DD
+═══════════════════════════════════════════ */
+const RT_MAX = 10;
+// Punto de salida fijo: la bodega. Se ubica sola la primera vez con su dirección; si hace falta, se ajusta en el mapa.
+const RT_BODEGA = {nombre:'Bodega SHS', dir:'Narciso Mendoza #150, Villa de Álvarez, Colima'};
+const RT_SALIDA_DEF = {lat:19.2675, lng:-103.7370, nombre:RT_BODEGA.nombre, aprox:true};   // aproximado (centro de Villa de Álvarez) mientras se ubica
+let rtMap=null, rtLayer=null, rtSat=false, rtTiles={}, rtSel=[], rtSalida=null, rtPinFor=null, rtVerOtros=false;
+
+function rtLoad(src, css){
+  return new Promise((ok,err)=>{
+    if(css){ const l=document.createElement('link'); l.rel='stylesheet'; l.href=src; l.onload=ok; l.onerror=err; document.head.appendChild(l); return; }
+    const s=document.createElement('script'); s.src=src; s.onload=ok; s.onerror=err; document.head.appendChild(s);
+  });
+}
+async function rtLibs(){
+  if(!window.L){ await rtLoad('https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css', true); await rtLoad('https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'); }
+}
+function rtManana(){ const d=new Date(); d.setDate(d.getDate()+1); return ymd(d); }
+function rtP(id){ return allProspects.find(p=>p.id===id); }
+function rtGeo(p){ return p && p.ubicacion && isFinite(p.ubicacion.lat) ? p.ubicacion : null; }
+
+// Candidatos: enviados por telemarketing sin visitar, segundas visitas, y (opcional) otros abiertos
+function rtCandidatos(){
+  const m = allProspects.filter(p=>p.responsable===CAMPO && (p.estado==='PROSPECTO'||p.estado==='EN NEGOCIACION'));
+  const der = m.filter(p=>p.derivadoDe && !p.fechaVisita);
+  const rv  = m.filter(p=>necesitaRevisita(p) && !der.includes(p));
+  const otros = m.filter(p=>!der.includes(p) && !rv.includes(p));
+  return {der, rv, otros};
+}
+function rtTipo(p){
+  if(p.derivadoDe && !p.fechaVisita) return 'der';
+  if(necesitaRevisita(p)) return 'rv';
+  return 'otro';
+}
+function rtMotivo(p){
+  const t=rtTipo(p);
+  if(t==='der') return p.motivoDerivacion||'';
+  if(t==='rv') return `Visita de seguimiento: ${diasSinAvance(p)} días sin avance${p.motivoDerivacion?' · '+p.motivoDerivacion:''}`;
+  return p.motivoDerivacion ? p.motivoDerivacion : 'Seguimiento';
+}
+// Domicilio para la bitácora: el capturado; si no hay, la dirección que se pegó al ubicarlo
+function rtDomicilio(p){ if(p.domicilio) return p.domicilio+(p.zona?', '+p.zona:''); const g=rtGeo(p); return g&&g.fuente==='direccion'&&g.dir ? g.dir : ''; }
+function rtEnviadoPor(p){ return p.derivadoDe || (rtTipo(p)==='rv' ? 'Seguimiento propio' : '—'); }
+
+async function rtAbrir(fecha){
+  document.getElementById('rt-overlay').classList.remove('hide');
+  document.getElementById('rt-fecha').value = (typeof fecha==='string' && fecha) ? fecha : rtManana();
+  try{ await rtLibs(); }catch(e){ toast('⚠️ No se pudo cargar el mapa (revisa la conexión a internet)'); }
+  if(window.L && !rtMap){
+    rtMap = L.map('rt-map').setView([RT_SALIDA_DEF.lat, RT_SALIDA_DEF.lng], 13);
+    // OpenStreetMap bloquea mapas abiertos desde un archivo de la computadora; por eso se usa Esri (calles y satélite)
+    // y CARTO como respaldo automático si Esri falla.
+    rtTiles.calle = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Mapa © Esri'}).addTo(rtMap);
+    rtTiles.sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Imágenes © Esri'});
+    rtTiles.respaldo = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',{maxZoom:19,subdomains:'abcd',attribution:'© OpenStreetMap · © CARTO'});
+    let fallos = 0;
+    rtTiles.calle.on('tileerror', ()=>{ if(++fallos===4 && rtMap.hasLayer(rtTiles.calle)){ rtMap.removeLayer(rtTiles.calle); rtTiles.calle = rtTiles.respaldo; rtTiles.calle.addTo(rtMap); } });
+    rtLayer = L.layerGroup().addTo(rtMap);
+    rtMap.on('click', e=>rtFijar(e.latlng.lat, e.latlng.lng));
+  }
+  setTimeout(()=>{ if(rtMap) rtMap.invalidateSize(); }, 150);
+  await rtCargarDia();
+}
+function rtCerrar(){ rtPinFor=null; document.getElementById('rt-overlay').classList.add('hide'); }
+async function rtCargarDia(){
+  const f = document.getElementById('rt-fecha').value || rtManana();
+  rtSel=[]; rtPinFor=null;
+  await rtSalidaBodega();
+  try{
+    const sn = await db.ref(DB+'/recorridos/'+f).once('value');
+    const r = sn.val();
+    if(r && r.paradas) rtSel = Object.values(r.paradas).filter(id=>{ const p=rtP(id); return p && p.responsable===CAMPO; });
+  }catch(e){}
+  rtCargados = [...rtSel];
+  rtRender();
+}
+async function rtSalidaBodega(){
+  const c = cfgCampo.salida;
+  if(c && c.bodega && isFinite(c.lat)){ rtSalida = c; return; }
+  rtSalida = RT_SALIDA_DEF;
+  const g = await rtGeocode('Narciso Mendoza 150, Villa de Álvarez, Colima, México');
+  if(g && !g.error && g.fuente==='direccion' && Math.abs(g.lat-RT_SALIDA_DEF.lat)<0.1 && Math.abs(g.lng-RT_SALIDA_DEF.lng)<0.1){
+    rtSalida = {lat:+g.lat.toFixed(6), lng:+g.lng.toFixed(6), nombre:RT_BODEGA.nombre, dir:RT_BODEGA.dir, encontrado:g.txt||'', bodega:true, fuente:'direccion'};
+    db.ref(DB+'/config/campo/salida').set(rtSalida).catch(()=>{});
+  }
+}
+function rtToggle(id){
+  const i = rtSel.indexOf(id);
+  if(i>=0){ rtSel.splice(i,1); rtRender(); return; }
+  if(rtSel.length>=RT_MAX){ toast(`⚠️ Máximo ${RT_MAX} clientes por bitácora`); rtRender(); return; }
+  rtSel.push(id); rtRender();
+  const p=rtP(id);
+  if(p && !rtGeo(p) && p.domicilio) rtUbicar(id, [p.domicilio, p.zona].filter(Boolean).join(', '));   // se ubica solo con el domicilio capturado
+}
+function rtMover(id, d){
+  const i=rtSel.indexOf(id), j=i+d; if(i<0||j<0||j>=rtSel.length) return;
+  [rtSel[i],rtSel[j]]=[rtSel[j],rtSel[i]]; rtRender();
+}
+function rtGoogle(id){
+  const p=rtP(id); if(!p) return;
+  const q=[p.cliente, p.domicilio, p.zona, 'México'].filter(Boolean).join(', ');
+  window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q), '_blank');
+  toast('Copia la dirección (o el link de la barra) en Google Maps y pégala en el campo del cliente');
+  setTimeout(()=>{ const el=document.getElementById('rt-in-'+id); if(el) el.focus(); }, 300);
+}
+// Modo clic en el mapa (opcional, para corregir a mano)
+function rtModoPin(id){
+  rtPinFor = (rtPinFor===id) ? null : id;
+  const h=document.getElementById('rt-hint');
+  if(rtPinFor){
+    const n = id==='__salida__' ? 'la bodega (Narciso Mendoza #150)' : (rtP(id)||{}).cliente;
+    h.textContent = `📍 Da clic en el mapa exactamente donde está ${n}.`;
+    h.classList.add('show');
+  } else h.classList.remove('show');
+  rtRender();
+}
+// Convierte lo que se pegue en coordenadas: link largo de Google Maps, coordenadas o dirección escrita
+function rtCoords(q){
+  const m = q.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) || q.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) || q.match(/[?&](?:q|query|ll|destination)=(-?\d+\.\d+)(?:,|%2C)\s*(-?\d+\.\d+)/) || q.match(/^\s*(-?\d{1,2}\.\d{3,})\s*,\s*(-?\d{1,3}\.\d{3,})\s*$/);
+  return m ? {lat:+m[1], lng:+m[2]} : null;
+}
+async function rtGeocode(q){
+  const c = rtCoords(q); if(c) return Object.assign(c,{txt:'Coordenadas', fuente:'coordenadas'});
+  if(/goo\.gl|maps\.app/.test(q)) return {error:'corto'};
+  const ref = rtSalida || RT_SALIDA_DEF;
+  try{   // Esri: direcciones y negocios en México, con preferencia cerca del punto de salida
+    const url='https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&maxLocations=1&countryCode=MEX&langCode=es&outFields=Match_addr,PlaceName,Addr_type&location='+ref.lng+','+ref.lat+'&SingleLine='+encodeURIComponent(q);
+    const r = await (await fetch(url)).json(), x = (r.candidates||[])[0];
+    if(x && x.score>=70) return {lat:x.location.y, lng:x.location.x, txt:x.address, fuente:'direccion', precision:x.attributes&&x.attributes.Addr_type};
+  }catch(e){}
+  try{
+    const url='https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=mx&accept-language=es&q='+encodeURIComponent(q);
+    const x = (await (await fetch(url)).json())[0];
+    if(x) return {lat:+x.lat, lng:+x.lon, txt:x.display_name, fuente:'direccion'};
+  }catch(e){}
+  return null;
+}
+let rtOcupado = {};
+async function rtUbicar(id, texto){
+  const el = document.getElementById('rt-in-'+id);
+  const q = String(texto!=null ? texto : (el ? el.value : '')).trim();
+  if(!q){ toast('Pega la dirección o el link de Google Maps'); return; }
+  rtOcupado[id]=true; rtRender();
+  const g = await rtGeocode(q);
+  delete rtOcupado[id];
+  if(!g || g.error){
+    rtRender();
+    toast(g&&g.error==='corto' ? '⚠️ Ese es un link corto de "Compartir": abre el negocio en Google Maps y copia el link largo de la barra, o pega la dirección' : '⚠️ No encontré esa dirección. Pega el link de Google Maps o da clic en el mapa con "📍 Marcar"');
+    if(id!=='__salida__'){ rtPinFor=id; const h=document.getElementById('rt-hint'); h.textContent='📍 No se encontró la dirección: da clic en el mapa donde está el negocio.'; h.classList.add('show'); }
+    return;
+  }
+  rtPinFor = id;
+  if(rtMap) rtMap.setView([g.lat,g.lng], 16);     // si ya hay ruta, rtFijar ajusta el mapa para verla completa
+  rtFijar(g.lat, g.lng, g.fuente==='coordenadas' ? (/google|maps/i.test(q)?'Link de Google Maps':'Coordenadas') : q, g.fuente, g.txt);
+}
+function rtFijar(lat, lng, dir, fuente, match){
+  if(!rtPinFor){ toast('Para corregir a mano, elige "📍 Marcar" en un cliente o en el punto de salida'); return; }
+  const loc = {lat:+(+lat).toFixed(6), lng:+(+lng).toFixed(6), fuente:fuente||'mapa'};
+  if(dir) loc.dir = String(dir).slice(0,250);
+  if(match) loc.encontrado = String(match).slice(0,250);
+  const id = rtPinFor; rtPinFor=null; document.getElementById('rt-hint').classList.remove('show');
+  document.getElementById('rt-results').style.display='none';
+  if(id==='__salida__'){
+    rtSalida = Object.assign({}, loc, {nombre:RT_BODEGA.nombre, dir:RT_BODEGA.dir, bodega:true, fuente:'mapa'});
+    db.ref(DB+'/config/campo/salida').set(rtSalida).then(()=>toast('✓ Ubicación de la bodega guardada')).catch(e=>toast('Error: '+e.message));
+    rtAutoOrden(); rtRender(); return;
+  }
+  const p = rtP(id); if(p) p.ubicacion = loc;     // reflejo inmediato; Firebase confirma
+  db.ref(DB+'/prospectos/'+id+'/ubicacion').set(loc).catch(e=>toast('Error: '+e.message));
+  if(rtSel.indexOf(id)<0 && rtSel.length<RT_MAX) rtSel.push(id);
+  rtAutoOrden(true);
+  rtRender();
+}
+function rtAutoOrden(avisar){
+  const n = rtSel.filter(x=>rtGeo(rtP(x))).length;
+  if(n>=2) rtOrdenar(!avisar); else if(avisar) toast('✓ Ubicado');
+}
+// Buscador de arriba: solo para mover el mapa (o fijar si se está marcando algo)
+async function rtBuscar(){
+  const q = document.getElementById('rt-q').value.trim(); if(!q) return;
+  const g = await rtGeocode(q);
+  if(!g || g.error){ toast('⚠️ No encontré esa dirección'); return; }
+  if(rtPinFor){ rtFijar(g.lat,g.lng,q,g.fuente,g.txt); }
+  if(rtMap) rtMap.setView([g.lat,g.lng],16);
+}
+function rtVerRes(lat,lng){ if(rtMap) rtMap.setView([lat,lng],17); if(rtPinFor) rtFijar(lat,lng); }
+function rtCapa(){
+  if(!rtMap) return; rtSat=!rtSat;
+  if(rtSat){ rtMap.removeLayer(rtTiles.calle); rtTiles.sat.addTo(rtMap); } else { rtMap.removeLayer(rtTiles.sat); rtTiles.calle.addTo(rtMap); }
+  document.getElementById('rt-capa').textContent = rtSat ? '🗺 Calles' : '🛰 Satélite';
+}
+
+// Ruta corta: vecino más cercano desde la salida + mejora 2-opt (sin regreso). Los que no tienen ubicación van al final.
+function rtDist(a,b){ const R=6371, t=x=>x*Math.PI/180, dLa=t(b.lat-a.lat), dLo=t(b.lng-a.lng);
+  const h=Math.sin(dLa/2)**2+Math.cos(t(a.lat))*Math.cos(t(b.lat))*Math.sin(dLo/2)**2; return 2*R*Math.asin(Math.sqrt(h)); }
+function rtLargo(ruta){ let s=0, prev=rtSalida; ruta.forEach(id=>{ const g=rtGeo(rtP(id)); s+=rtDist(prev,g); prev=g; }); return s; }
+function rtOrdenar(silencioso){
+  const con = rtSel.filter(id=>rtGeo(rtP(id))), sin = rtSel.filter(id=>!rtGeo(rtP(id)));
+  if(con.length<2){ if(!silencioso) toast('⚠️ Ubica al menos 2 clientes para ordenar la ruta'); return; }
+  let rest=[...con], ruta=[], prev=rtSalida;
+  while(rest.length){ rest.sort((a,b)=>rtDist(prev,rtGeo(rtP(a)))-rtDist(prev,rtGeo(rtP(b)))); const n=rest.shift(); ruta.push(n); prev=rtGeo(rtP(n)); }
+  let mejor=true;
+  while(mejor){ mejor=false;
+    for(let i=0;i<ruta.length-1;i++) for(let k=i+1;k<ruta.length;k++){
+      const nueva=[...ruta.slice(0,i), ...ruta.slice(i,k+1).reverse(), ...ruta.slice(k+1)];
+      if(rtLargo(nueva) < rtLargo(ruta)-1e-9){ ruta=nueva; mejor=true; }
+    }
+  }
+  rtSel=[...ruta, ...sin];
+  rtRender();
+  toast(`✓ Ruta ordenada · ${rtLargo(ruta).toFixed(1)} km aprox. en línea recta`+(sin.length?` · ${sin.length} sin ubicación al final`:''));
+  if(rtMap && window.L){ const pts=[[rtSalida.lat,rtSalida.lng], ...ruta.map(id=>{const g=rtGeo(rtP(id));return [g.lat,g.lng];})]; rtMap.fitBounds(pts,{padding:[40,40],maxZoom:16}); }
+}
+function rtAbrirGoogle(){
+  const pts = rtSel.map(id=>rtGeo(rtP(id))).filter(Boolean);
+  if(!pts.length){ toast('⚠️ Marca en el mapa los clientes del recorrido'); return; }
+  const f=g=>g.lat+','+g.lng, dest=pts[pts.length-1], way=pts.slice(0,-1);
+  let url='https://www.google.com/maps/dir/?api=1&travelmode=driving&origin='+f(rtSalida)+'&destination='+f(dest);
+  if(way.length) url+='&waypoints='+encodeURIComponent(way.map(f).join('|'));
+  window.open(url,'_blank');
+}
+// Guarda el orden del vendedor sin borrar lo que telemarketing haya agendado mientras tenía abierto el planificador
+let rtCargados = [];
+function rtGuardar(silencioso){
+  const f=document.getElementById('rt-fecha').value; if(!f) return Promise.resolve();
+  let agregadosPorOtros = [];
+  return db.ref(DB+'/recorridos/'+f).transaction(r=>{
+    r = r || {};
+    const actual = r.paradas ? Object.values(r.paradas).filter(Boolean) : [];
+    agregadosPorOtros = actual.filter(id=>!rtCargados.includes(id) && !rtSel.includes(id));
+    r.paradas = [...rtSel, ...agregadosPorOtros].slice(0, RT_MAX);
+    r.fecha=f; r.salida=rtSalida; r.actualizado=new Date().toISOString(); r.por=currentUser.responsable;
+    r.asignados = r.asignados || {};
+    Object.keys(r.asignados).forEach(id=>{ if(!r.paradas.includes(id)) delete r.asignados[id]; });
+    rtSel.forEach(id=>{ if(!r.asignados[id]) r.asignados[id]={por:currentUser.responsable, en:today()}; });
+    return r;
+  }).then(()=>{
+    rtCargados = [...rtSel];
+    if(agregadosPorOtros.length){ toast(`ℹ️ El equipo agendó ${agregadosPorOtros.length} cliente(s) más para este día; se agregaron al final`); rtCargarDia(); }
+    else if(!silencioso) toast('✓ Recorrido guardado');
+  }).catch(e=>toast('Error: '+e.message));
+}
+
+function rtRender(){
+  const {der, rv, otros} = rtCandidatos();
+  const item = p => {
+    const sel = rtSel.indexOf(p.id), g = rtGeo(p), t = rtTipo(p);
+    const tag = t==='der' ? `<span class="rt-tag rt-tag-der">↪ ${p.derivadoDe.replace('TELEMARKETING','TLMK')}</span>` : t==='rv' ? `<span class="rt-tag rt-tag-rv">🔁 ${diasSinAvance(p)} días sin avance</span>` : `<span class="rt-tag rt-tag-otro">${eLbl(p.estado)}</span>`;
+    return `<div class="rt-item ${sel>=0?'sel':''}">
+      <input type="checkbox" ${sel>=0?'checked':''} onchange="rtToggle('${p.id}')">
+      ${sel>=0?`<div class="rt-num ${g?'':'nogeo'}">${sel+1}</div>`:''}
+      <div style="flex:1;min-width:0">
+        <div class="rt-name">${p.cliente}</div>
+        <div class="rt-meta">${tag}${[p.contacto, p.telefono].filter(Boolean).join(' · ')}${p.domicilio?`<br>📍 ${p.domicilio}`:''}</div>
+        ${sel>=0 ? `
+        ${rtOcupado[p.id] ? `<div class="rt-busy">⏳ Ubicando…</div>` : g ? `<div class="rt-dir">✓ Ubicado${g.dir?': '+String(g.dir).replace(/</g,'&lt;').slice(0,90):' en el mapa'}</div>` : `
+        <div class="rt-addr"><input id="rt-in-${p.id}" placeholder="Pega aquí la dirección o el link de Google Maps" onpaste="setTimeout(()=>rtUbicar('${p.id}'),60)" onkeydown="if(event.key==='Enter')rtUbicar('${p.id}')"><button onclick="rtUbicar('${p.id}')">Ubicar</button></div>`}
+        <div class="rt-acts">
+          <button class="rt-btn" onclick="rtGoogle('${p.id}')">🔎 Buscar en Google Maps</button>
+          ${g?`<button class="rt-btn" onclick="delete rtP('${p.id}').ubicacion; db.ref(DB+'/prospectos/${p.id}/ubicacion').remove(); rtRender()">✏️ Cambiar dirección</button>`:''}
+          <button class="rt-btn ${rtPinFor===p.id?'on':''}" onclick="rtModoPin('${p.id}')">📍 ${g?'Ajustar en mapa':'Marcar en mapa'}</button>
+          ${g?`<button class="rt-btn" onclick="rtMap&&rtMap.setView([${g.lat},${g.lng}],17)">👁</button>`:''}
+        </div>` : `<div class="rt-meta"><span class="${g?'rt-geo-ok':'rt-geo-no'}">${g?'✓ Ya ubicado':(p.domicilio?'Se ubicará con su domicilio':'Sin ubicación')}</span></div>`}
+      </div>
+      ${sel>=0?`<div class="rt-mv"><button onclick="rtMover('${p.id}',-1)">▲</button><button onclick="rtMover('${p.id}',1)">▼</button></div>`:''}
+    </div>`;
+  };
+  const selP = rtSel.map(rtP).filter(Boolean);
+  let h = `<div class="rt-salida"><div class="rt-name">🏁 Salida: ${RT_BODEGA.nombre}</div>
+    <div class="rt-meta">${String(RT_BODEGA.dir).replace(/</g,'&lt;')}${rtSalida&&rtSalida.aprox?' · <span class="rt-geo-no">ubicación aproximada</span>':''}</div>
+    <div class="rt-acts"><button class="rt-btn ${rtPinFor==='__salida__'?'on':''}" onclick="rtModoPin('__salida__')">📍 Ajustar en mapa</button>${rtSalida?`<button class="rt-btn" onclick="rtMap&&rtMap.setView([${rtSalida.lat},${rtSalida.lng}],17)">👁</button>`:''}</div></div>`;
+  h += `<div class="rt-sec">Recorrido del día <span class="rt-cnt">${selP.length} / ${RT_MAX}</span></div>`;
+  h += selP.length ? selP.map(item).join('') : `<div class="rt-item"><div class="rt-meta">Selecciona hasta ${RT_MAX} clientes de las listas de abajo. A cada uno pégale su dirección (o el link de Google Maps) y la ruta se ordena sola.</div></div>`;
+  const resto = arr => arr.filter(p=>rtSel.indexOf(p.id)<0);
+  h += `<div class="rt-sec">↪ Enviados por telemarketing <span class="rt-cnt">${resto(der).length}</span></div>` + (resto(der).map(item).join('') || `<div class="rt-item"><div class="rt-meta">Sin pendientes.</div></div>`);
+  h += `<div class="rt-sec">🔁 Visitas de seguimiento <span class="rt-cnt">${resto(rv).length}</span></div>` + (resto(rv).map(item).join('') || `<div class="rt-item"><div class="rt-meta">Sin pendientes.</div></div>`);
+  h += `<div class="rt-sec" style="cursor:pointer" onclick="rtVerOtros=!rtVerOtros;rtRender()">Otros prospectos abiertos <span class="rt-cnt">${resto(otros).length} ${rtVerOtros?'▲':'▼'}</span></div>` + (rtVerOtros ? resto(otros).map(item).join('') : '');
+  document.getElementById('rt-left').innerHTML = h;
+  const sinG = selP.filter(p=>!rtGeo(p)).length;
+  document.getElementById('rt-info').innerHTML = `Salida: <b>${rtSalida?(rtSalida.nombre||'Punto de salida'):'—'}</b> · ${selP.length} parada${selP.length===1?'':'s'}`+(sinG?` · <span class="rt-geo-no">${sinG} sin ubicación (van al final)</span>`:'');
+  rtPintar();
+}
+function rtPintar(){
+  if(!rtMap || !rtLayer) return;
+  rtLayer.clearLayers();
+  const pts=[];
+  if(rtSalida){ L.marker([rtSalida.lat,rtSalida.lng],{icon:L.divIcon({className:'',html:'<div class="rt-pin start">🏁</div>',iconSize:[28,28],iconAnchor:[14,14]})}).bindTooltip('Punto de salida').addTo(rtLayer); pts.push([rtSalida.lat,rtSalida.lng]); }
+  rtSel.forEach((id,i)=>{ const p=rtP(id), g=rtGeo(p); if(!g) return;
+    L.marker([g.lat,g.lng],{icon:L.divIcon({className:'',html:`<div class="rt-pin">${i+1}</div>`,iconSize:[28,28],iconAnchor:[14,14]})}).bindTooltip(`${i+1}. ${p.cliente}`).addTo(rtLayer);
+    pts.push([g.lat,g.lng]); });
+  if(pts.length>1) L.polyline(pts,{color:'#185FA5',weight:3,dashArray:'6 6'}).addTo(rtLayer);
+}
+
+// ── Bitácora en Word (.docx) ──
+async function rtWord(){
+  const selP = rtSel.map(rtP).filter(Boolean);
+  if(!selP.length){ toast('⚠️ Selecciona al menos un cliente'); return; }
+  if(selP.some(p=>!rtGeo(p)) && !confirm('Hay clientes sin ubicación en el mapa: quedarán al final de la bitácora. ¿Continuar?')) return;
+  try{ if(!window.docx) await rtLoad('https://unpkg.com/docx@8.5.0/build/index.umd.js'); }
+  catch(e){ toast('⚠️ No se pudo cargar el generador de Word (revisa internet)'); return; }
+  await rtGuardar(true);
+  const {Document,Packer,Paragraph,TextRun,Table,TableRow,TableCell,WidthType,AlignmentType,PageOrientation,ShadingType,BorderStyle,VerticalAlign,HeightRule} = window.docx;
+  const F='Arial', NAVY='0F2744';
+  const fecha = document.getElementById('rt-fecha').value;
+  const fechaLarga = new Date(fecha+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const W=[450,2700,1500,1300,1000,1000,1100,1750,3600];   // suma 14400 = carta horizontal con márgenes de 0.5"
+  const hdr=['#','Prospecto','Contacto','Teléfono','Hora de llegada','Hora de salida','Folio cotización','Enviado por','Motivo'];
+  const bd={style:BorderStyle.SINGLE,size:4,color:'9A9A94'}, borders={top:bd,bottom:bd,left:bd,right:bd};
+  const cell=(runs,i,o={})=>new TableCell({width:{size:W[i],type:WidthType.DXA},borders,verticalAlign:VerticalAlign.CENTER,
+    shading:o.fill?{type:ShadingType.CLEAR,color:'auto',fill:o.fill}:undefined, margins:{top:60,bottom:60,left:80,right:80},
+    children:[new Paragraph({alignment:o.center?AlignmentType.CENTER:AlignmentType.LEFT,children:runs})]});
+  const tx=(t,o={})=>new TextRun({text:String(t||''),font:F,size:o.size||18,bold:o.bold,color:o.color,italics:o.it,break:o.br});
+  const filas = selP.map((p,i)=>new TableRow({height:{value:820,rule:HeightRule.ATLEAST},cantSplit:true,children:[
+    cell([tx(i+1,{bold:true,size:20})],0,{center:true}),
+    cell([tx(p.cliente,{bold:true}), ...(rtDomicilio(p)?[tx(rtDomicilio(p),{size:15,color:'555555',br:1})]:[])],1),
+    cell([tx(p.contacto)],2),
+    cell([tx(p.telefono)],3),
+    cell([tx('')],4,{center:true}),
+    cell([tx('')],5,{center:true}),
+    cell([tx(p.folio)],6),
+    cell([tx(rtEnviadoPor(p).replace(/^TELEMARKETING/,'Telemarketing'))],7),
+    cell([tx(rtMotivo(p),{size:16})],8)
+  ]}));
+  const doc = new Document({sections:[{properties:{page:{size:{width:12240,height:15840,orientation:PageOrientation.LANDSCAPE},margin:{top:720,bottom:720,left:720,right:720}}},
+    children:[
+      new Paragraph({children:[tx('Bitácora de recorrido · Vendedor de campo',{bold:true,size:30,color:NAVY})]}),
+      new Paragraph({spacing:{after:60},children:[tx('Surtidora de Higiénicos y Servicios (SHS)',{size:18,color:'6B6B66'})]}),
+      new Paragraph({spacing:{after:160},children:[tx('Fecha: ',{bold:true,size:20}),tx(fechaLarga.charAt(0).toUpperCase()+fechaLarga.slice(1),{size:20}),
+        tx('     Clientes: ',{bold:true,size:20}),tx(selP.length,{size:20}),
+        tx('     Salida: ',{bold:true,size:20}),tx(RT_BODEGA.nombre+' (Narciso Mendoza #150, Villa de Álvarez)',{size:20}),
+        tx('     Orden: ',{bold:true,size:20}),tx('ruta sugerida, visitar en el orden numerado',{size:20})]}),
+      new Table({width:{size:14400,type:WidthType.DXA},columnWidths:W,rows:[
+        new TableRow({tableHeader:true,children:hdr.map((h,i)=>cell([tx(h,{bold:true,color:'FFFFFF'})],i,{fill:NAVY,center:i===0||i===4||i===5}))}),
+        ...filas]}),
+      new Paragraph({spacing:{before:500},children:[tx('Firma del vendedor: ________________________________',{size:20}),tx('          Revisó (Gerente de ventas): ________________________________',{size:20})]})
+    ]}]});
+  const blob = await Packer.toBlob(doc);
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`Bitacora_recorrido_${fecha}.docx`;
+  document.body.appendChild(a); a.click(); a.remove();
+  toast('✓ Bitácora descargada');
+}
+
+let _t;
+function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(_t); _t=setTimeout(()=>el.classList.remove('show'),2800); }
+</script>
+</body>
+</html>
